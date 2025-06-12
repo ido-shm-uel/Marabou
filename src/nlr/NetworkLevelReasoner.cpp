@@ -198,6 +198,23 @@ void NetworkLevelReasoner::clearConstraintTightenings()
     _boundTightenings.clear();
 }
 
+void NetworkLevelReasoner::receivePolygonalTighterBound( PolygonalTightening polygonal_tightening )
+{
+    _polygonalBoundTightenings.append( polygonal_tightening );
+}
+
+void NetworkLevelReasoner::getConstraintPolygonalTightenings(
+    List<PolygonalTightening> &polygonal_tightenings )
+{
+    polygonal_tightenings = _polygonalBoundTightenings;
+    _polygonalBoundTightenings.clear();
+}
+
+void NetworkLevelReasoner::clearConstraintPolygonalTightenings()
+{
+    _polygonalBoundTightenings.clear();
+}
+
 void NetworkLevelReasoner::symbolicBoundPropagation()
 {
     for ( unsigned i = 0; i < _layerIndexToLayer.size(); ++i )
@@ -235,6 +252,9 @@ void NetworkLevelReasoner::lpRelaxationPropagation()
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
               MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX )
         lpFormulator.optimizeBoundsWithPreimageApproximation( _layerIndexToLayer );
+    else if ( Options::get()->getMILPSolverBoundTighteningType() ==
+              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
+        lpFormulator.optimizeBoundsWithPMNR( _layerIndexToLayer );
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
               MILPSolverBoundTighteningType::LP_RELAXATION )
         lpFormulator.optimizeBoundsWithLpRelaxation( _layerIndexToLayer );

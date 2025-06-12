@@ -140,16 +140,35 @@ public:
     void computeSymbolicBounds();
     void computeParameterisedSymbolicBounds( const Vector<double> &coeffs, bool receive = false );
 
+
+    // Get number of optimizable parameters for parameterised SBT relaxation per layer type.
+    unsigned getNumberOfParametersPerType( Type t ) const;
+
     // Get total number of optimizable parameters for parameterised SBT relaxation.
-    unsigned getNumberOfParameters( const Map<unsigned, Layer *> &layers );
+    unsigned getNumberOfParameters( const Map<unsigned, Layer *> &layers ) const;
+
+    // Get total number of non-weighted sum layers for INVPROP.
+    unsigned countNonlinearLayers( const Map<unsigned, Layer *> &layers ) const;
 
     // Get map containing vector of optimizable parameters for parameterised SBT relaxation for
     // every layer index.
     Map<unsigned, Vector<double>> getParametersForLayers( const Map<unsigned, Layer *> &layers,
-                                                          const Vector<double> &coeffs );
+                                                          const Vector<double> &coeffs ) const;
 
     // Return optimizable parameters which minimize parameterised SBT bounds' volume.
     const Vector<double> OptimalParameterisedSymbolicBoundTightening();
+
+    // Heuristically select neurons and polygonal tightenings for PMNR.
+    const List<NeuronIndex> selectConstraints( const Map<unsigned, Layer *> &layers ) const;
+
+    const Vector<PolygonalTightening>
+    generatePolygonalTightenings( const Map<unsigned, Layer *> &layers ) const;
+
+    // Optimize biases of generated parameterised polygonal tightenings.
+    const Vector<PolygonalTightening> OptimizeParameterisedPolygonalTightening();
+    const Vector<PolygonalTightening>
+    OptimizeSingleParameterisedPolygonalTightening( PolygonalTightening tightening,
+                                                    Vector<PolygonalTightening> prevTightenings );
 
     /*
       Preprocessing functionality: variable elimination and reindexing
@@ -321,6 +340,13 @@ private:
     // Return difference between given point and upper and lower bounds determined by parameterised
     // SBT relaxation.
     double calculateDifferenceFromSymbolic( Map<unsigned, double> &point, unsigned i ) const;
+
+    // Get current lower bound for selected parameterised polygonal tightenings' biases.
+    double getParameterisdPolygonalTighteningLowerBound(
+        const Vector<double> &coeffs,
+        const Vector<double> &gamma,
+        PolygonalTightening tightening,
+        Vector<PolygonalTightening> prevTightenings ) const;
 
     /*
       Helper functions for interval bound tightening

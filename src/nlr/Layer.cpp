@@ -77,7 +77,9 @@ void Layer::allocateMemory()
     if ( Options::get()->getSymbolicBoundTighteningType() ==
              SymbolicBoundTighteningType::SYMBOLIC_BOUND_TIGHTENING ||
          Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX )
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX ||
+         Options::get()->getMILPSolverBoundTighteningType() ==
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
     {
         _symbolicLb = new double[_size * _inputLayerSize];
         _symbolicUb = new double[_size * _inputLayerSize];
@@ -3580,22 +3582,21 @@ void Layer::computeParameterisedSymbolicBoundsForRelu( const Vector<double> &coe
           variable. If they are tigheter than what was previously
           known, store them.
         */
-        if ( _lb[i] < _symbolicLbOfLb[i] )
+        if ( receive )
         {
-            _lb[i] = _symbolicLbOfLb[i];
-
-            if ( receive )
+            if ( _lb[i] < _symbolicLbOfLb[i] )
+            {
+                _lb[i] = _symbolicLbOfLb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _lb[i], Tightening::LB ) );
-        }
+            }
 
-        if ( _ub[i] > _symbolicUbOfUb[i] )
-        {
-            _ub[i] = _symbolicUbOfUb[i];
-
-            if ( receive )
+            if ( _ub[i] > _symbolicUbOfUb[i] )
+            {
+                _ub[i] = _symbolicUbOfUb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _ub[i], Tightening::UB ) );
+            }
         }
     }
 }
@@ -3797,22 +3798,21 @@ void Layer::computeParameterisedSymbolicBoundsForSign( const Vector<double> &coe
           variable. If they are tigheter than what was previously
           known, store them.
         */
-        if ( _lb[i] < _symbolicLbOfLb[i] )
+        if ( receive )
         {
-            _lb[i] = _symbolicLbOfLb[i];
-
-            if ( receive )
+            if ( _lb[i] < _symbolicLbOfLb[i] )
+            {
+                _lb[i] = _symbolicLbOfLb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _lb[i], Tightening::LB ) );
-        }
+            }
 
-        if ( _ub[i] > _symbolicUbOfUb[i] )
-        {
-            _ub[i] = _symbolicUbOfUb[i];
-
-            if ( receive )
+            if ( _ub[i] > _symbolicUbOfUb[i] )
+            {
+                _ub[i] = _symbolicUbOfUb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _ub[i], Tightening::UB ) );
+            }
         }
     }
 }
@@ -4041,22 +4041,21 @@ void Layer::computeParameterisedSymbolicBoundsForLeakyRelu( const Vector<double>
           variable. If they are tigheter than what was previously
           known, store them.
         */
-        if ( _lb[i] < _symbolicLbOfLb[i] )
+        if ( receive )
         {
-            _lb[i] = _symbolicLbOfLb[i];
-
-            if ( receive )
+            if ( _lb[i] < _symbolicLbOfLb[i] )
+            {
+                _lb[i] = _symbolicLbOfLb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _lb[i], Tightening::LB ) );
-        }
+            }
 
-        if ( _ub[i] > _symbolicUbOfUb[i] )
-        {
-            _ub[i] = _symbolicUbOfUb[i];
-
-            if ( receive )
+            if ( _ub[i] > _symbolicUbOfUb[i] )
+            {
+                _ub[i] = _symbolicUbOfUb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _ub[i], Tightening::UB ) );
+            }
         }
     }
 }
@@ -4279,22 +4278,21 @@ void Layer::computeParameterisedSymbolicBoundsForBilinear( const Vector<double> 
           variable. If they are tigheter than what was previously
           known, store them.
         */
-        if ( _lb[i] < _symbolicLbOfLb[i] )
+        if ( receive )
         {
-            _lb[i] = _symbolicLbOfLb[i];
-
-            if ( receive )
+            if ( _lb[i] < _symbolicLbOfLb[i] )
+            {
+                _lb[i] = _symbolicLbOfLb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _lb[i], Tightening::LB ) );
-        }
+            }
 
-        if ( _ub[i] > _symbolicUbOfUb[i] )
-        {
-            _ub[i] = _symbolicUbOfUb[i];
-
-            if ( receive )
+            if ( _ub[i] > _symbolicUbOfUb[i] )
+            {
+                _ub[i] = _symbolicUbOfUb[i];
                 _layerOwner->receiveTighterBound(
                     Tightening( _neuronToVariable[i], _ub[i], Tightening::UB ) );
+            }
         }
     }
 }
@@ -4387,6 +4385,19 @@ const Vector<double> Layer::OptimalParameterisedSymbolicBoundTightening()
     return optimal_coeffs;
 }
 
+
+const Vector<PolygonalTightening> Layer::OptimizeParameterisedPolygonalTightening()
+{
+    // ...
+}
+
+const Vector<PolygonalTightening>
+Layer::OptimizeSingleParameterisedPolygonalTightening( PolygonalTightening tightening,
+                                                       Vector<PolygonalTightening> prevTightenings )
+{
+    // ...
+}
+
 double Layer::EstimateVolume( const Vector<double> &coeffs )
 {
     // First, run parameterised symbolic bound propagation.
@@ -4419,7 +4430,7 @@ double Layer::EstimateVolume( const Vector<double> &coeffs )
         double ub = inputLayer->getUb( index );
 
         if ( lb == ub )
-            return 0;
+            continue;
 
         log_box_volume += std::log( ub - lb );
     }
@@ -4474,34 +4485,53 @@ double Layer::calculateDifferenceFromSymbolic( Map<unsigned, double> &point, uns
     return std::max( _ub[i] - upperSum, lowerSum - _lb[i] );
 }
 
-unsigned Layer::getNumberOfParameters( const Map<unsigned, Layer *> &layers )
+double Layer::getParameterisdPolygonalTighteningLowerBound(
+    const Vector<double> &coeffs,
+    const Vector<double> &gamma,
+    PolygonalTightening tightening,
+    Vector<PolygonalTightening> prevTightenings ) const
 {
-    unsigned index = 0;
+    // ...
+}
+
+
+const List<NeuronIndex> Layer::selectConstraints( const Map<unsigned, Layer *> &layers ) const
+{
+    // ...
+}
+
+const Vector<PolygonalTightening>
+Layer::generatePolygonalTightenings( const Map<unsigned, Layer *> &layers ) const
+{
+    // ...
+}
+
+
+unsigned Layer::getNumberOfParametersPerType( Type t ) const
+{
+    if ( t == Layer::RELU || t == Layer::LEAKY_RELU )
+        return 1;
+
+    if ( t == Layer::SIGN || t == Layer::BILINEAR )
+        return 2;
+
+    return 0;
+}
+
+unsigned Layer::getNumberOfParameters( const Map<unsigned, Layer *> &layers ) const
+{
+    unsigned num = 0;
     for ( auto pair : layers )
     {
         unsigned layerIndex = pair.first;
         Layer *layer = layers[layerIndex];
-        switch ( layer->getLayerType() )
-        {
-        case Layer::RELU:
-        case Layer::LEAKY_RELU:
-            index++;
-            break;
-
-        case Layer::SIGN:
-        case Layer::BILINEAR:
-            index += 2;
-            break;
-
-        default:
-            break;
-        }
+        num += getNumberOfParametersPerType( layer->getLayerType() );
     }
-    return index;
+    return num;
 }
 
 Map<unsigned, Vector<double>> Layer::getParametersForLayers( const Map<unsigned, Layer *> &layers,
-                                                             const Vector<double> &coeffs )
+                                                             const Vector<double> &coeffs ) const
 {
     unsigned index = 0;
     Map<unsigned, Vector<double>> layerIndicesToParameters;
@@ -4509,31 +4539,28 @@ Map<unsigned, Vector<double>> Layer::getParametersForLayers( const Map<unsigned,
     {
         unsigned layerIndex = pair.first;
         Layer *layer = layers[layerIndex];
-        switch ( layer->getLayerType() )
+        unsigned n_coeffs = getNumberOfParametersPerType( layer->getLayerType() );
+        Vector<double> current_coeffs( n_coeffs );
+        for ( unsigned i = 0; i < n_coeffs; i++ )
         {
-        case Layer::RELU:
-        case Layer::LEAKY_RELU:
-        {
-            layerIndicesToParameters.insert( layerIndex, Vector<double>( { coeffs[index] } ) );
-            index++;
+            current_coeffs[i] = coeffs[index + i];
         }
-        break;
-
-        case Layer::SIGN:
-        case Layer::BILINEAR:
-        {
-            layerIndicesToParameters.insert(
-                layerIndex, Vector<double>( { coeffs[index], coeffs[index + 1] } ) );
-            index += 2;
-        }
-        break;
-
-        default:
-            layerIndicesToParameters.insert( layerIndex, Vector<double>( {} ) );
-            break;
-        }
+        layerIndicesToParameters.insert( layerIndex, current_coeffs );
+        index += n_coeffs;
     }
     return layerIndicesToParameters;
+}
+
+unsigned Layer::countNonlinearLayers( const Map<unsigned, Layer *> &layers ) const
+{
+    unsigned num = 0;
+    for ( auto pair : layers )
+    {
+        unsigned layerIndex = pair.first;
+        Layer *layer = layers[layerIndex];
+        num += layer->getLayerType() != Layer::WEIGHTED_SUM ? 1 : 0;
+    }
+    return num;
 }
 
 double Layer::softmaxLSELowerBound( const Vector<double> &inputs,

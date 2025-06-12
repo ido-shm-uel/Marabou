@@ -20,6 +20,7 @@
 #include "LayerOwner.h"
 #include "Map.h"
 #include "ParallelSolver.h"
+#include "PolygonalTightening.h"
 
 #include <atomic>
 #include <boost/chrono.hpp>
@@ -53,8 +54,11 @@ public:
     */
     void optimizeBoundsWithLpRelaxation( const Map<unsigned, Layer *> &layers,
                                          bool backward = false,
-                                         const Vector<double> &coeffs = Vector<double>( {} ) );
+                                         const Vector<double> &coeffs = Vector<double>( {} ),
+                                         const Vector<PolygonalTightening> &polygonal_tightenings =
+                                             Vector<PolygonalTightening>( {} ) );
     void optimizeBoundsWithPreimageApproximation( Map<unsigned, Layer *> &layers );
+    void optimizeBoundsWithPMNR( Map<unsigned, Layer *> &layers );
     void optimizeBoundsOfOneLayerWithLpRelaxation( const Map<unsigned, Layer *> &layers,
                                                    unsigned targetIndex );
     void optimizeBoundsWithIncrementalLpRelaxation( const Map<unsigned, Layer *> &layers );
@@ -75,11 +79,15 @@ public:
     void createLPRelaxation( const Map<unsigned, Layer *> &layers,
                              GurobiWrapper &gurobi,
                              unsigned lastLayer = UINT_MAX,
-                             const Vector<double> &coeffs = Vector<double>( {} ) );
+                             const Vector<double> &coeffs = Vector<double>( {} ),
+                             const Vector<PolygonalTightening> &polygonal_tightenings =
+                                 Vector<PolygonalTightening>( {} ) );
     void createLPRelaxationAfter( const Map<unsigned, Layer *> &layers,
                                   GurobiWrapper &gurobi,
                                   unsigned firstLayer,
-                                  const Vector<double> &coeffs = Vector<double>( {} ) );
+                                  const Vector<double> &coeffs = Vector<double>( {} ),
+                                  const Vector<PolygonalTightening> &polygonal_tightenings =
+                                      Vector<PolygonalTightening>( {} ) );
     double solveLPRelaxation( GurobiWrapper &gurobi,
                               const Map<unsigned, Layer *> &layers,
                               MinOrMax minOrMax,
@@ -131,10 +139,12 @@ private:
                                             const Layer *layer,
                                             bool createVariables );
 
-    void
-    optimizeBoundsOfNeuronsWithLpRelaxation( ThreadArgument &args,
-                                             bool backward,
-                                             const Vector<double> &coeffs = Vector<double>( {} ) );
+    void optimizeBoundsOfNeuronsWithLpRelaxation(
+        ThreadArgument &args,
+        bool backward,
+        const Vector<double> &coeffs = Vector<double>( {} ),
+        const Vector<PolygonalTightening> &polygonal_tightenings =
+            Vector<PolygonalTightening>( {} ) );
 
 
     // Create LP relaxations depending on external parameters.
@@ -163,6 +173,12 @@ private:
                                                       bool createVariables,
                                                       const Vector<double> &coeffs );
 
+    void addPolyognalTighteningsToLpRelaxation(
+        GurobiWrapper &gurobi,
+        const Map<unsigned, Layer *> &layers,
+        unsigned firstLayer,
+        unsigned lastLayer,
+        const Vector<PolygonalTightening> &polygonal_tightenings );
 
     /*
       Optimize for the min/max value of variableName with respect to the constraints

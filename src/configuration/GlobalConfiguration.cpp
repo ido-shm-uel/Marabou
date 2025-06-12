@@ -67,13 +67,21 @@ const unsigned GlobalConfiguration::ROW_BOUND_TIGHTENER_SATURATION_ITERATIONS = 
 const double GlobalConfiguration::COST_FUNCTION_ERROR_THRESHOLD = 0.0000000001;
 
 const unsigned GlobalConfiguration::SIMULATION_RANDOM_SEED = 1;
+
 const unsigned GlobalConfiguration::VOLUME_ESTIMATION_RANDOM_SEED = 1;
-const unsigned GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_RANDOM_SEED = 1;
 const unsigned GlobalConfiguration::VOLUME_ESTIMATION_ITERATIONS = 25000;
+const unsigned GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_RANDOM_SEED = 1;
 const unsigned GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_MAX_ITERATIONS = 25;
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_STEP_SIZE = 0.025;
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_LEARNING_RATE = 0.25;
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY = 0;
+
+const unsigned GlobalConfiguration::INVPROP_MAX_ITERATIONS = 25000;
+const double GlobalConfiguration::INVPROP_STEP_SIZE = 0.0025;
+const double GlobalConfiguration::INVPROP_LEARNING_RATE = 0.025;
+const double GlobalConfiguration::INVPROP_WEIGHT_DECAY = 0;
+const double GlobalConfiguration::INVPROP_INITIAL_ALPHA = 0.5;
+const double GlobalConfiguration::INVPROP_INITIAL_GAMMA = 0.025;
 
 const bool GlobalConfiguration::USE_HARRIS_RATIO_TEST = true;
 
@@ -125,6 +133,7 @@ const bool GlobalConfiguration::WRITE_JSON_PROOF = false;
 
 const unsigned GlobalConfiguration::BACKWARD_BOUND_PROPAGATION_DEPTH = 3;
 const unsigned GlobalConfiguration::MAX_ROUNDS_OF_BACKWARD_ANALYSIS = 10;
+const unsigned GlobalConfiguration::MAX_ROUNDS_OF_PMNR_BACKWARD_ANALYSIS = 10;
 
 #ifdef ENABLE_GUROBI
 const unsigned GlobalConfiguration::GUROBI_NUMBER_OF_THREADS = 1;

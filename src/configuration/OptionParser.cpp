@@ -267,7 +267,8 @@ void OptionParser::initialize()
                 &( ( *_stringOptions )[Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE] ) )
                 ->default_value( ( *_stringOptions )[Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE] ),
             "The MILP solver bound tightening type: "
-            "lp/backward-once/backward-converge/backward-preimage-approx/lp-inc/milp/milp-inc/"
+            "lp/backward-once/backward-converge/backward-preimage-approx/backward-pmnr/lp-inc/milp/"
+            "milp-inc/"
             "iter-prop/none." )
 #endif
         ;

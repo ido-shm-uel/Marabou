@@ -172,6 +172,24 @@ public:
     // Weight decay for PreimageApproximation optimization.
     static const double PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY;
 
+    // Maximum iterations for INVPROP optimization.
+    static const unsigned INVPROP_MAX_ITERATIONS;
+
+    // Step size for INVPROP optimization.
+    static const double INVPROP_STEP_SIZE;
+
+    // Learning rate for INVPROP optimization.
+    static const double INVPROP_LEARNING_RATE;
+
+    // Weight decay for INVPROP optimization.
+    static const double INVPROP_WEIGHT_DECAY;
+
+    // Initial alpha values for INVPROP optimization.
+    static const double INVPROP_INITIAL_ALPHA;
+
+    // Initial gamma values for INVPROP optimization.
+    static const double INVPROP_INITIAL_GAMMA;
+
     // How often should projected steepest edge reset the reference space?
     static const unsigned PSE_ITERATIONS_BEFORE_RESET;
 
@@ -283,6 +301,10 @@ public:
     /* How many rounds of backward analysis to perform?
      */
     static const unsigned MAX_ROUNDS_OF_BACKWARD_ANALYSIS;
+
+    /* How many rounds of backward analysis to perform for PMNR algorithm?
+     */
+    static const unsigned MAX_ROUNDS_OF_PMNR_BACKWARD_ANALYSIS;
 
 #ifdef ENABLE_GUROBI
     /*

@@ -248,9 +248,11 @@ void LPFormulator::optimizeBoundsWithIncrementalLpRelaxation( const Map<unsigned
                           .ascii() );
 }
 
-void LPFormulator::optimizeBoundsWithLpRelaxation( const Map<unsigned, Layer *> &layers,
-                                                   bool backward,
-                                                   const Vector<double> &coeffs )
+void LPFormulator::optimizeBoundsWithLpRelaxation(
+    const Map<unsigned, Layer *> &layers,
+    bool backward,
+    const Vector<double> &coeffs,
+    const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     unsigned numberOfWorkers = Options::get()->getInt( Options::NUM_WORKERS );
 
@@ -303,7 +305,8 @@ void LPFormulator::optimizeBoundsWithLpRelaxation( const Map<unsigned, Layer *> 
                                  &solverToIndex );
 
         // optimize every neuron of layer
-        optimizeBoundsOfNeuronsWithLpRelaxation( argument, backward, coeffs );
+        optimizeBoundsOfNeuronsWithLpRelaxation(
+            argument, backward, coeffs, polygonal_tightenings );
         LPFormulator_LOG( Stringf( "Tightening bound for layer %u - done", layerIndex ).ascii() );
     }
 
@@ -342,6 +345,15 @@ void LPFormulator::optimizeBoundsWithPreimageApproximation( Map<unsigned, Layer 
     const Vector<double> &optimal_coeffs = layers[0]->OptimalParameterisedSymbolicBoundTightening();
     optimizeBoundsWithLpRelaxation( layers, false, optimal_coeffs );
     optimizeBoundsWithLpRelaxation( layers, true, optimal_coeffs );
+}
+
+void LPFormulator::optimizeBoundsWithPMNR( Map<unsigned, Layer *> &layers )
+{
+    const Vector<PolygonalTightening> &polygonal_tightenings =
+        layers[0]->OptimizeParameterisedPolygonalTightening();
+    const Vector<double> &optimal_coeffs = layers[0]->OptimalParameterisedSymbolicBoundTightening();
+    optimizeBoundsWithLpRelaxation( layers, false, optimal_coeffs, polygonal_tightenings );
+    optimizeBoundsWithLpRelaxation( layers, true, optimal_coeffs, polygonal_tightenings );
 }
 
 void LPFormulator::optimizeBoundsOfOneLayerWithLpRelaxation( const Map<unsigned, Layer *> &layers,
@@ -417,9 +429,11 @@ void LPFormulator::optimizeBoundsOfOneLayerWithLpRelaxation( const Map<unsigned,
         throw InfeasibleQueryException();
 }
 
-void LPFormulator::optimizeBoundsOfNeuronsWithLpRelaxation( ThreadArgument &args,
-                                                            bool backward,
-                                                            const Vector<double> &coeffs )
+void LPFormulator::optimizeBoundsOfNeuronsWithLpRelaxation(
+    ThreadArgument &args,
+    bool backward,
+    const Vector<double> &coeffs,
+    const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     unsigned numberOfWorkers = Options::get()->getInt( Options::NUM_WORKERS );
 
@@ -532,9 +546,11 @@ void LPFormulator::optimizeBoundsOfNeuronsWithLpRelaxation( ThreadArgument &args
 
         mtx.lock();
         if ( backward )
-            createLPRelaxationAfter( layers, *freeSolver, lastIndexOfRelaxation, coeffs );
+            createLPRelaxationAfter(
+                layers, *freeSolver, lastIndexOfRelaxation, coeffs, polygonal_tightenings );
         else
-            createLPRelaxation( layers, *freeSolver, lastIndexOfRelaxation, coeffs );
+            createLPRelaxation(
+                layers, *freeSolver, lastIndexOfRelaxation, coeffs, polygonal_tightenings );
         mtx.unlock();
 
         // spawn a thread to tighten the bounds for the current variable
@@ -657,7 +673,8 @@ void LPFormulator::tightenSingleVariableBoundsWithLPRelaxation( ThreadArgument &
 void LPFormulator::createLPRelaxation( const Map<unsigned, Layer *> &layers,
                                        GurobiWrapper &gurobi,
                                        unsigned lastLayer,
-                                       const Vector<double> &coeffs )
+                                       const Vector<double> &coeffs,
+                                       const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     for ( const auto &layer : layers )
     {
@@ -675,12 +692,15 @@ void LPFormulator::createLPRelaxation( const Map<unsigned, Layer *> &layers,
             addLayerToParameterisedModel( gurobi, layer.second, false, currentLayerCoeffs );
         }
     }
+    addPolyognalTighteningsToLpRelaxation( gurobi, layers, 0, lastLayer, polygonal_tightenings );
 }
 
-void LPFormulator::createLPRelaxationAfter( const Map<unsigned, Layer *> &layers,
-                                            GurobiWrapper &gurobi,
-                                            unsigned firstLayer,
-                                            const Vector<double> &coeffs )
+void LPFormulator::createLPRelaxationAfter(
+    const Map<unsigned, Layer *> &layers,
+    GurobiWrapper &gurobi,
+    unsigned firstLayer,
+    const Vector<double> &coeffs,
+    const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     unsigned depth = GlobalConfiguration::BACKWARD_BOUND_PROPAGATION_DEPTH;
     std::priority_queue<unsigned, std::vector<unsigned>, std::greater<unsigned>> layersToAdd;
@@ -718,6 +738,8 @@ void LPFormulator::createLPRelaxationAfter( const Map<unsigned, Layer *> &layers
             }
         }
     }
+    addPolyognalTighteningsToLpRelaxation(
+        gurobi, layers, firstLayer, layersToAdd.top(), polygonal_tightenings );
 }
 
 void LPFormulator::addLayerToModel( GurobiWrapper &gurobi,
@@ -2139,6 +2161,69 @@ void LPFormulator::addBilinearLayerToParameterisedLpRelaxation( GurobiWrapper &g
             gurobi.addLeqConstraint( terms,
                                      -coeffs[1] * sourceLbs[0] * sourceUbs[1] -
                                          ( 1 - coeffs[1] ) * sourceUbs[0] * sourceLbs[1] );
+        }
+    }
+}
+
+void LPFormulator::addPolyognalTighteningsToLpRelaxation(
+    GurobiWrapper &gurobi,
+    const Map<unsigned, Layer *> &layers,
+    unsigned firstLayer,
+    unsigned lastLayer,
+    const Vector<PolygonalTightening> &polygonal_tightenings )
+{
+    for ( const auto &tightening : polygonal_tightenings )
+    {
+        bool out_of_bounds = false;
+        Map<NeuronIndex, double> neuronToCoefficient = tightening._neuronToCoefficient;
+        PolygonalTightening::PolygonalBoundType type = tightening._type;
+        double value = tightening._value;
+        List<GurobiWrapper::Term> terms;
+
+        for ( const auto &pair : neuronToCoefficient )
+        {
+            unsigned currentLayerIndex = pair.first._layer;
+            if ( currentLayerIndex < firstLayer || currentLayerIndex > lastLayer )
+            {
+                out_of_bounds = true;
+            }
+        }
+
+        if ( out_of_bounds )
+        {
+            continue;
+        }
+
+        for ( const auto &pair : neuronToCoefficient )
+        {
+            unsigned currentLayerIndex = pair.first._layer;
+            unsigned i = pair.first._neuron;
+            double coeff = pair.second;
+            Layer *layer = layers[currentLayerIndex];
+
+            if ( !layer->neuronEliminated( i ) )
+            {
+                unsigned variable = layer->neuronToVariable( i );
+                String variableName = Stringf( "x%u", variable );
+                if ( !gurobi.containsVariable( variableName ) )
+                {
+                    gurobi.addVariable( variableName, layer->getLb( i ), layer->getUb( i ) );
+                }
+                terms.append( GurobiWrapper::Term( coeff, Stringf( "x%u", variable ) ) );
+            }
+            else
+            {
+                value -= coeff * layer->getEliminatedNeuronValue( i );
+            }
+        }
+
+        if ( type == PolygonalTightening::UB )
+        {
+            gurobi.addLeqConstraint( terms, value );
+        }
+        else
+        {
+            gurobi.addGeqConstraint( terms, value );
         }
     }
 }
