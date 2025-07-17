@@ -17,10 +17,11 @@
 
 namespace NLR {
 
-DeepPolyElement::DeepPolyElement()
+DeepPolyElement::DeepPolyElement( bool storeSymbolicBounds )
     : _layer( NULL )
     , _size( 0 )
     , _layerIndex( 0 )
+    , _storeSymbolicBounds( storeSymbolicBounds )
     , _symbolicLb( NULL )
     , _symbolicUb( NULL )
     , _symbolicLowerBias( NULL )
@@ -92,6 +93,11 @@ double DeepPolyElement::getUpperBound( unsigned index ) const
     return _ub[index];
 }
 
+void DeepPolyElement::setStoreSymbolicBounds( bool storeSymbolicBounds )
+{
+    _storeSymbolicBounds = storeSymbolicBounds;
+}
+
 double DeepPolyElement::getLowerBoundFromLayer( unsigned index ) const
 {
     ASSERT( index < getSize() );
@@ -154,6 +160,97 @@ void DeepPolyElement::setWorkingMemory( double *work1SymbolicLb,
     _work2SymbolicUb = work2SymbolicUb;
     _workSymbolicLowerBias = workSymbolicLowerBias;
     _workSymbolicUpperBias = workSymbolicUpperBias;
+}
+
+void DeepPolyElement::setOutputLayerSymbolicBoundsMemory(
+    Map<unsigned, double *> *outputLayerSymbolicLb,
+    Map<unsigned, double *> *outputLayerSymbolicUb,
+    Map<unsigned, double *> *outputLayerSymbolicLowerBias,
+    Map<unsigned, double *> *outputLayerSymbolicUpperBias )
+{
+    _outputLayerSymbolicLb = outputLayerSymbolicLb;
+    _outputLayerSymbolicUb = outputLayerSymbolicUb;
+    _outputLayerSymbolicLowerBias = outputLayerSymbolicLowerBias;
+    _outputLayerSymbolicUpperBias = outputLayerSymbolicUpperBias;
+}
+
+void DeepPolyElement::storeWorkSymbolicBounds(
+    unsigned sourceLayerSize,
+    double *work1SymbolicLb,
+    double *work1SymbolicUb,
+    double *workSymbolicLowerBias,
+    double *workSymbolicUpperBias,
+    Map<unsigned, double *> &residualLb,
+    Map<unsigned, double *> &residualUb,
+    Set<unsigned> &residualLayerIndices,
+    const Map<unsigned, DeepPolyElement *> &deepPolyElementsBefore )
+{
+    double *workSymbolicLowerBias2 = new double[_size];
+    double *workSymbolicUpperBias2 = new double[_size];
+    memcpy( workSymbolicLowerBias2, workSymbolicLowerBias, _size * sizeof( double ) );
+    memcpy( workSymbolicUpperBias2, workSymbolicUpperBias, _size * sizeof( double ) );
+
+    for ( const auto &residualLayerIndex : residualLayerIndices )
+    {
+        DeepPolyElement *residualElement = deepPolyElementsBefore[residualLayerIndex];
+        double *currentResidualLb = residualLb[residualLayerIndex];
+        double *currentResidualUb = residualUb[residualLayerIndex];
+
+        // Get concrete bounds
+        for ( unsigned i = 0; i < residualElement->getSize(); ++i )
+        {
+            double sourceLb = residualElement->getLowerBoundFromLayer( i ) -
+                              GlobalConfiguration::SYMBOLIC_TIGHTENING_ROUNDING_CONSTANT;
+            double sourceUb = residualElement->getUpperBoundFromLayer( i ) +
+                              GlobalConfiguration::SYMBOLIC_TIGHTENING_ROUNDING_CONSTANT;
+
+            for ( unsigned j = 0; j < _size; ++j )
+            {
+                // Compute lower bound
+                double weight = currentResidualLb[i * _size + j];
+                if ( weight >= 0 )
+                {
+                    workSymbolicLowerBias2[j] += ( weight * sourceLb );
+                }
+                else
+                {
+                    workSymbolicLowerBias2[j] += ( weight * sourceUb );
+                }
+
+                // Compute upper bound
+                weight = currentResidualUb[i * _size + j];
+                if ( weight >= 0 )
+                {
+                    workSymbolicUpperBias2[j] += ( weight * sourceUb );
+                }
+                else
+                {
+                    workSymbolicUpperBias2[j] += ( weight * sourceLb );
+                }
+            }
+        }
+    }
+
+    double *currentSymbolicLb = ( *_outputLayerSymbolicLb )[_layerIndex];
+    double *currentSymbolicUb = ( *_outputLayerSymbolicUb )[_layerIndex];
+    double *currentSymbolicLowerBias = ( *_outputLayerSymbolicLowerBias )[_layerIndex];
+    double *currentSymbolicUpperBias = ( *_outputLayerSymbolicUpperBias )[_layerIndex];
+    memcpy( currentSymbolicLb, work1SymbolicLb, _size * sourceLayerSize * sizeof( double ) );
+    memcpy( currentSymbolicUb, work1SymbolicUb, _size * sourceLayerSize * sizeof( double ) );
+    memcpy( currentSymbolicLowerBias, workSymbolicLowerBias2, _size * sizeof( double ) );
+    memcpy( currentSymbolicUpperBias, workSymbolicUpperBias2, _size * sizeof( double ) );
+
+    if ( workSymbolicLowerBias2 )
+    {
+        delete[] workSymbolicLowerBias2;
+        workSymbolicLowerBias2 = NULL;
+    }
+
+    if ( workSymbolicUpperBias2 )
+    {
+        delete[] workSymbolicUpperBias2;
+        workSymbolicUpperBias2 = NULL;
+    }
 }
 
 } // namespace NLR

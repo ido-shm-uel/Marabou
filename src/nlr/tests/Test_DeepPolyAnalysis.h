@@ -14,7 +14,6 @@
 **/
 
 #include "../../engine/tests/MockTableau.h"
-#include "DeepPolySoftmaxElement.h"
 #include "FloatUtils.h"
 #include "InputQuery.h"
 #include "Layer.h"
@@ -291,7 +290,7 @@ public:
 
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
+        TS_ASSERT_THROWS_NOTHING( nlr.initializeOutputLayerSymbolicBounds() );
 
         /*
           Input ranges:
@@ -1392,22 +1391,22 @@ public:
         Vector<double> inputUb = { 0, 2, 4 };
         Vector<double> input = { -0.5, 1, 2.5 };
 
-        double value = NLR::DeepPolySoftmaxElement::ERLowerBound( input, inputLb, inputUb, 0 );
+        double value = NLR::Layer::ERLowerBound( input, inputLb, inputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.0114799, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERLowerBound( input, inputLb, inputUb, 0, 0 );
+        value = NLR::Layer::dERLowerBound( input, inputLb, inputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.00563867, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERLowerBound( input, inputLb, inputUb, 0, 1 );
+        value = NLR::Layer::dERLowerBound( input, inputLb, inputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.000838421, 0.00001 ) );
 
 
         Vector<double> outputLb = { 0.2, 0, 0 };
         Vector<double> outputUb = { 0.4, 0.1, 0.1 };
 
-        value = NLR::DeepPolySoftmaxElement::ERUpperBound( input, outputLb, outputUb, 0 );
+        value = NLR::Layer::ERUpperBound( input, outputLb, outputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, -1.44538, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERUpperBound( input, outputLb, outputUb, 0, 0 );
+        value = NLR::Layer::dERUpperBound( input, outputLb, outputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 1.96538, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERUpperBound( input, outputLb, outputUb, 0, 1 );
+        value = NLR::Layer::dERUpperBound( input, outputLb, outputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.358535, 0.00001 ) );
     }
 
@@ -1416,20 +1415,20 @@ public:
         Vector<double> inputLb = { -1, 0, 1 };
         Vector<double> inputUb = { 0, 2, 3 };
         Vector<double> input = { -0.5, 1, 2 };
-        double value = NLR::DeepPolySoftmaxElement::LSELowerBound( input, inputLb, inputUb, 0 );
+        double value = NLR::Layer::LSELowerBound( input, inputLb, inputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.0365, 0.001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSELowerBound( input, inputLb, inputUb, 0, 0 );
+        value = NLR::Layer::dLSELowerBound( input, inputLb, inputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.0365, 0.001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSELowerBound( input, inputLb, inputUb, 0, 1 );
+        value = NLR::Layer::dLSELowerBound( input, inputLb, inputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.00703444, 0.001 ) );
 
         Vector<double> outputLb = { 0.2, 0, 0 };
         Vector<double> outputUb = { 0.4, 0.1, 0.1 };
-        value = NLR::DeepPolySoftmaxElement::LSEUpperBound( input, outputLb, outputUb, 0 );
+        value = NLR::Layer::LSEUpperBound( input, outputLb, outputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.164165, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSEUpperbound( input, outputLb, outputUb, 0, 0 );
+        value = NLR::Layer::dLSEUpperbound( input, outputLb, outputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.272204, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSEUpperbound( input, outputLb, outputUb, 0, 1 );
+        value = NLR::Layer::dLSEUpperbound( input, outputLb, outputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.073207, 0.00001 ) );
     }
 

@@ -52,12 +52,15 @@ public:
       LP model is adjusted from the previous call, instead of being
       constructed from scratch
     */
-    void optimizeBoundsWithLpRelaxation( const Map<unsigned, Layer *> &layers,
-                                         bool backward = false,
-                                         const Vector<double> &coeffs = Vector<double>( {} ),
-                                         const Vector<PolygonalTightening> &polygonal_tightenings =
-                                             Vector<PolygonalTightening>( {} ) );
+    void
+    optimizeBoundsWithLpRelaxation( const Map<unsigned, Layer *> &layers,
+                                    bool backward = false,
+                                    const Map<unsigned, Vector<double>> &layerIndicesToParameters =
+                                        Map<unsigned, Vector<double>>(),
+                                    const Vector<PolygonalTightening> &polygonal_tightenings =
+                                        Vector<PolygonalTightening>( {} ) );
     void optimizeBoundsWithPreimageApproximation( Map<unsigned, Layer *> &layers );
+    void optimizeBoundsWithInvprop( Map<unsigned, Layer *> &layers );
     void optimizeBoundsWithPMNR( Map<unsigned, Layer *> &layers );
     void optimizeBoundsOfOneLayerWithLpRelaxation( const Map<unsigned, Layer *> &layers,
                                                    unsigned targetIndex );
@@ -79,13 +82,15 @@ public:
     void createLPRelaxation( const Map<unsigned, Layer *> &layers,
                              GurobiWrapper &gurobi,
                              unsigned lastLayer = UINT_MAX,
-                             const Vector<double> &coeffs = Vector<double>( {} ),
+                             const Map<unsigned, Vector<double>> &layerIndicesToParameters =
+                                 Map<unsigned, Vector<double>>(),
                              const Vector<PolygonalTightening> &polygonal_tightenings =
                                  Vector<PolygonalTightening>( {} ) );
     void createLPRelaxationAfter( const Map<unsigned, Layer *> &layers,
                                   GurobiWrapper &gurobi,
                                   unsigned firstLayer,
-                                  const Vector<double> &coeffs = Vector<double>( {} ),
+                                  const Map<unsigned, Vector<double>> &layerIndicesToParameters =
+                                      Map<unsigned, Vector<double>>(),
                                   const Vector<PolygonalTightening> &polygonal_tightenings =
                                       Vector<PolygonalTightening>( {} ) );
     double solveLPRelaxation( GurobiWrapper &gurobi,
@@ -142,7 +147,8 @@ private:
     void optimizeBoundsOfNeuronsWithLpRelaxation(
         ThreadArgument &args,
         bool backward,
-        const Vector<double> &coeffs = Vector<double>( {} ),
+        const Map<unsigned, Vector<double>> &layerIndicesToParameters =
+            Map<unsigned, Vector<double>>(),
         const Vector<PolygonalTightening> &polygonal_tightenings =
             Vector<PolygonalTightening>( {} ) );
 

@@ -28,7 +28,7 @@ namespace NLR {
 class DeepPolyElement
 {
 public:
-    DeepPolyElement();
+    DeepPolyElement( bool storeSymbolicBounds = false );
     virtual ~DeepPolyElement(){};
 
     // execute the abstract layer based on the abstract layers topologically
@@ -68,6 +68,7 @@ public:
     double *getSymbolicUpperBias() const;
     double getLowerBound( unsigned index ) const;
     double getUpperBound( unsigned index ) const;
+    void setStoreSymbolicBounds( bool storeSymbolicBounds );
 
     void setWorkingMemory( double *work1SymbolicLb,
                            double *work1SymbolicUb,
@@ -76,6 +77,22 @@ public:
                            double *workSymbolicLowerBias,
                            double *workSymbolicUpperBias );
 
+    void
+    setOutputLayerSymbolicBoundsMemory( Map<unsigned, double *> *outputLayerSymbolicLb,
+                                        Map<unsigned, double *> *outputLayerSymbolicUb,
+                                        Map<unsigned, double *> *outputLayerSymbolicLowerBias,
+                                        Map<unsigned, double *> *outputLayerSymbolicUpperBias );
+
+    void storeWorkSymbolicBounds( unsigned sourceLayerSize,
+                                  double *work1SymbolicLb,
+                                  double *work1SymbolicUb,
+                                  double *workSymbolicLowerBias,
+                                  double *workSymbolicUpperBias,
+                                  Map<unsigned, double *> &residualLb,
+                                  Map<unsigned, double *> &residualUb,
+                                  Set<unsigned> &residualLayerIndices,
+                                  const Map<unsigned, DeepPolyElement *> &deepPolyElementsBefore );
+
     double getLowerBoundFromLayer( unsigned index ) const;
     double getUpperBoundFromLayer( unsigned index ) const;
 
@@ -83,6 +100,7 @@ protected:
     Layer *_layer;
     unsigned _size;
     unsigned _layerIndex;
+    bool _storeSymbolicBounds;
 
     /*
       Abstract element described in
@@ -102,6 +120,11 @@ protected:
     double *_work2SymbolicUb;
     double *_workSymbolicLowerBias;
     double *_workSymbolicUpperBias;
+
+    Map<unsigned, double *> *_outputLayerSymbolicLb;
+    Map<unsigned, double *> *_outputLayerSymbolicUb;
+    Map<unsigned, double *> *_outputLayerSymbolicLowerBias;
+    Map<unsigned, double *> *_outputLayerSymbolicUpperBias;
 
     void allocateMemory();
     void freeMemoryIfNeeded();

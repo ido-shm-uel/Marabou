@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file NetworkLevelReasoner.cpp
+/*! \file LPFormulator.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Guy Katz
@@ -251,7 +251,7 @@ void LPFormulator::optimizeBoundsWithIncrementalLpRelaxation( const Map<unsigned
 void LPFormulator::optimizeBoundsWithLpRelaxation(
     const Map<unsigned, Layer *> &layers,
     bool backward,
-    const Vector<double> &coeffs,
+    const Map<unsigned, Vector<double>> &layerIndicesToParameters,
     const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     unsigned numberOfWorkers = Options::get()->getInt( Options::NUM_WORKERS );
@@ -306,7 +306,7 @@ void LPFormulator::optimizeBoundsWithLpRelaxation(
 
         // optimize every neuron of layer
         optimizeBoundsOfNeuronsWithLpRelaxation(
-            argument, backward, coeffs, polygonal_tightenings );
+            argument, backward, layerIndicesToParameters, polygonal_tightenings );
         LPFormulator_LOG( Stringf( "Tightening bound for layer %u - done", layerIndex ).ascii() );
     }
 
@@ -338,22 +338,6 @@ void LPFormulator::optimizeBoundsWithLpRelaxation(
 
     if ( infeasible )
         throw InfeasibleQueryException();
-}
-
-void LPFormulator::optimizeBoundsWithPreimageApproximation( Map<unsigned, Layer *> &layers )
-{
-    const Vector<double> &optimal_coeffs = layers[0]->OptimalParameterisedSymbolicBoundTightening();
-    optimizeBoundsWithLpRelaxation( layers, false, optimal_coeffs );
-    optimizeBoundsWithLpRelaxation( layers, true, optimal_coeffs );
-}
-
-void LPFormulator::optimizeBoundsWithPMNR( Map<unsigned, Layer *> &layers )
-{
-    const Vector<PolygonalTightening> &polygonal_tightenings =
-        layers[0]->OptimizeParameterisedPolygonalTightening();
-    const Vector<double> &optimal_coeffs = layers[0]->OptimalParameterisedSymbolicBoundTightening();
-    optimizeBoundsWithLpRelaxation( layers, false, optimal_coeffs, polygonal_tightenings );
-    optimizeBoundsWithLpRelaxation( layers, true, optimal_coeffs, polygonal_tightenings );
 }
 
 void LPFormulator::optimizeBoundsOfOneLayerWithLpRelaxation( const Map<unsigned, Layer *> &layers,
@@ -432,7 +416,7 @@ void LPFormulator::optimizeBoundsOfOneLayerWithLpRelaxation( const Map<unsigned,
 void LPFormulator::optimizeBoundsOfNeuronsWithLpRelaxation(
     ThreadArgument &args,
     bool backward,
-    const Vector<double> &coeffs,
+    const Map<unsigned, Vector<double>> &layerIndicesToParameters,
     const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     unsigned numberOfWorkers = Options::get()->getInt( Options::NUM_WORKERS );
@@ -546,11 +530,17 @@ void LPFormulator::optimizeBoundsOfNeuronsWithLpRelaxation(
 
         mtx.lock();
         if ( backward )
-            createLPRelaxationAfter(
-                layers, *freeSolver, lastIndexOfRelaxation, coeffs, polygonal_tightenings );
+            createLPRelaxationAfter( layers,
+                                     *freeSolver,
+                                     lastIndexOfRelaxation,
+                                     layerIndicesToParameters,
+                                     polygonal_tightenings );
         else
-            createLPRelaxation(
-                layers, *freeSolver, lastIndexOfRelaxation, coeffs, polygonal_tightenings );
+            createLPRelaxation( layers,
+                                *freeSolver,
+                                lastIndexOfRelaxation,
+                                layerIndicesToParameters,
+                                polygonal_tightenings );
         mtx.unlock();
 
         // spawn a thread to tighten the bounds for the current variable
@@ -670,11 +660,12 @@ void LPFormulator::tightenSingleVariableBoundsWithLPRelaxation( ThreadArgument &
     }
 }
 
-void LPFormulator::createLPRelaxation( const Map<unsigned, Layer *> &layers,
-                                       GurobiWrapper &gurobi,
-                                       unsigned lastLayer,
-                                       const Vector<double> &coeffs,
-                                       const Vector<PolygonalTightening> &polygonal_tightenings )
+void LPFormulator::createLPRelaxation(
+    const Map<unsigned, Layer *> &layers,
+    GurobiWrapper &gurobi,
+    unsigned lastLayer,
+    const Map<unsigned, Vector<double>> &layerIndicesToParameters,
+    const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     for ( const auto &layer : layers )
     {
@@ -682,12 +673,10 @@ void LPFormulator::createLPRelaxation( const Map<unsigned, Layer *> &layers,
         if ( currentLayerIndex > lastLayer )
             continue;
 
-        if ( coeffs.empty() )
+        if ( layerIndicesToParameters.empty() )
             addLayerToModel( gurobi, layer.second, false );
         else
         {
-            Map<unsigned, Vector<double>> layerIndicesToParameters =
-                layer.second->getParametersForLayers( layers, coeffs );
             const Vector<double> &currentLayerCoeffs = layerIndicesToParameters[currentLayerIndex];
             addLayerToParameterisedModel( gurobi, layer.second, false, currentLayerCoeffs );
         }
@@ -699,7 +688,7 @@ void LPFormulator::createLPRelaxationAfter(
     const Map<unsigned, Layer *> &layers,
     GurobiWrapper &gurobi,
     unsigned firstLayer,
-    const Vector<double> &coeffs,
+    const Map<unsigned, Vector<double>> &layerIndicesToParameters,
     const Vector<PolygonalTightening> &polygonal_tightenings )
 {
     unsigned depth = GlobalConfiguration::BACKWARD_BOUND_PROPAGATION_DEPTH;
@@ -718,12 +707,10 @@ void LPFormulator::createLPRelaxationAfter(
             continue;
         else
         {
-            if ( coeffs.empty() )
+            if ( layerIndicesToParameters.empty() )
                 addLayerToModel( gurobi, currentLayer, true );
             else
             {
-                Map<unsigned, Vector<double>> layerIndicesToParameters =
-                    currentLayer->getParametersForLayers( layers, coeffs );
                 const Vector<double> &currentLayerCoeffs =
                     layerIndicesToParameters[currentLayerIndex];
                 addLayerToParameterisedModel( gurobi, currentLayer, true, currentLayerCoeffs );
@@ -1360,11 +1347,9 @@ void LPFormulator::addSoftmaxLayerToLpRelaxation( GurobiWrapper &gurobi,
         }
 
         double ub =
-            std::min( DeepPolySoftmaxElement::linearUpperBound( sourceLbs, sourceUbs, index ),
-                      layer->getUb( i ) );
+            std::min( Layer::linearUpperBound( sourceLbs, sourceUbs, index ), layer->getUb( i ) );
         double lb =
-            std::max( DeepPolySoftmaxElement::linearLowerBound( sourceLbs, sourceUbs, index ),
-                      layer->getLb( i ) );
+            std::max( Layer::linearLowerBound( sourceLbs, sourceUbs, index ), layer->getLb( i ) );
         targetLbs[index] = lb;
         targetUbs[index] = ub;
 
@@ -1396,14 +1381,13 @@ void LPFormulator::addSoftmaxLayerToLpRelaxation( GurobiWrapper &gurobi,
                 {
                     terms.clear();
                     terms.append( GurobiWrapper::Term( 1, Stringf( "x%u", targetVariable ) ) );
-                    bias = DeepPolySoftmaxElement::LSELowerBound(
-                        sourceMids, sourceLbs, sourceUbs, index );
+                    bias = Layer::LSELowerBound( sourceMids, sourceLbs, sourceUbs, index );
                     for ( const auto &source : sources )
                     {
                         const Layer *sourceLayer = _layerOwner->getLayer( source._layer );
                         unsigned sourceNeuron = source._neuron;
                         unsigned sourceVariable = sourceLayer->neuronToVariable( sourceNeuron );
-                        double dldj = DeepPolySoftmaxElement::dLSELowerBound(
+                        double dldj = Layer::dLSELowerBound(
                             sourceMids, sourceLbs, sourceUbs, index, inputIndex );
                         terms.append(
                             GurobiWrapper::Term( -dldj, Stringf( "x%u", sourceVariable ) ) );
@@ -1416,14 +1400,13 @@ void LPFormulator::addSoftmaxLayerToLpRelaxation( GurobiWrapper &gurobi,
                 {
                     terms.clear();
                     terms.append( GurobiWrapper::Term( 1, Stringf( "x%u", targetVariable ) ) );
-                    bias = DeepPolySoftmaxElement::LSELowerBound2(
-                        sourceMids, sourceLbs, sourceUbs, index );
+                    bias = Layer::LSELowerBound2( sourceMids, sourceLbs, sourceUbs, index );
                     for ( const auto &source : sources )
                     {
                         const Layer *sourceLayer = _layerOwner->getLayer( source._layer );
                         unsigned sourceNeuron = source._neuron;
                         unsigned sourceVariable = sourceLayer->neuronToVariable( sourceNeuron );
-                        double dldj = DeepPolySoftmaxElement::dLSELowerBound2(
+                        double dldj = Layer::dLSELowerBound2(
                             sourceMids, sourceLbs, sourceUbs, index, inputIndex );
                         terms.append(
                             GurobiWrapper::Term( -dldj, Stringf( "x%u", sourceVariable ) ) );
@@ -1435,15 +1418,14 @@ void LPFormulator::addSoftmaxLayerToLpRelaxation( GurobiWrapper &gurobi,
 
                 terms.clear();
                 terms.append( GurobiWrapper::Term( 1, Stringf( "x%u", targetVariable ) ) );
-                bias = DeepPolySoftmaxElement::LSEUpperBound(
-                    sourceMids, targetLbs, targetUbs, index );
+                bias = Layer::LSEUpperBound( sourceMids, targetLbs, targetUbs, index );
                 inputIndex = 0;
                 for ( const auto &source : sources )
                 {
                     const Layer *sourceLayer = _layerOwner->getLayer( source._layer );
                     unsigned sourceNeuron = source._neuron;
                     unsigned sourceVariable = sourceLayer->neuronToVariable( sourceNeuron );
-                    double dudj = DeepPolySoftmaxElement::dLSEUpperbound(
+                    double dudj = Layer::dLSEUpperbound(
                         sourceMids, targetLbs, targetUbs, index, inputIndex );
                     terms.append( GurobiWrapper::Term( -dudj, Stringf( "x%u", sourceVariable ) ) );
                     bias -= dudj * sourceMids[inputIndex];
@@ -1455,16 +1437,15 @@ void LPFormulator::addSoftmaxLayerToLpRelaxation( GurobiWrapper &gurobi,
             {
                 terms.clear();
                 terms.append( GurobiWrapper::Term( 1, Stringf( "x%u", targetVariable ) ) );
-                bias =
-                    DeepPolySoftmaxElement::ERLowerBound( sourceMids, sourceLbs, sourceUbs, index );
+                bias = Layer::ERLowerBound( sourceMids, sourceLbs, sourceUbs, index );
                 unsigned inputIndex = 0;
                 for ( const auto &source : sources )
                 {
                     const Layer *sourceLayer = _layerOwner->getLayer( source._layer );
                     unsigned sourceNeuron = source._neuron;
                     unsigned sourceVariable = sourceLayer->neuronToVariable( sourceNeuron );
-                    double dldj = DeepPolySoftmaxElement::dERLowerBound(
-                        sourceMids, sourceLbs, sourceUbs, index, inputIndex );
+                    double dldj =
+                        Layer::dERLowerBound( sourceMids, sourceLbs, sourceUbs, index, inputIndex );
                     terms.append( GurobiWrapper::Term( -dldj, Stringf( "x%u", sourceVariable ) ) );
                     bias -= dldj * sourceMids[inputIndex];
                     ++inputIndex;
@@ -1473,16 +1454,15 @@ void LPFormulator::addSoftmaxLayerToLpRelaxation( GurobiWrapper &gurobi,
 
                 terms.clear();
                 terms.append( GurobiWrapper::Term( 1, Stringf( "x%u", targetVariable ) ) );
-                bias =
-                    DeepPolySoftmaxElement::ERUpperBound( sourceMids, targetLbs, targetUbs, index );
+                bias = Layer::ERUpperBound( sourceMids, targetLbs, targetUbs, index );
                 inputIndex = 0;
                 for ( const auto &source : sources )
                 {
                     const Layer *sourceLayer = _layerOwner->getLayer( source._layer );
                     unsigned sourceNeuron = source._neuron;
                     unsigned sourceVariable = sourceLayer->neuronToVariable( sourceNeuron );
-                    double dudj = DeepPolySoftmaxElement::dERUpperBound(
-                        sourceMids, targetLbs, targetUbs, index, inputIndex );
+                    double dudj =
+                        Layer::dERUpperBound( sourceMids, targetLbs, targetUbs, index, inputIndex );
                     terms.append( GurobiWrapper::Term( -dudj, Stringf( "x%u", sourceVariable ) ) );
                     bias -= dudj * sourceMids[inputIndex];
                     ++inputIndex;
@@ -2172,14 +2152,14 @@ void LPFormulator::addPolyognalTighteningsToLpRelaxation(
     unsigned lastLayer,
     const Vector<PolygonalTightening> &polygonal_tightenings )
 {
+    List<GurobiWrapper::Term> terms;
     for ( const auto &tightening : polygonal_tightenings )
     {
-        bool out_of_bounds = false;
         Map<NeuronIndex, double> neuronToCoefficient = tightening._neuronToCoefficient;
         PolygonalTightening::PolygonalBoundType type = tightening._type;
         double value = tightening._value;
-        List<GurobiWrapper::Term> terms;
 
+        bool out_of_bounds = false;
         for ( const auto &pair : neuronToCoefficient )
         {
             unsigned currentLayerIndex = pair.first._layer;
@@ -2188,12 +2168,12 @@ void LPFormulator::addPolyognalTighteningsToLpRelaxation(
                 out_of_bounds = true;
             }
         }
-
         if ( out_of_bounds )
         {
             continue;
         }
 
+        terms.clear();
         for ( const auto &pair : neuronToCoefficient )
         {
             unsigned currentLayerIndex = pair.first._layer;

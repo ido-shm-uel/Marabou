@@ -190,6 +190,15 @@ public:
     // Initial gamma values for INVPROP optimization.
     static const double INVPROP_INITIAL_GAMMA;
 
+    // Random seed for PMNR (with randomized hyperplanes).
+    static const unsigned PMNR_RANDOM_SEED;
+
+    // Random seed for PMNR (with randomized hyperplanes).
+    static const unsigned PMNR_MAX_ITERATIONS;
+
+    // Random seed for PMNR (with heuristically selected hyperplanes).
+    static const unsigned PMNR_SELECTED_NEURONS;
+
     // How often should projected steepest edge reset the reference space?
     static const unsigned PSE_ITERATIONS_BEFORE_RESET;
 

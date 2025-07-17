@@ -83,6 +83,10 @@ const double GlobalConfiguration::INVPROP_WEIGHT_DECAY = 0;
 const double GlobalConfiguration::INVPROP_INITIAL_ALPHA = 0.5;
 const double GlobalConfiguration::INVPROP_INITIAL_GAMMA = 0.025;
 
+const unsigned GlobalConfiguration::PMNR_RANDOM_SEED = 1;
+const unsigned GlobalConfiguration::PMNR_MAX_ITERATIONS = 100;
+const unsigned GlobalConfiguration::PMNR_SELECTED_NEURONS = 3;
+
 const bool GlobalConfiguration::USE_HARRIS_RATIO_TEST = true;
 
 const double GlobalConfiguration::SYMBOLIC_TIGHTENING_ROUNDING_CONSTANT = 0.00000000001;

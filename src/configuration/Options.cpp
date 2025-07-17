@@ -211,8 +211,14 @@ MILPSolverBoundTighteningType Options::getMILPSolverBoundTighteningType() const
             return MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_CONVERGE;
         if ( strategyString == "backward-preimage-approx" )
             return MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX;
-        if ( strategyString == "backward-pmnr" )
-            return MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR;
+        if ( strategyString == "backward-invprop" )
+            return MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP;
+        if ( strategyString == "backward-pmnr-random" )
+            return MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM;
+        if ( strategyString == "backward-pmnr-gradient" )
+            return MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT;
+        if ( strategyString == "backward-pmnr-bbps" )
+            return MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS;
         else if ( strategyString == "milp" )
             return MILPSolverBoundTighteningType::MILP_ENCODING;
         else if ( strategyString == "milp-inc" )

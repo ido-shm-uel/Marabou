@@ -140,35 +140,64 @@ public:
     void computeSymbolicBounds();
     void computeParameterisedSymbolicBounds( const Vector<double> &coeffs, bool receive = false );
 
+    // Return difference between given point and upper and lower bounds determined by parameterised
+    // SBT relaxation.
+    double calculateDifferenceFromSymbolic( Map<unsigned, double> &point, unsigned i ) const;
 
-    // Get number of optimizable parameters for parameterised SBT relaxation per layer type.
-    unsigned getNumberOfParametersPerType( Type t ) const;
-
-    // Get total number of optimizable parameters for parameterised SBT relaxation.
-    unsigned getNumberOfParameters( const Map<unsigned, Layer *> &layers ) const;
-
-    // Get total number of non-weighted sum layers for INVPROP.
-    unsigned countNonlinearLayers( const Map<unsigned, Layer *> &layers ) const;
-
-    // Get map containing vector of optimizable parameters for parameterised SBT relaxation for
-    // every layer index.
-    Map<unsigned, Vector<double>> getParametersForLayers( const Map<unsigned, Layer *> &layers,
-                                                          const Vector<double> &coeffs ) const;
-
-    // Return optimizable parameters which minimize parameterised SBT bounds' volume.
-    const Vector<double> OptimalParameterisedSymbolicBoundTightening();
-
-    // Heuristically select neurons and polygonal tightenings for PMNR.
-    const List<NeuronIndex> selectConstraints( const Map<unsigned, Layer *> &layers ) const;
-
-    const Vector<PolygonalTightening>
-    generatePolygonalTightenings( const Map<unsigned, Layer *> &layers ) const;
-
-    // Optimize biases of generated parameterised polygonal tightenings.
-    const Vector<PolygonalTightening> OptimizeParameterisedPolygonalTightening();
-    const Vector<PolygonalTightening>
-    OptimizeSingleParameterisedPolygonalTightening( PolygonalTightening tightening,
-                                                    Vector<PolygonalTightening> prevTightenings );
+    // The following methods compute concrete softmax output bounds
+    // using different linear approximation, as well as the coefficients
+    // of softmax inputs in the symbolic bounds
+    static double LSELowerBound( const Vector<double> &sourceMids,
+                                 const Vector<double> &inputLbs,
+                                 const Vector<double> &inputUbs,
+                                 unsigned outputIndex );
+    static double dLSELowerBound( const Vector<double> &sourceMids,
+                                  const Vector<double> &inputLbs,
+                                  const Vector<double> &inputUbs,
+                                  unsigned outputIndex,
+                                  unsigned inputIndex );
+    static double LSELowerBound2( const Vector<double> &sourceMids,
+                                  const Vector<double> &inputLbs,
+                                  const Vector<double> &inputUbs,
+                                  unsigned outputIndex );
+    static double dLSELowerBound2( const Vector<double> &sourceMids,
+                                   const Vector<double> &inputLbs,
+                                   const Vector<double> &inputUbs,
+                                   unsigned outputIndex,
+                                   unsigned inputIndex );
+    static double LSEUpperBound( const Vector<double> &sourceMids,
+                                 const Vector<double> &outputLb,
+                                 const Vector<double> &outputUb,
+                                 unsigned outputIndex );
+    static double dLSEUpperbound( const Vector<double> &sourceMids,
+                                  const Vector<double> &outputLb,
+                                  const Vector<double> &outputUb,
+                                  unsigned outputIndex,
+                                  unsigned inputIndex );
+    static double ERLowerBound( const Vector<double> &sourceMids,
+                                const Vector<double> &inputLbs,
+                                const Vector<double> &inputUbs,
+                                unsigned outputIndex );
+    static double dERLowerBound( const Vector<double> &sourceMids,
+                                 const Vector<double> &inputLbs,
+                                 const Vector<double> &inputUbs,
+                                 unsigned outputIndex,
+                                 unsigned inputIndex );
+    static double ERUpperBound( const Vector<double> &sourceMids,
+                                const Vector<double> &outputLbs,
+                                const Vector<double> &outputUbs,
+                                unsigned outputIndex );
+    static double dERUpperBound( const Vector<double> &sourceMids,
+                                 const Vector<double> &outputLbs,
+                                 const Vector<double> &outputUbs,
+                                 unsigned outputIndex,
+                                 unsigned inputIndex );
+    static double linearLowerBound( const Vector<double> &outputLbs,
+                                    const Vector<double> &outputUbs,
+                                    unsigned outputIndex );
+    static double linearUpperBound( const Vector<double> &outputLbs,
+                                    const Vector<double> &outputUbs,
+                                    unsigned outputIndex );
 
     /*
       Preprocessing functionality: variable elimination and reindexing
@@ -240,74 +269,6 @@ private:
     void freeMemoryIfNeeded();
 
     /*
-       The following methods compute concrete softmax output bounds
-       using different linear approximation, as well as the coefficients
-       of softmax inputs in the symbolic bounds
-    */
-    double softmaxLSELowerBound( const Vector<double> &inputs,
-                                 const Vector<double> &inputLbs,
-                                 const Vector<double> &inputUbs,
-                                 unsigned i );
-
-    double softmaxdLSELowerBound( const Vector<double> &inputMids,
-                                  const Vector<double> &inputLbs,
-                                  const Vector<double> &inputUbs,
-                                  unsigned i,
-                                  unsigned di );
-
-    double softmaxLSELowerBound2( const Vector<double> &inputMids,
-                                  const Vector<double> &inputLbs,
-                                  const Vector<double> &inputUbs,
-                                  unsigned i );
-
-    double softmaxdLSELowerBound2( const Vector<double> &inputMids,
-                                   const Vector<double> &inputLbs,
-                                   const Vector<double> &inputUbs,
-                                   unsigned i,
-                                   unsigned di );
-
-    double softmaxLSEUpperBound( const Vector<double> &inputs,
-                                 const Vector<double> &outputLb,
-                                 const Vector<double> &outputUb,
-                                 unsigned i );
-
-    double softmaxdLSEUpperbound( const Vector<double> &inputMids,
-                                  const Vector<double> &outputLb,
-                                  const Vector<double> &outputUb,
-                                  unsigned i,
-                                  unsigned di );
-
-    double softmaxERLowerBound( const Vector<double> &inputs,
-                                const Vector<double> &inputLbs,
-                                const Vector<double> &inputUbs,
-                                unsigned i );
-
-    double softmaxdERLowerBound( const Vector<double> &inputMids,
-                                 const Vector<double> &inputLbs,
-                                 const Vector<double> &inputUbs,
-                                 unsigned i,
-                                 unsigned di );
-
-    double softmaxERUpperBound( const Vector<double> &inputs,
-                                const Vector<double> &outputLb,
-                                const Vector<double> &outputUb,
-                                unsigned i );
-
-    double softmaxdERUpperBound( const Vector<double> &inputMids,
-                                 const Vector<double> &outputLb,
-                                 const Vector<double> &outputUb,
-                                 unsigned i,
-                                 unsigned di );
-
-    double softmaxLinearLowerBound( const Vector<double> &inputLbs,
-                                    const Vector<double> &inputUbs,
-                                    unsigned i );
-
-    double softmaxLinearUpperBound( const Vector<double> &inputLbs,
-                                    const Vector<double> &inputUbs,
-                                    unsigned i );
-
-    /*
       Helper functions for symbolic bound tightening
     */
     void computeSymbolicBoundsForInput();
@@ -323,7 +284,6 @@ private:
     void computeSymbolicBoundsForBilinear();
     void computeSymbolicBoundsDefault();
 
-
     /*
       Helper functions for parameterised symbolic bound tightening
     */
@@ -333,20 +293,6 @@ private:
                                                          bool receive );
     void computeParameterisedSymbolicBoundsForBilinear( const Vector<double> &coeffs,
                                                         bool receive );
-
-    // Estimate Volume of parameterised symbolic bound tightening.
-    double EstimateVolume( const Vector<double> &coeffs );
-
-    // Return difference between given point and upper and lower bounds determined by parameterised
-    // SBT relaxation.
-    double calculateDifferenceFromSymbolic( Map<unsigned, double> &point, unsigned i ) const;
-
-    // Get current lower bound for selected parameterised polygonal tightenings' biases.
-    double getParameterisdPolygonalTighteningLowerBound(
-        const Vector<double> &coeffs,
-        const Vector<double> &gamma,
-        PolygonalTightening tightening,
-        Vector<PolygonalTightening> prevTightenings ) const;
 
     /*
       Helper functions for interval bound tightening

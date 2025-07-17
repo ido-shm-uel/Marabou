@@ -39,14 +39,24 @@
 
 namespace NLR {
 
-DeepPolyAnalysis::DeepPolyAnalysis( LayerOwner *layerOwner )
+DeepPolyAnalysis::DeepPolyAnalysis( LayerOwner *layerOwner,
+                                    bool storeSymbolicBounds,
+                                    Map<unsigned, double *> *outputLayerSymbolicLb,
+                                    Map<unsigned, double *> *outputLayerSymbolicUb,
+                                    Map<unsigned, double *> *outputLayerSymbolicLowerBias,
+                                    Map<unsigned, double *> *outputLayerSymbolicUpperBias )
     : _layerOwner( layerOwner )
+    , _storeSymbolicBounds( storeSymbolicBounds )
     , _work1SymbolicLb( NULL )
     , _work1SymbolicUb( NULL )
     , _work2SymbolicLb( NULL )
     , _work2SymbolicUb( NULL )
     , _workSymbolicLowerBias( NULL )
     , _workSymbolicUpperBias( NULL )
+    , _outputLayerSymbolicLb( outputLayerSymbolicLb )
+    , _outputLayerSymbolicUb( outputLayerSymbolicUb )
+    , _outputLayerSymbolicLowerBias( outputLayerSymbolicLowerBias )
+    , _outputLayerSymbolicUpperBias( outputLayerSymbolicUpperBias )
 {
     const Map<unsigned, Layer *> &layers = _layerOwner->getLayerIndexToLayer();
     // Get the maximal layer size
@@ -148,6 +158,8 @@ void DeepPolyAnalysis::run()
         {
             if ( layer->neuronEliminated( j ) )
                 continue;
+            if ( _storeSymbolicBounds && index == _layerOwner->getNumberOfLayers() - 1 )
+                continue;
             double lb = deepPolyElement->getLowerBound( j );
             if ( layer->getLb( j ) < lb )
             {
@@ -157,6 +169,7 @@ void DeepPolyAnalysis::run()
                               layer->getLb( j ),
                               lb ) );
                 layer->setLb( j, lb );
+
                 _layerOwner->receiveTighterBound(
                     Tightening( layer->neuronToVariable( j ), lb, Tightening::LB ) );
             }
@@ -169,6 +182,7 @@ void DeepPolyAnalysis::run()
                               layer->getUb( j ),
                               ub ) );
                 layer->setUb( j, ub );
+
                 _layerOwner->receiveTighterBound(
                     Tightening( layer->neuronToVariable( j ), ub, Tightening::UB ) );
             }
@@ -235,6 +249,15 @@ DeepPolyElement *DeepPolyAnalysis::createDeepPolyElement( Layer *layer )
     else
         throw NLRError( NLRError::LAYER_TYPE_NOT_SUPPORTED,
                         Stringf( "Layer %u not yet supported", layer->getLayerType() ).ascii() );
+
+    if ( _storeSymbolicBounds && layer->getLayerIndex() == _layerOwner->getNumberOfLayers() - 1 )
+    {
+        deepPolyElement->setStoreSymbolicBounds( true );
+    }
+    deepPolyElement->setOutputLayerSymbolicBoundsMemory( _outputLayerSymbolicLb,
+                                                         _outputLayerSymbolicUb,
+                                                         _outputLayerSymbolicLowerBias,
+                                                         _outputLayerSymbolicUpperBias );
     return deepPolyElement;
 }
 

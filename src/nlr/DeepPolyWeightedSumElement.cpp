@@ -102,6 +102,20 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
                              _workSymbolicUpperBias,
                              currentElement,
                              deepPolyElementsBefore );
+
+    if ( _storeSymbolicBounds )
+    {
+        precedingElement->storeWorkSymbolicBounds( sourceLayerSize,
+                                                   _work1SymbolicLb,
+                                                   _work1SymbolicUb,
+                                                   _workSymbolicLowerBias,
+                                                   _workSymbolicUpperBias,
+                                                   _residualLb,
+                                                   _residualUb,
+                                                   _residualLayerIndices,
+                                                   deepPolyElementsBefore );
+    }
+
     log( Stringf( "Computing symbolic bounds with respect to layer %u - done", predecessorIndex ) );
 
     while ( currentElement->hasPredecessor() || !_residualLayerIndices.empty() )
@@ -228,6 +242,19 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
             _residualLayerIndices.erase( newCurrentIndex );
             std::fill_n( _residualLb[newCurrentIndex], currentMatrixSize, 0 );
             std::fill_n( _residualUb[newCurrentIndex], currentMatrixSize, 0 );
+        }
+
+        if ( _storeSymbolicBounds )
+        {
+            precedingElement->storeWorkSymbolicBounds( sourceLayerSize,
+                                                       _work1SymbolicLb,
+                                                       _work1SymbolicUb,
+                                                       _workSymbolicLowerBias,
+                                                       _workSymbolicUpperBias,
+                                                       _residualLb,
+                                                       _residualUb,
+                                                       _residualLayerIndices,
+                                                       deepPolyElementsBefore );
         }
     }
     ASSERT( _residualLayerIndices.empty() );

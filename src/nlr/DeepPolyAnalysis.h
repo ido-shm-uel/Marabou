@@ -28,13 +28,19 @@ namespace NLR {
 class DeepPolyAnalysis
 {
 public:
-    DeepPolyAnalysis( LayerOwner *layerOwner );
+    DeepPolyAnalysis( LayerOwner *layerOwner,
+                      bool storeSymbolicBounds = false,
+                      Map<unsigned, double *> *outputLayerSymbolicLb = NULL,
+                      Map<unsigned, double *> *outputLayerSymbolicUb = NULL,
+                      Map<unsigned, double *> *outputLayerSymbolicLowerBias = NULL,
+                      Map<unsigned, double *> *outputLayerSymbolicUpperBias = NULL );
     ~DeepPolyAnalysis();
 
     void run();
 
 private:
     LayerOwner *_layerOwner;
+    bool _storeSymbolicBounds;
 
     /*
       Maps layer index to the abstract element
@@ -50,6 +56,11 @@ private:
     double *_work2SymbolicUb;
     double *_workSymbolicLowerBias;
     double *_workSymbolicUpperBias;
+
+    Map<unsigned, double *> *_outputLayerSymbolicLb;
+    Map<unsigned, double *> *_outputLayerSymbolicUb;
+    Map<unsigned, double *> *_outputLayerSymbolicLowerBias;
+    Map<unsigned, double *> *_outputLayerSymbolicUpperBias;
 
     unsigned _maxLayerSize;
 

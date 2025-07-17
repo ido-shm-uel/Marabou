@@ -1595,7 +1595,10 @@ void Engine::performMILPSolverBoundedTightening( Query *inputQuery )
         case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_ONCE:
         case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_CONVERGE:
         case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX:
-        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS:
             _networkLevelReasoner->lpRelaxationPropagation();
             break;
         case MILPSolverBoundTighteningType::MILP_ENCODING:
@@ -1670,7 +1673,14 @@ void Engine::performAdditionalBackwardAnalysisIfNeeded()
             printf( "Backward analysis tightened %u bounds\n", tightened );
     }
 
-    if ( _milpSolverBoundTighteningType == MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
+    if ( _milpSolverBoundTighteningType ==
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP ||
+         _milpSolverBoundTighteningType ==
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
+         _milpSolverBoundTighteningType ==
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT ||
+         _milpSolverBoundTighteningType ==
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
     {
         unsigned tightened = performSymbolicBoundTightening( &( *_preprocessedQuery ) );
         if ( _verbosity > 0 )
@@ -1711,7 +1721,10 @@ void Engine::performMILPSolverBoundedTighteningForSingleLayer( unsigned targetIn
         case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_ONCE:
         case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_CONVERGE:
         case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX:
-        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT:
+        case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS:
         case MILPSolverBoundTighteningType::ITERATIVE_PROPAGATION:
         case MILPSolverBoundTighteningType::NONE:
             return;
