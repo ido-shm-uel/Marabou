@@ -104,6 +104,11 @@ void DeepPolyBilinearElement::execute(
         _symbolicUpperBias[i] = -sourceLbs[0] * sourceUbs[1];
     }
 
+    if ( _storeSymbolicBoundsInTermsOfPredecessor )
+    {
+        storePredecessorSymbolicBounds();
+    }
+
     DEBUG( {
         for ( unsigned i = 0; i < _size; ++i )
         {
@@ -113,6 +118,24 @@ void DeepPolyBilinearElement::execute(
     } );
 
     log( "Executing - done" );
+}
+
+void DeepPolyBilinearElement::storePredecessorSymbolicBounds()
+{
+    double *currentSymbolicLb = ( *_symbolicLbInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicUb = ( *_symbolicUbInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicLowerBias = ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicUpperBias = ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex];
+
+    for ( unsigned i = 0; i < _size; ++i )
+    {
+        currentSymbolicLb[i * _size] = _symbolicLbA[i];
+        currentSymbolicUb[i * _size] = _symbolicUbA[i];
+        currentSymbolicLb[i * _size + 1] = _symbolicLbB[i];
+        currentSymbolicUb[i * _size + 1] = _symbolicUbB[i];
+        currentSymbolicLowerBias[i] = _symbolicLowerBias[i];
+        currentSymbolicUpperBias[i] = _symbolicUpperBias[i];
+    }
 }
 
 void DeepPolyBilinearElement::symbolicBoundInTermsOfPredecessor(

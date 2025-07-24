@@ -140,9 +140,10 @@ public:
     void computeSymbolicBounds();
     void computeParameterisedSymbolicBounds( const Vector<double> &coeffs, bool receive = false );
 
-    // Return difference between given point and upper and lower bounds determined by parameterised
-    // SBT relaxation.
-    double calculateDifferenceFromSymbolic( Map<unsigned, double> &point, unsigned i ) const;
+    const double *getSymbolicLb() const;
+    const double *getSymbolicUb() const;
+    const double *getSymbolicLowerBias() const;
+    const double *getSymbolicUpperBias() const;
 
     // The following methods compute concrete softmax output bounds
     // using different linear approximation, as well as the coefficients
@@ -308,10 +309,6 @@ private:
     void computeIntervalArithmeticBoundsForSoftmax();
     void computeIntervalArithmeticBoundsForBilinear();
 
-    const double *getSymbolicLb() const;
-    const double *getSymbolicUb() const;
-    const double *getSymbolicLowerBias() const;
-    const double *getSymbolicUpperBias() const;
     double getSymbolicLbOfLb( unsigned neuron ) const;
     double getSymbolicUbOfLb( unsigned neuron ) const;
     double getSymbolicLbOfUb( unsigned neuron ) const;

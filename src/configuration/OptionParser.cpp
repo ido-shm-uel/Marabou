@@ -269,7 +269,7 @@ void OptionParser::initialize()
             "The MILP solver bound tightening type: "
             "lp/backward-once/backward-converge/backward-preimage-approx/backward-invprop/"
             "backward-pmnr-random/"
-            "backward-pmnr-gradient/backward-pmnr-bbps-heuristic/lp-inc/milp/milp-inc/"
+            "backward-pmnr-gradient/backward-pmnr-bbps/lp-inc/milp/milp-inc/"
             "iter-prop/none." )
 #endif
         ;

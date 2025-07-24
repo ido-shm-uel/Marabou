@@ -188,7 +188,25 @@ void DeepPolySoftmaxElement::execute(
             }
         }
     }
+
+    if ( _storeSymbolicBoundsInTermsOfPredecessor )
+    {
+        storePredecessorSymbolicBounds();
+    }
+
     log( "Executing - done" );
+}
+
+void DeepPolySoftmaxElement::storePredecessorSymbolicBounds()
+{
+    double *currentSymbolicLb = ( *_symbolicLbInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicUb = ( *_symbolicUbInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicLowerBias = ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicUpperBias = ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex];
+    memcpy( currentSymbolicLb, _symbolicLb, _size * _size * sizeof( double ) );
+    memcpy( currentSymbolicUb, _symbolicUb, _size * _size * sizeof( double ) );
+    memcpy( currentSymbolicLowerBias, _symbolicLowerBias, _size * sizeof( double ) );
+    memcpy( currentSymbolicUpperBias, _symbolicUpperBias, _size * sizeof( double ) );
 }
 
 void DeepPolySoftmaxElement::symbolicBoundInTermsOfPredecessor(

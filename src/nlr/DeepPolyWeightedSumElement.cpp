@@ -103,17 +103,17 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
                              currentElement,
                              deepPolyElementsBefore );
 
-    if ( _storeSymbolicBounds )
+    if ( _storeOutputLayerSymbolicBounds )
     {
-        precedingElement->storeWorkSymbolicBounds( sourceLayerSize,
-                                                   _work1SymbolicLb,
-                                                   _work1SymbolicUb,
-                                                   _workSymbolicLowerBias,
-                                                   _workSymbolicUpperBias,
-                                                   _residualLb,
-                                                   _residualUb,
-                                                   _residualLayerIndices,
-                                                   deepPolyElementsBefore );
+        precedingElement->storeOutputSymbolicBounds( sourceLayerSize,
+                                                     _work1SymbolicLb,
+                                                     _work1SymbolicUb,
+                                                     _workSymbolicLowerBias,
+                                                     _workSymbolicUpperBias,
+                                                     _residualLb,
+                                                     _residualUb,
+                                                     _residualLayerIndices,
+                                                     deepPolyElementsBefore );
     }
 
     log( Stringf( "Computing symbolic bounds with respect to layer %u - done", predecessorIndex ) );
@@ -244,17 +244,17 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
             std::fill_n( _residualUb[newCurrentIndex], currentMatrixSize, 0 );
         }
 
-        if ( _storeSymbolicBounds )
+        if ( _storeOutputLayerSymbolicBounds )
         {
-            precedingElement->storeWorkSymbolicBounds( sourceLayerSize,
-                                                       _work1SymbolicLb,
-                                                       _work1SymbolicUb,
-                                                       _workSymbolicLowerBias,
-                                                       _workSymbolicUpperBias,
-                                                       _residualLb,
-                                                       _residualUb,
-                                                       _residualLayerIndices,
-                                                       deepPolyElementsBefore );
+            precedingElement->storeOutputSymbolicBounds( currentElement->getSize(),
+                                                         _work1SymbolicLb,
+                                                         _work1SymbolicUb,
+                                                         _workSymbolicLowerBias,
+                                                         _workSymbolicUpperBias,
+                                                         _residualLb,
+                                                         _residualUb,
+                                                         _residualLayerIndices,
+                                                         deepPolyElementsBefore );
         }
     }
     ASSERT( _residualLayerIndices.empty() );

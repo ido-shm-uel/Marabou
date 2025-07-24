@@ -40,13 +40,19 @@
 namespace NLR {
 
 DeepPolyAnalysis::DeepPolyAnalysis( LayerOwner *layerOwner,
-                                    bool storeSymbolicBounds,
+                                    bool storeOutputLayerSymbolicBounds,
+                                    bool storeSymbolicBoundsInTermsOfPredecessor,
                                     Map<unsigned, double *> *outputLayerSymbolicLb,
                                     Map<unsigned, double *> *outputLayerSymbolicUb,
                                     Map<unsigned, double *> *outputLayerSymbolicLowerBias,
-                                    Map<unsigned, double *> *outputLayerSymbolicUpperBias )
+                                    Map<unsigned, double *> *outputLayerSymbolicUpperBias,
+                                    Map<unsigned, double *> *symbolicLbInTermsOfPredecessor,
+                                    Map<unsigned, double *> *symbolicUbInTermsOfPredecessor,
+                                    Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor,
+                                    Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor )
     : _layerOwner( layerOwner )
-    , _storeSymbolicBounds( storeSymbolicBounds )
+    , _storeOutputLayerSymbolicBounds( storeOutputLayerSymbolicBounds )
+    , _storeSymbolicBoundsInTermsOfPredecessor( storeSymbolicBoundsInTermsOfPredecessor )
     , _work1SymbolicLb( NULL )
     , _work1SymbolicUb( NULL )
     , _work2SymbolicLb( NULL )
@@ -57,6 +63,10 @@ DeepPolyAnalysis::DeepPolyAnalysis( LayerOwner *layerOwner,
     , _outputLayerSymbolicUb( outputLayerSymbolicUb )
     , _outputLayerSymbolicLowerBias( outputLayerSymbolicLowerBias )
     , _outputLayerSymbolicUpperBias( outputLayerSymbolicUpperBias )
+    , _symbolicLbInTermsOfPredecessor( symbolicLbInTermsOfPredecessor )
+    , _symbolicUbInTermsOfPredecessor( symbolicUbInTermsOfPredecessor )
+    , _symbolicLowerBiasInTermsOfPredecessor( symbolicLowerBiasInTermsOfPredecessor )
+    , _symbolicUpperBiasInTermsOfPredecessor( symbolicUpperBiasInTermsOfPredecessor )
 {
     const Map<unsigned, Layer *> &layers = _layerOwner->getLayerIndexToLayer();
     // Get the maximal layer size
@@ -158,7 +168,7 @@ void DeepPolyAnalysis::run()
         {
             if ( layer->neuronEliminated( j ) )
                 continue;
-            if ( _storeSymbolicBounds && index == _layerOwner->getNumberOfLayers() - 1 )
+            if ( _storeOutputLayerSymbolicBounds && index == _layerOwner->getNumberOfLayers() - 1 )
                 continue;
             double lb = deepPolyElement->getLowerBound( j );
             if ( layer->getLb( j ) < lb )
@@ -250,14 +260,20 @@ DeepPolyElement *DeepPolyAnalysis::createDeepPolyElement( Layer *layer )
         throw NLRError( NLRError::LAYER_TYPE_NOT_SUPPORTED,
                         Stringf( "Layer %u not yet supported", layer->getLayerType() ).ascii() );
 
-    if ( _storeSymbolicBounds && layer->getLayerIndex() == _layerOwner->getNumberOfLayers() - 1 )
+    deepPolyElement->setStoreSymbolicBoundsInTermsOfPredecessor(
+        _storeSymbolicBoundsInTermsOfPredecessor );
+    if ( layer->getLayerIndex() == _layerOwner->getNumberOfLayers() - 1 )
     {
-        deepPolyElement->setStoreSymbolicBounds( true );
+        deepPolyElement->setStoreOutputLayerSymbolicBounds( _storeOutputLayerSymbolicBounds );
     }
-    deepPolyElement->setOutputLayerSymbolicBoundsMemory( _outputLayerSymbolicLb,
-                                                         _outputLayerSymbolicUb,
-                                                         _outputLayerSymbolicLowerBias,
-                                                         _outputLayerSymbolicUpperBias );
+    deepPolyElement->setSymbolicBoundsMemory( _outputLayerSymbolicLb,
+                                              _outputLayerSymbolicUb,
+                                              _outputLayerSymbolicLowerBias,
+                                              _outputLayerSymbolicUpperBias,
+                                              _symbolicLbInTermsOfPredecessor,
+                                              _symbolicUbInTermsOfPredecessor,
+                                              _symbolicLowerBiasInTermsOfPredecessor,
+                                              _symbolicUpperBiasInTermsOfPredecessor );
     return deepPolyElement;
 }
 

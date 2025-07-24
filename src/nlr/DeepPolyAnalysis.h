@@ -29,18 +29,24 @@ class DeepPolyAnalysis
 {
 public:
     DeepPolyAnalysis( LayerOwner *layerOwner,
-                      bool storeSymbolicBounds = false,
+                      bool storeOutputLayerSymbolicBounds = false,
+                      bool storeSymbolicBoundsInTermsOfPredecessor = false,
                       Map<unsigned, double *> *outputLayerSymbolicLb = NULL,
                       Map<unsigned, double *> *outputLayerSymbolicUb = NULL,
                       Map<unsigned, double *> *outputLayerSymbolicLowerBias = NULL,
-                      Map<unsigned, double *> *outputLayerSymbolicUpperBias = NULL );
+                      Map<unsigned, double *> *outputLayerSymbolicUpperBias = NULL,
+                      Map<unsigned, double *> *symbolicLbInTermsOfPredecessor = NULL,
+                      Map<unsigned, double *> *symbolicUbInTermsOfPredecessor = NULL,
+                      Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor = NULL,
+                      Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor = NULL );
     ~DeepPolyAnalysis();
 
     void run();
 
 private:
     LayerOwner *_layerOwner;
-    bool _storeSymbolicBounds;
+    bool _storeOutputLayerSymbolicBounds;
+    bool _storeSymbolicBoundsInTermsOfPredecessor;
 
     /*
       Maps layer index to the abstract element
@@ -61,6 +67,11 @@ private:
     Map<unsigned, double *> *_outputLayerSymbolicUb;
     Map<unsigned, double *> *_outputLayerSymbolicLowerBias;
     Map<unsigned, double *> *_outputLayerSymbolicUpperBias;
+
+    Map<unsigned, double *> *_symbolicLbInTermsOfPredecessor;
+    Map<unsigned, double *> *_symbolicUbInTermsOfPredecessor;
+    Map<unsigned, double *> *_symbolicLowerBiasInTermsOfPredecessor;
+    Map<unsigned, double *> *_symbolicUpperBiasInTermsOfPredecessor;
 
     unsigned _maxLayerSize;
 

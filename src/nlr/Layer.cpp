@@ -2275,7 +2275,7 @@ void Layer::computeSymbolicBoundsForSigmoid()
         double sourceLbSigmoid = SigmoidConstraint::sigmoid( sourceLb );
 
         // Case when the Sigmoid constraint is fixed
-        if ( FloatUtils::areEqual( FloatUtils::round( sourceUb ), FloatUtils::round( sourceLb ) ) )
+        if ( FloatUtils::areEqual( sourceLb, sourceUb ) )
         {
             for ( unsigned j = 0; j < _inputLayerSize; ++j )
             {
@@ -4298,21 +4298,6 @@ void Layer::computeParameterisedSymbolicBoundsForBilinear( const Vector<double> 
             }
         }
     }
-}
-
-
-double Layer::calculateDifferenceFromSymbolic( Map<unsigned, double> &point, unsigned i ) const
-{
-    double lowerSum = _symbolicLowerBias[i];
-    double upperSum = _symbolicUpperBias[i];
-
-    for ( unsigned j = 0; j < _inputLayerSize; ++j )
-    {
-        lowerSum += _symbolicLb[j * _size + i] * point[j];
-        upperSum += _symbolicUb[j * _size + i] * point[j];
-    }
-
-    return std::max( _ub[i] - upperSum, lowerSum - _lb[i] );
 }
 
 double Layer::LSELowerBound( const Vector<double> &inputs,

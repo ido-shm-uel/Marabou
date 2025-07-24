@@ -232,7 +232,7 @@ void NetworkLevelReasoner::parameterisedSymbolicBoundPropagation( const Vector<d
     for ( unsigned i = 0; i < _layerIndexToLayer.size(); ++i )
     {
         const Vector<double> &currentLayerCoeffs = layerIndicesToParameters[i];
-        _layerIndexToLayer[i]->computeParameterisedSymbolicBounds( currentLayerCoeffs );
+        _layerIndexToLayer[i]->computeParameterisedSymbolicBounds( currentLayerCoeffs, true );
     }
 }
 
@@ -258,7 +258,7 @@ void NetworkLevelReasoner::lpRelaxationPropagation()
         optimizeBoundsWithPreimageApproximation( _layerIndexToLayer, lpFormulator );
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
               MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP )
-        optimizeBoundsWithInvprop( _layerIndexToLayer, lpFormulator );
+        optimizeBoundsWithPMNR( _layerIndexToLayer, lpFormulator );
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
                   MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
               Options::get()->getMILPSolverBoundTighteningType() ==
@@ -284,28 +284,14 @@ void NetworkLevelReasoner::optimizeBoundsWithPreimageApproximation( Map<unsigned
     lpFormulator.optimizeBoundsWithLpRelaxation( layers, true, layerIndicesToParameters );
 }
 
-void NetworkLevelReasoner::optimizeBoundsWithInvprop( Map<unsigned, Layer *> &layers,
-                                                      LPFormulator &lpFormulator )
-{
-    const Vector<PolygonalTightening> &polygonal_tightenings =
-        OptimizeParameterisedPolygonalTightening();
-    const Vector<double> &optimal_coeffs = Vector<double>( {} );
-    Map<unsigned, Vector<double>> layerIndicesToParameters =
-        getParametersForLayers( layers, optimal_coeffs );
-    lpFormulator.optimizeBoundsWithLpRelaxation(
-        layers, false, layerIndicesToParameters, polygonal_tightenings );
-    lpFormulator.optimizeBoundsWithLpRelaxation(
-        layers, true, layerIndicesToParameters, polygonal_tightenings );
-}
-
 void NetworkLevelReasoner::optimizeBoundsWithPMNR( Map<unsigned, Layer *> &layers,
                                                    LPFormulator &lpFormulator )
 {
     const Vector<PolygonalTightening> &polygonal_tightenings =
         OptimizeParameterisedPolygonalTightening();
-    const Vector<double> &optimal_coeffs = OptimalParameterisedSymbolicBoundTightening();
+    const Vector<double> &coeffs = Vector<double>( {} );
     Map<unsigned, Vector<double>> layerIndicesToParameters =
-        getParametersForLayers( layers, optimal_coeffs );
+        getParametersForLayers( layers, coeffs );
     lpFormulator.optimizeBoundsWithLpRelaxation(
         layers, false, layerIndicesToParameters, polygonal_tightenings );
     lpFormulator.optimizeBoundsWithLpRelaxation(
@@ -368,45 +354,7 @@ void NetworkLevelReasoner::freeMemoryIfNeeded()
         delete layer.second;
     _layerIndexToLayer.clear();
 
-    for ( auto &pair : _outputLayerSymbolicLb )
-    {
-        if ( pair.second )
-        {
-            delete[] pair.second;
-            pair.second = NULL;
-        }
-    }
-    _outputLayerSymbolicLb.clear();
-
-    for ( auto &pair : _outputLayerSymbolicUb )
-    {
-        if ( pair.second )
-        {
-            delete[] pair.second;
-            pair.second = NULL;
-        }
-    }
-    _outputLayerSymbolicUb.clear();
-
-    for ( auto &pair : _outputLayerSymbolicLowerBias )
-    {
-        if ( pair.second )
-        {
-            delete[] pair.second;
-            pair.second = NULL;
-        }
-    }
-    _outputLayerSymbolicLowerBias.clear();
-
-    for ( auto &pair : _outputLayerSymbolicUpperBias )
-    {
-        if ( pair.second )
-        {
-            delete[] pair.second;
-            pair.second = NULL;
-        }
-    }
-    _outputLayerSymbolicUpperBias.clear();
+    freeMemoryForSymbolicBoundMapsIfNeeded();
 }
 
 void NetworkLevelReasoner::storeIntoOther( NetworkLevelReasoner &other ) const
@@ -793,13 +741,12 @@ double NetworkLevelReasoner::getPreviousBias( const ReluConstraint *reluConstrai
     return _previousBiases[reluConstraint];
 }
 
-
 const double *NetworkLevelReasoner::getOutputLayerSymbolicLb( unsigned layerIndex ) const
 {
-    // Initialize map if empty
-    if ( _previousBiases.empty() )
+    // Initialize map if empty.
+    if ( _outputLayerSymbolicLb.empty() )
     {
-        const_cast<NetworkLevelReasoner *>( this )->initializeOutputLayerSymbolicBounds();
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
     }
 
     if ( !_outputLayerSymbolicLb.exists( layerIndex ) )
@@ -812,10 +759,10 @@ const double *NetworkLevelReasoner::getOutputLayerSymbolicLb( unsigned layerInde
 
 const double *NetworkLevelReasoner::getOutputLayerSymbolicUb( unsigned layerIndex ) const
 {
-    // Initialize map if empty
-    if ( _previousBiases.empty() )
+    // Initialize map if empty.
+    if ( _outputLayerSymbolicUb.empty() )
     {
-        const_cast<NetworkLevelReasoner *>( this )->initializeOutputLayerSymbolicBounds();
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
     }
 
     if ( !_outputLayerSymbolicUb.exists( layerIndex ) )
@@ -828,10 +775,10 @@ const double *NetworkLevelReasoner::getOutputLayerSymbolicUb( unsigned layerInde
 
 const double *NetworkLevelReasoner::getOutputLayerSymbolicLowerBias( unsigned layerIndex ) const
 {
-    // Initialize map if empty
-    if ( _previousBiases.empty() )
+    // Initialize map if empty.
+    if ( _outputLayerSymbolicLowerBias.empty() )
     {
-        const_cast<NetworkLevelReasoner *>( this )->initializeOutputLayerSymbolicBounds();
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
     }
 
     if ( !_outputLayerSymbolicLowerBias.exists( layerIndex ) )
@@ -844,10 +791,10 @@ const double *NetworkLevelReasoner::getOutputLayerSymbolicLowerBias( unsigned la
 
 const double *NetworkLevelReasoner::getOutputLayerSymbolicUpperBias( unsigned layerIndex ) const
 {
-    // Initialize map if empty
-    if ( _previousBiases.empty() )
+    // Initialize map if empty.
+    if ( _outputLayerSymbolicUpperBias.empty() )
     {
-        const_cast<NetworkLevelReasoner *>( this )->initializeOutputLayerSymbolicBounds();
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
     }
 
     if ( !_outputLayerSymbolicUpperBias.exists( layerIndex ) )
@@ -856,6 +803,72 @@ const double *NetworkLevelReasoner::getOutputLayerSymbolicUpperBias( unsigned la
     }
 
     return _outputLayerSymbolicUpperBias[layerIndex];
+}
+
+const double *NetworkLevelReasoner::getSymbolicLbInTermsOfPredecessor( unsigned layerIndex ) const
+{
+    // Initialize map if empty.
+    if ( _symbolicLbInTermsOfPredecessor.empty() )
+    {
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
+    }
+
+    if ( !_symbolicLbInTermsOfPredecessor.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND, "Layer not found in symbolic bounds map." );
+    }
+
+    return _symbolicLbInTermsOfPredecessor[layerIndex];
+}
+
+const double *NetworkLevelReasoner::getSymbolicUbInTermsOfPredecessor( unsigned layerIndex ) const
+{
+    // Initialize map if empty.
+    if ( _symbolicUbInTermsOfPredecessor.empty() )
+    {
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
+    }
+
+    if ( !_symbolicUbInTermsOfPredecessor.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND, "Layer not found in symbolic bounds map." );
+    }
+
+    return _symbolicUbInTermsOfPredecessor[layerIndex];
+}
+
+const double *
+NetworkLevelReasoner::getSymbolicLowerBiasInTermsOfPredecessor( unsigned layerIndex ) const
+{
+    // Initialize map if empty.
+    if ( _symbolicLowerBiasInTermsOfPredecessor.empty() )
+    {
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
+    }
+
+    if ( !_symbolicLowerBiasInTermsOfPredecessor.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND, "Layer not found in symbolic bounds map." );
+    }
+
+    return _symbolicLowerBiasInTermsOfPredecessor[layerIndex];
+}
+
+const double *
+NetworkLevelReasoner::getSymbolicUpperBiasInTermsOfPredecessor( unsigned layerIndex ) const
+{
+    // Initialize map if empty.
+    if ( _symbolicUpperBiasInTermsOfPredecessor.empty() )
+    {
+        const_cast<NetworkLevelReasoner *>( this )->initializeSymbolicBoundsMaps();
+    }
+
+    if ( !_symbolicUpperBiasInTermsOfPredecessor.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND, "Layer not found in symbolic bounds map." );
+    }
+
+    return _symbolicUpperBiasInTermsOfPredecessor[layerIndex];
 }
 
 unsigned
@@ -1088,7 +1101,7 @@ double NetworkLevelReasoner::EstimateVolume( const Map<unsigned, Layer *> &layer
             if ( outputLayer->neuronEliminated( j ) )
                 continue;
 
-            double margin = outputLayer->calculateDifferenceFromSymbolic( point, j );
+            double margin = calculateDifferenceFromSymbolic( outputLayer, point, j );
             max_margin = std::max( max_margin, margin );
         }
         sigmoid_sum += SigmoidConstraint::sigmoid( max_margin );
@@ -1096,6 +1109,24 @@ double NetworkLevelReasoner::EstimateVolume( const Map<unsigned, Layer *> &layer
 
     return std::exp( log_box_volume + std::log( sigmoid_sum ) ) /
            GlobalConfiguration::VOLUME_ESTIMATION_ITERATIONS;
+}
+
+double NetworkLevelReasoner::calculateDifferenceFromSymbolic( const Layer *layer,
+                                                              Map<unsigned, double> &point,
+                                                              unsigned i ) const
+{
+    unsigned size = layer->getSize();
+    unsigned inputLayerSize = _layerIndexToLayer[0]->getSize();
+    double lowerSum = layer->getSymbolicLowerBias()[i];
+    double upperSum = layer->getSymbolicUpperBias()[i];
+
+    for ( unsigned j = 0; j < inputLayerSize; ++j )
+    {
+        lowerSum += layer->getSymbolicLb()[j * size + i] * point[j];
+        upperSum += layer->getSymbolicUb()[j * size + i] * point[j];
+    }
+
+    return std::max( layer->getUb( i ) - upperSum, lowerSum - layer->getLb( i ) );
 }
 
 const Vector<PolygonalTightening> NetworkLevelReasoner::OptimizeParameterisedPolygonalTightening()
@@ -1241,9 +1272,17 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
     PolygonalTightening &tightening,
     Vector<PolygonalTightening> &prevTightenings )
 {
-    // First, run parameterised symbolic bound propagation.
-    parameterisedSymbolicBoundPropagation( coeffs );
+    // First, run parameterised symbolic bound propagation and compue successor layers.
+    Map<unsigned, Vector<double>> layerIndicesToParameters =
+        getParametersForLayers( _layerIndexToLayer, coeffs );
+    for ( unsigned i = 0; i < _layerIndexToLayer.size(); ++i )
+    {
+        const Vector<double> &currentLayerCoeffs = layerIndicesToParameters[i];
+        _layerIndexToLayer[i]->computeParameterisedSymbolicBounds( currentLayerCoeffs );
+    }
+    computeSuccessorLayers();
 
+    // Recursively compute mu, mu_hat for every layer.
     const unsigned numLayers = layers.size();
     const unsigned maxLayer = layers.size() - 1;
     const unsigned numCoeffs = coeffs.size();
@@ -1252,6 +1291,7 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
 
     Vector<Vector<double>> mu( numLayers );
     Vector<Vector<double>> mu_hat( numLayers );
+    Set<unsigned> handledInputNeurons;
 
     for ( unsigned index = maxLayer; index > 0; --index )
     {
@@ -1264,18 +1304,19 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
 
         if ( layerIndex < maxLayer )
         {
-            for ( const unsigned successorLayerIndex : layer->getSuccessorLayers() )
+            for ( unsigned i = 0; i < layerSize; ++i )
             {
-                const Layer *successorLayer = getLayer( successorLayerIndex );
-                const unsigned successorLayerSize = successorLayer->getSize();
-                const Layer::Type successorLayerType = successorLayer->getLayerType();
-
-                if ( successorLayerType == Layer::WEIGHTED_SUM )
+                NeuronIndex neuron( layerIndex, i );
+                for ( const unsigned successorLayerIndex : layer->getSuccessorLayers() )
                 {
-                    const double *successorWeights =
-                        successorLayer->getWeights( successorLayerIndex );
-                    for ( unsigned i = 0; i < layerSize; ++i )
+                    const Layer *successorLayer = getLayer( successorLayerIndex );
+                    const unsigned successorLayerSize = successorLayer->getSize();
+                    const Layer::Type successorLayerType = successorLayer->getLayerType();
+
+                    if ( successorLayerType == Layer::WEIGHTED_SUM )
                     {
+                        const double *successorWeights = successorLayer->getWeights( layerIndex );
+
                         for ( unsigned j = 0; j < successorLayerSize; ++j )
                         {
                             if ( !successorLayer->neuronEliminated( j ) )
@@ -1285,44 +1326,60 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
                             }
                         }
                     }
-                }
-
-                else
-                {
-                    // const double *successorSymbolicLbInTermsOfPredecessor =
-                    // successorLayer->getSymbolicLbInTermsOfPredecessor(); const double
-                    // *successorSymbolicUbInTermsOfPredecessor =
-                    // successorLayer->getSymbolicUbInTermsOfPredecessor();
-                    /*const double *successorSymbolicLbInTermsOfPredecessor =
-                        successorLayer->getSymbolicLb();
-                    const double *successorSymbolicUbInTermsOfPredecessor =
-                        successorLayer->getSymbolicUb();
-                    for ( unsigned i = 0; i < layerSize; ++i )
+                    else
                     {
+                        const double *successorSymbolicLbInTermsOfPredecessor =
+                            _symbolicLbInTermsOfPredecessor[successorLayerIndex];
+                        const double *successorSymbolicUbInTermsOfPredecessor =
+                            _symbolicUbInTermsOfPredecessor[successorLayerIndex];
                         for ( unsigned j = 0; j < successorLayerSize; ++j )
                         {
-                            if ( !successorLayer->neuronEliminated( j ) )
+                            // Find the index of the current neuron in the activation source list.
+                            unsigned predecessorIndex = 0;
+                            bool found = false;
+                            List<NeuronIndex> sources = successorLayer->getActivationSources( j );
+                            for ( const auto &sourceIndex : sources )
                             {
-                                if ( mu[successorLayerIndex][j] >= 0 )
+                                if ( sourceIndex != neuron )
                                 {
-                                    mu_hat[index][i] += mu[successorLayerIndex][j] *
-                                                        successorSymbolicUbInTermsOfPredecessor
-                                                            [i * successorLayerSize + j];
+                                    if ( !found )
+                                    {
+                                        ++predecessorIndex;
+                                    }
                                 }
                                 else
                                 {
-                                    mu_hat[index][i] -= mu[successorLayerIndex][j] *
-                                                        successorSymbolicLbInTermsOfPredecessor
-                                                            [i * successorLayerSize + j];
+                                    found = true;
+                                }
+                            }
+
+                            if ( found )
+                            {
+                                if ( !successorLayer->neuronEliminated( j ) )
+                                {
+                                    if ( mu[successorLayerIndex][j] >= 0 )
+                                    {
+                                        mu_hat[index][i] +=
+                                            mu[successorLayerIndex][j] *
+                                            successorSymbolicUbInTermsOfPredecessor
+                                                [j * successorLayerSize + predecessorIndex];
+                                    }
+                                    else
+                                    {
+                                        mu_hat[index][i] -=
+                                            mu[successorLayerIndex][j] *
+                                            successorSymbolicLbInTermsOfPredecessor
+                                                [j * successorLayerSize + predecessorIndex];
+                                    }
                                 }
                             }
                         }
-                    }*/
+                    }
                 }
             }
         }
 
-
+        // Compute mu from mu_hat.
         mu[index] += mu_hat[index];
         for ( unsigned i = 0; i < layerSize; ++i )
         {
@@ -1343,26 +1400,27 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
         }
     }
 
-    Vector<double> globalBoundVector( inputLayerSize, 0 );
+    // Compute global bound for input space minimization problem.
+    Vector<double> inputLayerBound( inputLayerSize, 0 );
     for ( unsigned i = 0; i < inputLayerSize; ++i )
     {
-        globalBoundVector[i] += tightening.getCoeff( NeuronIndex( 0, i ) ) - mu_hat[0][i];
+        inputLayerBound[i] += tightening.getCoeff( NeuronIndex( 0, i ) ) - mu_hat[0][i];
         for ( unsigned j = 0; j < numCoeffs; ++j )
         {
             const PolygonalTightening pt = prevTightenings[j];
             double prevCoeff = pt.getCoeff( NeuronIndex( 0, i ) );
             if ( pt._type == PolygonalTightening::UB )
             {
-                globalBoundVector[i] += gamma[j] * prevCoeff;
+                inputLayerBound[i] += gamma[j] * prevCoeff;
             }
             else
             {
-                globalBoundVector[i] -= gamma[j] * prevCoeff;
+                inputLayerBound[i] -= gamma[j] * prevCoeff;
             }
         }
     }
 
-
+    // Compute lower bound for polygonal tightening bias using mu and inputLayerBound.
     double lowerBound = 0;
     for ( unsigned i = 0; i < numGamma; ++i )
     {
@@ -1399,14 +1457,6 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
         }
         else
         {
-            /* // const double *successorSymbolicLowerBiasInTermsOfPredecessor =
-            // successorLayer->getSymbolicLowerBiasInTermsOfPredecessor(); const double
-            // *successorSymbolicUpperBiasInTermsOfPredecessor =
-            // successorLayer->getSymbolicUpperBiasInTermsOfPredecessor();
-            const double *successorSymbolicLowerBiasInTermsOfPredecessor =
-                layer->getSymbolicLowerBias();
-            const double *successorSymbolicUpperBiasInTermsOfPredecessor =
-                layer->getSymbolicUpperBias();
             for ( unsigned i = 0; i < layerSize; ++i )
             {
                 if ( !layer->neuronEliminated( i ) )
@@ -1414,20 +1464,20 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
                     if ( mu[index][i] > 0 )
                     {
                         lowerBound -=
-                            mu[index][i] * successorSymbolicUpperBiasInTermsOfPredecessor[i];
+                            mu[index][i] * _symbolicUpperBiasInTermsOfPredecessor[index][i];
                     }
                     else
                     {
                         lowerBound +=
-                            mu[index][i] * successorSymbolicLowerBiasInTermsOfPredecessor[i];
+                            mu[index][i] * _symbolicLowerBiasInTermsOfPredecessor[index][i];
                     }
                 }
                 else
                 {
-                    lowerBound +=
+                    lowerBound -=
                         FloatUtils::abs( mu[index][i] ) * layer->getEliminatedNeuronValue( i );
                 }
-            }*/
+            }
         }
     }
 
@@ -1436,22 +1486,22 @@ double NetworkLevelReasoner::getParameterisdPolygonalTighteningLowerBound(
     const double *inputUbs = inputLayer->getUbs();
     for ( unsigned i = 0; i < inputLayerSize; ++i )
     {
-        if ( globalBoundVector[i] > 0 )
+        if ( inputLayerBound[i] > 0 )
         {
-            lowerBound += globalBoundVector[i] * inputUbs[i];
+            lowerBound += inputLayerBound[i] * inputUbs[i];
         }
         else
         {
-            lowerBound += globalBoundVector[i] * inputLbs[i];
+            lowerBound += inputLayerBound[i] * inputLbs[i];
         }
     }
     return lowerBound;
 }
 
 const Vector<PolygonalTightening>
-NetworkLevelReasoner::generatePolygonalTightenings( const Map<unsigned, Layer *> &layers ) const
+NetworkLevelReasoner::generatePolygonalTightenings( const Map<unsigned, Layer *> &layers )
 {
-    /*Vector<PolygonalTightening> tightenings = Vector<PolygonalTightening>( {} );
+    Vector<PolygonalTightening> tightenings = Vector<PolygonalTightening>( {} );
     if ( Options::get()->getMILPSolverBoundTighteningType() ==
              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
          Options::get()->getMILPSolverBoundTighteningType() ==
@@ -1459,106 +1509,124 @@ NetworkLevelReasoner::generatePolygonalTightenings( const Map<unsigned, Layer *>
          Options::get()->getMILPSolverBoundTighteningType() ==
              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
     {
+        unsigned neuronCount = GlobalConfiguration::PMNR_SELECTED_NEURONS;
+        Vector<PolygonalTightening> lowerBoundTightenings = Vector<PolygonalTightening>( {} );
+        Vector<PolygonalTightening> upperBoundTightenings = Vector<PolygonalTightening>( {} );
         const List<NeuronIndex> constraints = selectConstraints( layers );
         for ( const auto &pair : constraints )
         {
-            unsigned layerIndex = constraints._layer;
-            unsigned neuron = constraints._neuron;
+            unsigned layerIndex = pair._layer;
+            unsigned neuron = pair._neuron;
             Layer *layer = layers[layerIndex];
+            unsigned layerSize = layer->getSize();
 
-            Map<NLR::NeuronIndex, double> neuronToCoefficient = Map<NLR::NeuronIndex, double> ( {}
-    );
+            Map<NeuronIndex, double> neuronToLowerCoefficient = Map<NeuronIndex, double>( {} );
+            Map<NeuronIndex, double> neuronToUpperCoefficient = Map<NeuronIndex, double>( {} );
+            neuronToLowerCoefficient[pair] = -1;
+            neuronToUpperCoefficient[pair] = -1;
 
-            if ( layer->getLayerType() == NetworkLevelReasoner::WEIGHTED_SUM )
+            List<NeuronIndex> sources = layer->getActivationSources( neuron );
+            unsigned predecessorIndex = 0;
+            for ( const auto &sourceIndex : sources )
             {
-                const double *biases = layer->getBiases();
-                for ( unsigned i = 0; i < layerSize; ++i )
-                {
-                    if ( !layer->neuronEliminated( i ) )
-                    {
-                        lowerBound -= mu[index][i] * biases[i];
-                    }
-                    else
-                    {
-                        lowerBound -= mu[index][i] * layer->getEliminatedNeuronValue[i];
-                    }
-                }
+                neuronToLowerCoefficient[sourceIndex] =
+                    _symbolicLbInTermsOfPredecessor[layerIndex]
+                                                   [neuron * layerSize + predecessorIndex];
+                neuronToUpperCoefficient[sourceIndex] =
+                    _symbolicLbInTermsOfPredecessor[layerIndex]
+                                                   [neuron * layerSize + predecessorIndex];
+                ++predecessorIndex;
+            }
+            PolygonalTightening lowerTightening(
+                neuronToLowerCoefficient, 0, PolygonalTightening::LB );
+            PolygonalTightening upperTightening(
+                neuronToLowerCoefficient, 0, PolygonalTightening::UB );
+            lowerBoundTightenings.append( lowerTightening );
+            upperBoundTightenings.append( upperTightening );
         }
-        else
+
+        int range = ( 1 << neuronCount ) - 1;
+        for ( int i = 0; i < range; ++i )
         {
-            const double *successorSymbolicLowerBiasInTermsOfPredecessor =
-    successorLayer->getSymbolicLbInTermsOfPredecessor(); const double
-    *successorSymbolicUpperBiasInTermsOfPredecessor =
-    successorLayer->getSymbolicUbInTermsOfPredecessor(); for ( unsigned i = 0; i < layerSize; ++i )
+            Map<NeuronIndex, double> neuronToLowerCoefficient = Map<NeuronIndex, double>( {} );
+            Map<NeuronIndex, double> neuronToUpperCoefficient = Map<NeuronIndex, double>( {} );
+            for ( unsigned j = 0; j < neuronCount; ++j )
             {
-                if ( !layer->neuronEliminated( i ) )
+                int flag = ( i >> j ) % 2;
+                if ( flag > 0 )
                 {
-                    if ( mu[index][i] > 0 )
+                    for ( const auto &pair : lowerBoundTightenings[j]._neuronToCoefficient )
                     {
-                        lowerBound -= mu[index][i] *
-    successorSymbolicUpperBiasInTermsOfPredecessor[i];
+                        neuronToLowerCoefficient[pair.first] = pair.second;
                     }
-                    else
+                    for ( const auto &pair : upperBoundTightenings[j]._neuronToCoefficient )
                     {
-                        lowerBound += mu[index][i] *
-    successorSymbolicLowerBiasInTermsOfPredecessor[i];
+                        neuronToUpperCoefficient[pair.first] = pair.second;
                     }
-                }
-                else
-                {
-                    lowerBound += FloatUtils::abs( mu[index][i] ) *
-    layer->getEliminatedNeuronValue[i];
                 }
             }
+            PolygonalTightening lowerTightening(
+                neuronToLowerCoefficient, 0, PolygonalTightening::LB );
+            PolygonalTightening upperTightening(
+                neuronToLowerCoefficient, 0, PolygonalTightening::UB );
+            tightenings.append( lowerTightening );
+            tightenings.append( upperTightening );
         }
     }
 
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP )
+              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP )
     {
-
-    }*/
-    unsigned n = layers.size();
-    n = n;
-    const Vector<PolygonalTightening> defaultVector = Vector<PolygonalTightening>( {} );
-    return defaultVector;
+        for ( const auto &pair : layers )
+        {
+            unsigned layerIndex = pair.first;
+            Layer *layer = pair.second;
+            const Vector<unsigned> nonFixedNeurons = getNonFixedNeurons( layer );
+            for ( const unsigned neuron : nonFixedNeurons )
+            {
+                NeuronIndex index( layerIndex, neuron );
+                Map<NeuronIndex, double> neuronToLowerCoefficient = Map<NeuronIndex, double>( {} );
+                Map<NeuronIndex, double> neuronToUpperCoefficient = Map<NeuronIndex, double>( {} );
+                neuronToLowerCoefficient[index] = 1;
+                neuronToUpperCoefficient[index] = 1;
+                PolygonalTightening lowerTightening(
+                    neuronToLowerCoefficient, layer->getUb( neuron ), PolygonalTightening::LB );
+                PolygonalTightening upperTightening(
+                    neuronToLowerCoefficient, layer->getLb( neuron ), PolygonalTightening::UB );
+                tightenings.append( lowerTightening );
+                tightenings.append( upperTightening );
+            }
+        }
+    }
+    const Vector<PolygonalTightening> tighteningsVector =
+        Vector<PolygonalTightening>( tightenings );
+    return tighteningsVector;
 }
 
 const List<NeuronIndex>
-NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) const
+NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers )
 {
+    // ...
     List<NeuronIndex> neuronList = List<NeuronIndex>( {} );
+    unsigned neuronCount = GlobalConfiguration::PMNR_SELECTED_NEURONS;
 
     switch ( Options::get()->getMILPSolverBoundTighteningType() )
     {
     case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM:
     {
-        unsigned numNonlinear = countNonlinearLayers( layers );
+        Vector<unsigned> candidateLayers = getLayersWithNonFixedNeurons( layers );
         std::mt19937_64 rng( GlobalConfiguration::PMNR_RANDOM_SEED );
-        std::uniform_int_distribution<unsigned> dis_layer( 0, numNonlinear - 1 );
-        unsigned nonlinearIndex = dis_layer( rng );
-
-        unsigned index = 0;
-        while ( index != nonlinearIndex )
-        {
-            Layer::Type type = _layerIndexToLayer[index]->getLayerType();
-
-            if ( type != Layer::WEIGHTED_SUM )
-            {
-                ++index;
-            }
-        }
+        std::uniform_int_distribution<unsigned> dis_layer( 0, candidateLayers.size() - 1 );
+        unsigned entry = dis_layer( rng );
+        unsigned index = candidateLayers[entry];
 
         Layer *layer = _layerIndexToLayer[index];
-        unsigned layerSize = layer->getSize();
-        std::uniform_int_distribution<unsigned> dis_neuron( 0, layerSize - 1 );
-        for ( unsigned i = 0; i < GlobalConfiguration::PMNR_SELECTED_NEURONS; ++i )
+        Vector<unsigned> candidateNeurons = getNonFixedNeurons( layer );
+        std::uniform_int_distribution<unsigned> dis_neuron( 0, candidateNeurons.size() - 1 );
+        for ( unsigned i = 0; i < neuronCount; ++i )
         {
-            unsigned neuron = dis_neuron( rng );
-            while ( layer->neuronEliminated( neuron ) )
-            {
-                neuron = dis_neuron( rng );
-            }
+            unsigned entry = dis_neuron( rng );
+            unsigned neuron = candidateNeurons[entry];
             neuronList.append( NeuronIndex( index, neuron ) );
         }
         break;
@@ -1566,6 +1634,8 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
 
     case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT:
     {
+        initializeSymbolicBoundsMaps();
+
         double maxScore = 0;
         unsigned maxScoreIndex = 0;
         Map<NeuronIndex, double> neuronIndexToScore;
@@ -1576,14 +1646,14 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
             Layer *layer = pair.second;
             unsigned layerSize = layer->getSize();
 
-            if ( layer->getLayerType() == Layer::WEIGHTED_SUM )
+            if ( getNonFixedNeurons( layer ).size() == 0 )
             {
                 continue;
             }
 
             for ( unsigned i = 0; i < layerSize; ++i )
             {
-                if ( !( layer->neuronEliminated( i ) ) )
+                if ( isNeuronNonFixed( layer, i ) )
                 {
                     double neuronScore = std::pow(
                         ( _outputLayerSymbolicLb[index][i] + _outputLayerSymbolicUb[index][i] ) /
@@ -1609,14 +1679,14 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
             max_priority_queue;
         for ( unsigned i = 0; i < layerSize; ++i )
         {
-            if ( !( layer->neuronEliminated( i ) ) )
+            if ( isNeuronNonFixed( layer, i ) )
             {
                 double neuronScore = neuronIndexToScore[NeuronIndex( maxScoreIndex, i )];
                 max_priority_queue.push( std::pair( neuronScore, i ) );
             }
         }
 
-        for ( unsigned i = 0; i < GlobalConfiguration::PMNR_SELECTED_NEURONS; ++i )
+        for ( unsigned i = 0; i < neuronCount; ++i )
         {
             unsigned neuron = max_priority_queue.top().second;
             neuronList.append( NeuronIndex( maxScoreIndex, neuron ) );
@@ -1627,7 +1697,9 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
 
     case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS:
     {
-        double maxScore = 0;
+        initializeSymbolicBoundsMaps();
+
+        /*double maxScore = 0;
         unsigned maxScoreIndex = 0;
         Map<NeuronIndex, double> neuronIndexToScore;
         for ( const auto &pair : _layerIndexToLayer )
@@ -1635,14 +1707,17 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
             double score = 0;
             unsigned index = pair.first;
             Layer *layer = pair.second;
-            // unsigned layerSize = layer->getSize();
+            unsigned layerSize = layer->getSize();
+            unsigned inputLayerSize = _layerIndexToLayer[0]->getSize();
+            unsigned outputLayerSize = _layerIndexToLayer[getNumberOfLayers() - 1]->getSize();
+            Vector<double> outputLayerScores( outputLayerSize, 0 );
 
-            if ( layer->getLayerType() == Layer::WEIGHTED_SUM )
+            if ( getNonFixedNeurons( layer ).size() == 0 )
             {
                 continue;
             }
 
-            /*double *Lbs = layer->getLbs();
+            double *Lbs = layer->getLbs();
             double *Ubs = layer->getUbs();
             double *symbolicLb = layer->getSymbolicLb();
             double *symbolicUb = layer->getSymbolicUb();
@@ -1650,22 +1725,39 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
             double *symbolicUpperBias = layer->getSymbolicUpperBias();
             for ( unsigned i = 0; i < layerSize; ++i )
             {
-                if
-                    ( !( layer->neuronEliminated( i ) ) )
+
+
+
+                    for ( unsigned j = 0; j < outputLayerSize; j++ )
                     {
-                        double neuronScore = _outputLayerSymbolicLowerBias[i];
+                        outputLayerScores[j] = _outputLayerSymbolicLowerBias[j];
+
                         if ( _outputLayerSymbolicLb[index][i] > 0 )
                         {
-                            neuronScore += std::max( 0, _outputLayerSymbolicLb[index][i] ) *
-                        symbolicLb[i] + std::min( 0, _outputLayerSymbolicLb[index][i] ) *
-                        symbolicUb[i]
+                            outputLayerScores[j] += _outputLayerSymbolicLb[index][i] *
+        symbolicLb[i];
+                        }
+                        else
+                        {
+                            outputLayerScores[j] += _outputLayerSymbolicLb[index][i] *
+        symbolicUb[i];
                         }
 
-                        std::pow( ( _outputLayerSymbolicLb[index][i] +
-            _outputLayerSymbolicUb[index][i] ) / 2.0, 2 ); neuronIndexToScore.insert( NeuronIndex(
-            index, i ), neuronScore ); score += neuronScore;
+                        for ( unsigned k = 0; k < inputLayerSize; k++ )
+                        {
+
+                        }
                     }
-            }*/
+
+                    for ( unsigned j = 0; j < outputLayerSize; j++ )
+                    {
+                        neuronScore += std::pow( outputLayerScores[j], 2 );
+                    }
+
+                    neuronIndexToScore.insert( NeuronIndex( index, i ), neuronScore );
+                    score += neuronScore;
+                }
+            }
 
             if ( score > maxScore )
             {
@@ -1682,20 +1774,20 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
             max_priority_queue;
         for ( unsigned i = 0; i < layerSize; ++i )
         {
-            if ( !( layer->neuronEliminated( i ) ) )
+            if ( isNeuronNonFixed( layer, i ) )
             {
                 double neuronScore = neuronIndexToScore[NeuronIndex( maxScoreIndex, i )];
                 max_priority_queue.push( std::pair( neuronScore, i ) );
             }
         }
 
-        for ( unsigned i = 0; i < GlobalConfiguration::PMNR_SELECTED_NEURONS; ++i )
+        for ( unsigned i = 0; i < neuronCount; ++i )
         {
             unsigned neuron = max_priority_queue.top().second;
             neuronList.append( NeuronIndex( maxScoreIndex, neuron ) );
             max_priority_queue.pop();
         }
-        break;
+        break;*/
     }
 
     default:
@@ -1706,16 +1798,36 @@ NetworkLevelReasoner::selectConstraints( const Map<unsigned, Layer *> &layers ) 
     return list;
 }
 
+double NetworkLevelReasoner::getBranchingPoint( Layer *layer, unsigned neuron ) const
+{
+    ASSERT( isNeuronNonFixed( layer, neuron ) );
+    double lb = layer->getLb( neuron );
+    double ub = layer->getUb( neuron );
+
+    double branchingPoint;
+    if ( layer->getLayerType() == Layer::RELU || layer->getLayerType() == Layer::LEAKY_RELU ||
+         layer->getLayerType() == Layer::SIGN || layer->getLayerType() == Layer::ABSOLUTE_VALUE )
+    {
+        branchingPoint = 0;
+    }
+    else
+    {
+        branchingPoint = ( lb + ub ) / 2.0;
+    }
+
+    return branchingPoint;
+}
+
 const Map<unsigned, Vector<double>>
 NetworkLevelReasoner::getParametersForLayers( const Map<unsigned, Layer *> &layers,
                                               const Vector<double> &coeffs ) const
 {
     unsigned index = 0;
     Map<unsigned, Vector<double>> layerIndicesToParameters;
-    for ( auto pair : layers )
+    for ( const auto &pair : layers )
     {
         unsigned layerIndex = pair.first;
-        Layer *layer = layers[layerIndex];
+        Layer *layer = pair.second;
         unsigned n_coeffs = getNumberOfParametersPerType( layer->getLayerType() );
         Vector<double> current_coeffs( n_coeffs );
         for ( unsigned i = 0; i < n_coeffs; ++i )
@@ -1732,10 +1844,9 @@ NetworkLevelReasoner::getParametersForLayers( const Map<unsigned, Layer *> &laye
 unsigned NetworkLevelReasoner::getNumberOfParameters( const Map<unsigned, Layer *> &layers ) const
 {
     unsigned num = 0;
-    for ( auto pair : layers )
+    for ( const auto &pair : layers )
     {
-        unsigned layerIndex = pair.first;
-        Layer *layer = layers[layerIndex];
+        Layer *layer = pair.second;
         num += getNumberOfParametersPerType( layer->getLayerType() );
     }
     return num;
@@ -1752,6 +1863,203 @@ unsigned NetworkLevelReasoner::getNumberOfParametersPerType( Layer::Type t ) con
     return 0;
 }
 
+const Vector<unsigned>
+NetworkLevelReasoner::getLayersWithNonFixedNeurons( const Map<unsigned, Layer *> &layers ) const
+{
+    Vector<unsigned> layerWithNonFixedNeurons = Vector<unsigned>( {} );
+    for ( const auto &pair : layers )
+    {
+        unsigned layerIndex = pair.first;
+        Layer *layer = pair.second;
+        const Vector<unsigned> nonFixedNeurons = getNonFixedNeurons( layer );
+        if ( nonFixedNeurons.size() > 0 )
+        {
+            layerWithNonFixedNeurons.append( layerIndex );
+        }
+    }
+    const Vector<unsigned> layerList = Vector<unsigned>( layerWithNonFixedNeurons );
+    return layerList;
+}
+
+const Vector<unsigned> NetworkLevelReasoner::getNonFixedNeurons( Layer *layer ) const
+{
+    Vector<unsigned> nonFixedNeurons = Vector<unsigned>( {} );
+    unsigned size = layer->getSize();
+    for ( unsigned i = 0; i < size; ++i )
+    {
+        if ( isNeuronNonFixed( layer, i ) )
+        {
+            nonFixedNeurons.append( i );
+        }
+    }
+    const Vector<unsigned> neuronList = Vector<unsigned>( nonFixedNeurons );
+    return neuronList;
+}
+
+bool NetworkLevelReasoner::isNeuronNonFixed( Layer *layer, unsigned neuron ) const
+{
+    if ( layer->neuronEliminated( neuron ) )
+    {
+        return false;
+    }
+
+    bool nonFixed = false;
+    switch ( layer->getLayerType() )
+    {
+    case Layer::RELU:
+    case Layer::LEAKY_RELU:
+    {
+        double lb = layer->getLb( neuron );
+        double ub = layer->getUb( neuron );
+        nonFixed = !FloatUtils::isPositive( lb ) && !FloatUtils::isZero( ub );
+        break;
+    }
+    case Layer::SIGN:
+    {
+        double lb = layer->getLb( neuron );
+        double ub = layer->getUb( neuron );
+        nonFixed = FloatUtils::isNegative( lb ) && !FloatUtils::isNegative( ub );
+        break;
+    }
+    case Layer::ABSOLUTE_VALUE:
+    {
+        NeuronIndex sourceIndex = *layer->getActivationSources( neuron ).begin();
+        const Layer *sourceLayer = getLayer( sourceIndex._layer );
+        double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+        double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+        nonFixed = sourceLb < 0 && sourceUb > 0;
+        break;
+    }
+    case Layer::SIGMOID:
+    {
+        NeuronIndex sourceIndex = *layer->getActivationSources( neuron ).begin();
+        const Layer *sourceLayer = getLayer( sourceIndex._layer );
+        double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+        double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+        nonFixed = !FloatUtils::areEqual( sourceLb, sourceUb );
+        break;
+    }
+    case Layer::ROUND:
+    {
+        NeuronIndex sourceIndex = *layer->getActivationSources( neuron ).begin();
+        const Layer *sourceLayer = getLayer( sourceIndex._layer );
+        double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+        double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+        nonFixed =
+            !FloatUtils::areEqual( FloatUtils::round( sourceUb ), FloatUtils::round( sourceLb ) );
+        break;
+    }
+    case Layer::MAX:
+    {
+        List<NeuronIndex> sources = layer->getActivationSources( neuron );
+        const Layer *sourceLayer = getLayer( sources.begin()->_layer );
+        NeuronIndex indexOfMaxLowerBound = *( sources.begin() );
+        double maxLowerBound = FloatUtils::negativeInfinity();
+        double maxUpperBound = FloatUtils::negativeInfinity();
+
+        Map<NeuronIndex, double> sourceUbs;
+        for ( const auto &sourceIndex : sources )
+        {
+            unsigned sourceNeuron = sourceIndex._neuron;
+            double sourceLb = sourceLayer->getLb( sourceNeuron );
+            double sourceUb = sourceLayer->getUb( sourceNeuron );
+            sourceUbs[sourceIndex] = sourceUb;
+            if ( maxLowerBound < sourceLb )
+            {
+                indexOfMaxLowerBound = sourceIndex;
+                maxLowerBound = sourceLb;
+            }
+            if ( maxUpperBound < sourceUb )
+            {
+                maxUpperBound = sourceUb;
+            }
+        }
+
+        bool phaseFixed = true;
+        for ( const auto &sourceIndex : sources )
+        {
+            if ( sourceIndex != indexOfMaxLowerBound &&
+                 FloatUtils::gt( sourceUbs[sourceIndex], maxLowerBound ) )
+            {
+                phaseFixed = false;
+                break;
+            }
+        }
+        nonFixed = !phaseFixed;
+        break;
+    }
+    case Layer::SOFTMAX:
+    {
+        List<NeuronIndex> sources = layer->getActivationSources( neuron );
+        const Layer *sourceLayer = getLayer( sources.begin()->_layer );
+        Vector<double> sourceLbs;
+        Vector<double> sourceUbs;
+        Set<unsigned> handledInputNeurons;
+        for ( const auto &sourceIndex : sources )
+        {
+            unsigned sourceNeuron = sourceIndex._neuron;
+            double sourceLb = sourceLayer->getLb( sourceNeuron );
+            double sourceUb = sourceLayer->getUb( sourceNeuron );
+            sourceLbs.append( sourceLb - GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+            sourceUbs.append( sourceUb + GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+        }
+
+        unsigned index = 0;
+        for ( const auto &sourceIndex : sources )
+        {
+            if ( handledInputNeurons.exists( sourceIndex._neuron ) )
+                ++index;
+            else
+            {
+                handledInputNeurons.insert( sourceIndex._neuron );
+                break;
+            }
+        }
+
+        double lb = std::max( layer->getLb( neuron ),
+                              Layer::linearLowerBound( sourceLbs, sourceUbs, index ) );
+        double ub = std::max( layer->getUb( neuron ),
+                              Layer::linearUpperBound( sourceLbs, sourceUbs, index ) );
+        nonFixed = !FloatUtils::areEqual( lb, ub );
+        break;
+    }
+    case Layer::BILINEAR:
+    {
+        List<NeuronIndex> sources = layer->getActivationSources( neuron );
+        const Layer *sourceLayer = getLayer( sources.begin()->_layer );
+        bool eitherConstant = false;
+        for ( const auto &sourceIndex : sources )
+        {
+            unsigned sourceNeuron = sourceIndex._neuron;
+            double sourceLb = sourceLayer->getLb( sourceNeuron );
+            double sourceUb = sourceLayer->getUb( sourceNeuron );
+            if ( !sourceLayer->neuronEliminated( sourceNeuron ) )
+            {
+                eitherConstant = true;
+            }
+            if ( FloatUtils::areEqual( sourceLb, sourceUb ) )
+            {
+                eitherConstant = true;
+            }
+        }
+        nonFixed = !eitherConstant;
+        break;
+    }
+    case Layer::WEIGHTED_SUM:
+    case Layer::INPUT:
+    {
+        nonFixed = false;
+        break;
+    }
+    default:
+    {
+        nonFixed = false;
+        break;
+    }
+    }
+    return nonFixed;
+}
+
 unsigned NetworkLevelReasoner::countNonlinearLayers( const Map<unsigned, Layer *> &layers ) const
 {
     unsigned num = 0;
@@ -1764,9 +2072,9 @@ unsigned NetworkLevelReasoner::countNonlinearLayers( const Map<unsigned, Layer *
     return num;
 }
 
-void NetworkLevelReasoner::initializeOutputLayerSymbolicBounds()
+void NetworkLevelReasoner::initializeSymbolicBoundsMaps()
 {
-    freeMemoryForOutputLayerSBTIfNeeded();
+    freeMemoryForSymbolicBoundMapsIfNeeded();
 
     // Temporarily add weighted sum layer to the NLR of the same size of the output layer.
     Layer *outputLayer = _layerIndexToLayer[getNumberOfLayers() - 1];
@@ -1786,16 +2094,21 @@ void NetworkLevelReasoner::initializeOutputLayerSymbolicBounds()
     }
 
     // Populate symbolic bounds maps via DeepPoly.
-    allocateMemoryForOutputLayerSBTIfNeeded();
+    allocateMemoryForSymbolicBoundMapsIfNeeded();
 
     if ( _deepPolyAnalysis == nullptr )
         _deepPolyAnalysis = std::unique_ptr<DeepPolyAnalysis>(
             new DeepPolyAnalysis( this,
                                   true,
+                                  true,
                                   &_outputLayerSymbolicLb,
                                   &_outputLayerSymbolicUb,
                                   &_outputLayerSymbolicLowerBias,
-                                  &_outputLayerSymbolicUpperBias ) );
+                                  &_outputLayerSymbolicUpperBias,
+                                  &_symbolicLbInTermsOfPredecessor,
+                                  &_symbolicUbInTermsOfPredecessor,
+                                  &_symbolicLowerBiasInTermsOfPredecessor,
+                                  &_symbolicUpperBiasInTermsOfPredecessor ) );
     _deepPolyAnalysis->run();
 
     // Remove new weighted sum layer.
@@ -1808,34 +2121,51 @@ void NetworkLevelReasoner::initializeOutputLayerSymbolicBounds()
     }
 }
 
-void NetworkLevelReasoner::allocateMemoryForOutputLayerSBTIfNeeded()
+void NetworkLevelReasoner::allocateMemoryForSymbolicBoundMapsIfNeeded()
 {
     unsigned outputLayerSize = _layerIndexToLayer[getNumberOfLayers() - 1]->getSize();
-
+    unsigned maxLayerSize = getMaxLayerSize();
     for ( const auto &pair : _layerIndexToLayer )
     {
         unsigned layerIndex = pair.first;
         Layer *layer = pair.second;
         unsigned layerSize = layer->getSize();
 
-        double *currentSymbolicLb = new double[layerSize * outputLayerSize];
-        double *currentSymbolicUb = new double[layerSize * outputLayerSize];
-        double *currentSymbolicLowerBias = new double[outputLayerSize];
-        double *currentSymbolicUpperBias = new double[outputLayerSize];
+        double *currentOutputSymbolicLb = new double[layerSize * outputLayerSize];
+        double *currentOutputSymbolicUb = new double[layerSize * outputLayerSize];
+        double *currentOutputSymbolicLowerBias = new double[outputLayerSize];
+        double *currentOutputSymbolicUpperBias = new double[outputLayerSize];
 
-        std::fill_n( currentSymbolicLb, layerSize * outputLayerSize, 0 );
-        std::fill_n( currentSymbolicUb, layerSize * outputLayerSize, 0 );
-        std::fill_n( currentSymbolicLowerBias, outputLayerSize, 0 );
-        std::fill_n( currentSymbolicUpperBias, outputLayerSize, 0 );
+        double *currentPredecessorSymbolicLb = new double[maxLayerSize * layerSize];
+        double *currentPredecessorSymbolicUb = new double[maxLayerSize * layerSize];
+        double *currentPredecessorSymbolicLowerBias = new double[layerSize];
+        double *currentPredecessorSymbolicUpperBias = new double[layerSize];
 
-        _outputLayerSymbolicLb.insert( layerIndex, currentSymbolicLb );
-        _outputLayerSymbolicUb.insert( layerIndex, currentSymbolicUb );
-        _outputLayerSymbolicLowerBias.insert( layerIndex, currentSymbolicLowerBias );
-        _outputLayerSymbolicUpperBias.insert( layerIndex, currentSymbolicUpperBias );
+        std::fill_n( currentOutputSymbolicLb, layerSize * outputLayerSize, 0 );
+        std::fill_n( currentOutputSymbolicUb, layerSize * outputLayerSize, 0 );
+        std::fill_n( currentOutputSymbolicLowerBias, outputLayerSize, 0 );
+        std::fill_n( currentOutputSymbolicUpperBias, outputLayerSize, 0 );
+
+        std::fill_n( currentPredecessorSymbolicLb, maxLayerSize * layerSize, 0 );
+        std::fill_n( currentPredecessorSymbolicUb, maxLayerSize * layerSize, 0 );
+        std::fill_n( currentPredecessorSymbolicLowerBias, layerSize, 0 );
+        std::fill_n( currentPredecessorSymbolicUpperBias, layerSize, 0 );
+
+        _outputLayerSymbolicLb.insert( layerIndex, currentOutputSymbolicLb );
+        _outputLayerSymbolicUb.insert( layerIndex, currentOutputSymbolicUb );
+        _outputLayerSymbolicLowerBias.insert( layerIndex, currentOutputSymbolicLowerBias );
+        _outputLayerSymbolicUpperBias.insert( layerIndex, currentOutputSymbolicUpperBias );
+
+        _symbolicLbInTermsOfPredecessor.insert( layerIndex, currentPredecessorSymbolicLb );
+        _symbolicUbInTermsOfPredecessor.insert( layerIndex, currentPredecessorSymbolicUb );
+        _symbolicLowerBiasInTermsOfPredecessor.insert( layerIndex,
+                                                       currentPredecessorSymbolicLowerBias );
+        _symbolicUpperBiasInTermsOfPredecessor.insert( layerIndex,
+                                                       currentPredecessorSymbolicUpperBias );
     }
 }
 
-void NetworkLevelReasoner::freeMemoryForOutputLayerSBTIfNeeded()
+void NetworkLevelReasoner::freeMemoryForSymbolicBoundMapsIfNeeded()
 {
     for ( auto &pair : _outputLayerSymbolicLb )
     {
@@ -1876,6 +2206,46 @@ void NetworkLevelReasoner::freeMemoryForOutputLayerSBTIfNeeded()
         }
     }
     _outputLayerSymbolicUpperBias.clear();
+
+    for ( auto &pair : _symbolicLbInTermsOfPredecessor )
+    {
+        if ( pair.second )
+        {
+            delete[] pair.second;
+            pair.second = NULL;
+        }
+    }
+    _symbolicLbInTermsOfPredecessor.clear();
+
+    for ( auto &pair : _symbolicUbInTermsOfPredecessor )
+    {
+        if ( pair.second )
+        {
+            delete[] pair.second;
+            pair.second = NULL;
+        }
+    }
+    _symbolicUbInTermsOfPredecessor.clear();
+
+    for ( auto &pair : _symbolicLowerBiasInTermsOfPredecessor )
+    {
+        if ( pair.second )
+        {
+            delete[] pair.second;
+            pair.second = NULL;
+        }
+    }
+    _symbolicLowerBiasInTermsOfPredecessor.clear();
+
+    for ( auto &pair : _symbolicUpperBiasInTermsOfPredecessor )
+    {
+        if ( pair.second )
+        {
+            delete[] pair.second;
+            pair.second = NULL;
+        }
+    }
+    _symbolicUpperBiasInTermsOfPredecessor.clear();
 }
 
 void NetworkLevelReasoner::mergeWSLayers( unsigned secondLayerIndex,

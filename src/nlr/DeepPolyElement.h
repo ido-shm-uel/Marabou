@@ -28,7 +28,7 @@ namespace NLR {
 class DeepPolyElement
 {
 public:
-    DeepPolyElement( bool storeSymbolicBounds = false );
+    DeepPolyElement();
     virtual ~DeepPolyElement(){};
 
     // execute the abstract layer based on the abstract layers topologically
@@ -68,7 +68,9 @@ public:
     double *getSymbolicUpperBias() const;
     double getLowerBound( unsigned index ) const;
     double getUpperBound( unsigned index ) const;
-    void setStoreSymbolicBounds( bool storeSymbolicBounds );
+
+    void setStoreOutputLayerSymbolicBounds( bool storeOutputLayerSymbolicBounds );
+    void setStoreSymbolicBoundsInTermsOfPredecessor( bool storeSymbolicBoundsInTermsOfPredecessor );
 
     void setWorkingMemory( double *work1SymbolicLb,
                            double *work1SymbolicUb,
@@ -77,21 +79,25 @@ public:
                            double *workSymbolicLowerBias,
                            double *workSymbolicUpperBias );
 
-    void
-    setOutputLayerSymbolicBoundsMemory( Map<unsigned, double *> *outputLayerSymbolicLb,
-                                        Map<unsigned, double *> *outputLayerSymbolicUb,
-                                        Map<unsigned, double *> *outputLayerSymbolicLowerBias,
-                                        Map<unsigned, double *> *outputLayerSymbolicUpperBias );
+    void setSymbolicBoundsMemory( Map<unsigned, double *> *outputLayerSymbolicLb,
+                                  Map<unsigned, double *> *outputLayerSymbolicUb,
+                                  Map<unsigned, double *> *outputLayerSymbolicLowerBias,
+                                  Map<unsigned, double *> *outputLayerSymbolicUpperBias,
+                                  Map<unsigned, double *> *symbolicLbInTermsOfPredecessor,
+                                  Map<unsigned, double *> *symbolicUbInTermsOfPredecessor,
+                                  Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor,
+                                  Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor );
 
-    void storeWorkSymbolicBounds( unsigned sourceLayerSize,
-                                  double *work1SymbolicLb,
-                                  double *work1SymbolicUb,
-                                  double *workSymbolicLowerBias,
-                                  double *workSymbolicUpperBias,
-                                  Map<unsigned, double *> &residualLb,
-                                  Map<unsigned, double *> &residualUb,
-                                  Set<unsigned> &residualLayerIndices,
-                                  const Map<unsigned, DeepPolyElement *> &deepPolyElementsBefore );
+    void
+    storeOutputSymbolicBounds( unsigned sourceLayerSize,
+                               double *work1SymbolicLb,
+                               double *work1SymbolicUb,
+                               double *workSymbolicLowerBias,
+                               double *workSymbolicUpperBias,
+                               Map<unsigned, double *> &residualLb,
+                               Map<unsigned, double *> &residualUb,
+                               Set<unsigned> &residualLayerIndices,
+                               const Map<unsigned, DeepPolyElement *> &deepPolyElementsBefore );
 
     double getLowerBoundFromLayer( unsigned index ) const;
     double getUpperBoundFromLayer( unsigned index ) const;
@@ -100,7 +106,8 @@ protected:
     Layer *_layer;
     unsigned _size;
     unsigned _layerIndex;
-    bool _storeSymbolicBounds;
+    bool _storeOutputLayerSymbolicBounds;
+    bool _storeSymbolicBoundsInTermsOfPredecessor;
 
     /*
       Abstract element described in
@@ -125,6 +132,11 @@ protected:
     Map<unsigned, double *> *_outputLayerSymbolicUb;
     Map<unsigned, double *> *_outputLayerSymbolicLowerBias;
     Map<unsigned, double *> *_outputLayerSymbolicUpperBias;
+
+    Map<unsigned, double *> *_symbolicLbInTermsOfPredecessor;
+    Map<unsigned, double *> *_symbolicUbInTermsOfPredecessor;
+    Map<unsigned, double *> *_symbolicLowerBiasInTermsOfPredecessor;
+    Map<unsigned, double *> *_symbolicUpperBiasInTermsOfPredecessor;
 
     void allocateMemory();
     void freeMemoryIfNeeded();

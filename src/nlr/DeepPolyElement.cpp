@@ -17,11 +17,12 @@
 
 namespace NLR {
 
-DeepPolyElement::DeepPolyElement( bool storeSymbolicBounds )
+DeepPolyElement::DeepPolyElement()
     : _layer( NULL )
     , _size( 0 )
     , _layerIndex( 0 )
-    , _storeSymbolicBounds( storeSymbolicBounds )
+    , _storeOutputLayerSymbolicBounds( false )
+    , _storeSymbolicBoundsInTermsOfPredecessor( false )
     , _symbolicLb( NULL )
     , _symbolicUb( NULL )
     , _symbolicLowerBias( NULL )
@@ -93,9 +94,15 @@ double DeepPolyElement::getUpperBound( unsigned index ) const
     return _ub[index];
 }
 
-void DeepPolyElement::setStoreSymbolicBounds( bool storeSymbolicBounds )
+void DeepPolyElement::setStoreOutputLayerSymbolicBounds( bool storeOutputLayerSymbolicBounds )
 {
-    _storeSymbolicBounds = storeSymbolicBounds;
+    _storeOutputLayerSymbolicBounds = storeOutputLayerSymbolicBounds;
+}
+
+void DeepPolyElement::setStoreSymbolicBoundsInTermsOfPredecessor(
+    bool storeSymbolicBoundsInTermsOfPredecessor )
+{
+    _storeSymbolicBoundsInTermsOfPredecessor = storeSymbolicBoundsInTermsOfPredecessor;
 }
 
 double DeepPolyElement::getLowerBoundFromLayer( unsigned index ) const
@@ -162,19 +169,27 @@ void DeepPolyElement::setWorkingMemory( double *work1SymbolicLb,
     _workSymbolicUpperBias = workSymbolicUpperBias;
 }
 
-void DeepPolyElement::setOutputLayerSymbolicBoundsMemory(
+void DeepPolyElement::setSymbolicBoundsMemory(
     Map<unsigned, double *> *outputLayerSymbolicLb,
     Map<unsigned, double *> *outputLayerSymbolicUb,
     Map<unsigned, double *> *outputLayerSymbolicLowerBias,
-    Map<unsigned, double *> *outputLayerSymbolicUpperBias )
+    Map<unsigned, double *> *outputLayerSymbolicUpperBias,
+    Map<unsigned, double *> *symbolicLbInTermsOfPredecessor,
+    Map<unsigned, double *> *symbolicUbInTermsOfPredecessor,
+    Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor,
+    Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor )
 {
     _outputLayerSymbolicLb = outputLayerSymbolicLb;
     _outputLayerSymbolicUb = outputLayerSymbolicUb;
     _outputLayerSymbolicLowerBias = outputLayerSymbolicLowerBias;
     _outputLayerSymbolicUpperBias = outputLayerSymbolicUpperBias;
+    _symbolicLbInTermsOfPredecessor = symbolicLbInTermsOfPredecessor;
+    _symbolicUbInTermsOfPredecessor = symbolicUbInTermsOfPredecessor;
+    _symbolicLowerBiasInTermsOfPredecessor = symbolicLowerBiasInTermsOfPredecessor;
+    _symbolicUpperBiasInTermsOfPredecessor = symbolicUpperBiasInTermsOfPredecessor;
 }
 
-void DeepPolyElement::storeWorkSymbolicBounds(
+void DeepPolyElement::storeOutputSymbolicBounds(
     unsigned sourceLayerSize,
     double *work1SymbolicLb,
     double *work1SymbolicUb,

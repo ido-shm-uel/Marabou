@@ -94,7 +94,29 @@ void DeepPolyAbsoluteValueElement::execute(
                       _symbolicUpperBias[i] ) );
         log( Stringf( "Neuron%u LB: %f, UB: %f", i, _lb[i], _ub[i] ) );
     }
+
+    if ( _storeSymbolicBoundsInTermsOfPredecessor )
+    {
+        storePredecessorSymbolicBounds();
+    }
+
     log( "Executing - done" );
+}
+
+void DeepPolyAbsoluteValueElement::storePredecessorSymbolicBounds()
+{
+    double *currentSymbolicLb = ( *_symbolicLbInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicUb = ( *_symbolicUbInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicLowerBias = ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex];
+    double *currentSymbolicUpperBias = ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex];
+
+    for ( unsigned i = 0; i < _size; ++i )
+    {
+        currentSymbolicLb[i * _size] = _symbolicLb[i];
+        currentSymbolicUb[i * _size] = _symbolicUb[i];
+        currentSymbolicLowerBias[i] = _symbolicLowerBias[i];
+        currentSymbolicUpperBias[i] = _symbolicUpperBias[i];
+    }
 }
 
 void DeepPolyAbsoluteValueElement::symbolicBoundInTermsOfPredecessor(
