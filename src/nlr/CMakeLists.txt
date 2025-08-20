@@ -21,7 +21,7 @@ network_level_reasoner_add_unit_test(ParallelSolver)
 
 if (${ENABLE_GUROBI})
     network_level_reasoner_add_unit_test(LPRelaxation)
-    network_level_reasoner_add_unit_test(PMNR)
+    network_level_reasoner_add_unit_test(PMNRSelection)
 endif()
 
 if (${BUILD_PYTHON})

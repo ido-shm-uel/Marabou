@@ -39,20 +39,25 @@
 
 namespace NLR {
 
-DeepPolyAnalysis::DeepPolyAnalysis( LayerOwner *layerOwner,
-                                    bool storeOutputLayerSymbolicBounds,
-                                    bool storeSymbolicBoundsInTermsOfPredecessor,
-                                    Map<unsigned, double *> *outputLayerSymbolicLb,
-                                    Map<unsigned, double *> *outputLayerSymbolicUb,
-                                    Map<unsigned, double *> *outputLayerSymbolicLowerBias,
-                                    Map<unsigned, double *> *outputLayerSymbolicUpperBias,
-                                    Map<unsigned, double *> *symbolicLbInTermsOfPredecessor,
-                                    Map<unsigned, double *> *symbolicUbInTermsOfPredecessor,
-                                    Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor,
-                                    Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor )
+DeepPolyAnalysis::DeepPolyAnalysis(
+    LayerOwner *layerOwner,
+    bool storeOutputLayerSymbolicBounds,
+    bool storeSymbolicBoundsInTermsOfPredecessor,
+    bool useParameterisedSBT,
+    Map<unsigned, Vector<double>> *layerIndicesToParameters,
+    Map<unsigned, Vector<double>> *outputLayerSymbolicLb,
+    Map<unsigned, Vector<double>> *outputLayerSymbolicUb,
+    Map<unsigned, Vector<double>> *outputLayerSymbolicLowerBias,
+    Map<unsigned, Vector<double>> *outputLayerSymbolicUpperBias,
+    Map<unsigned, Vector<double>> *symbolicLbInTermsOfPredecessor,
+    Map<unsigned, Vector<double>> *symbolicUbInTermsOfPredecessor,
+    Map<unsigned, Vector<double>> *symbolicLowerBiasInTermsOfPredecessor,
+    Map<unsigned, Vector<double>> *symbolicUpperBiasInTermsOfPredecessor )
     : _layerOwner( layerOwner )
     , _storeOutputLayerSymbolicBounds( storeOutputLayerSymbolicBounds )
     , _storeSymbolicBoundsInTermsOfPredecessor( storeSymbolicBoundsInTermsOfPredecessor )
+    , _useParameterisedSBT( useParameterisedSBT )
+    , _layerIndicesToParameters( layerIndicesToParameters )
     , _work1SymbolicLb( NULL )
     , _work1SymbolicUb( NULL )
     , _work2SymbolicLb( NULL )
@@ -260,12 +265,18 @@ DeepPolyElement *DeepPolyAnalysis::createDeepPolyElement( Layer *layer )
         throw NLRError( NLRError::LAYER_TYPE_NOT_SUPPORTED,
                         Stringf( "Layer %u not yet supported", layer->getLayerType() ).ascii() );
 
+    Map<unsigned, Layer *> _layerIndexToLayer = _layerOwner->getLayerIndexToLayer();
+    Layer *outputLayer = _layerIndexToLayer[_layerOwner->getNumberOfLayers() - 1];
+    unsigned outputLayerSize = outputLayer->getSize();
+    deepPolyElement->setOutputLayerSize( outputLayerSize );
     deepPolyElement->setStoreSymbolicBoundsInTermsOfPredecessor(
         _storeSymbolicBoundsInTermsOfPredecessor );
     if ( layer->getLayerIndex() == _layerOwner->getNumberOfLayers() - 1 )
     {
         deepPolyElement->setStoreOutputLayerSymbolicBounds( _storeOutputLayerSymbolicBounds );
     }
+    deepPolyElement->setUseParameterisedSBT( _useParameterisedSBT );
+    deepPolyElement->setLayerIndicesToParameters( _layerIndicesToParameters );
     deepPolyElement->setSymbolicBoundsMemory( _outputLayerSymbolicLb,
                                               _outputLayerSymbolicUb,
                                               _outputLayerSymbolicLowerBias,

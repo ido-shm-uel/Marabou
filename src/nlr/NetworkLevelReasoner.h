@@ -147,7 +147,7 @@ public:
     void MILPTighteningForOneLayer( unsigned targetIndex );
     void iterativePropagation();
 
-    void initializeSymbolicBoundsMaps();
+    void initializeSymbolicBoundsMaps( const Vector<double> &coeffs = Vector<double>( {} ) );
 
     // Return optimizable parameters which minimize parameterised SBT bounds' volume.
     const Vector<double> OptimalParameterisedSymbolicBoundTightening();
@@ -155,12 +155,15 @@ public:
     // Optimize biases of generated parameterised polygonal tightenings.
     const Vector<PolygonalTightening> OptimizeParameterisedPolygonalTightening();
 
+    // Get total number of optimizable parameters for parameterised SBT relaxation.
+    unsigned getNumberOfParameters() const;
+
     void receiveTighterBound( Tightening tightening );
     void getConstraintTightenings( List<Tightening> &tightenings );
     void clearConstraintTightenings();
 
-    void receivePolygonalTighterBound( PolygonalTightening polygonal_tightening );
-    void getConstraintPolygonalTightenings( List<PolygonalTightening> &polygonal_tightenings );
+    void receivePolygonalTighterBound( PolygonalTightening polygonalTightening );
+    void getConstraintPolygonalTightenings( List<PolygonalTightening> &polygonalTightening );
     void clearConstraintPolygonalTightenings();
 
     /*
@@ -207,15 +210,18 @@ public:
     */
     double getPreviousBias( const ReluConstraint *reluConstraint ) const;
 
-    const double *getOutputLayerSymbolicLb( unsigned layerIndex ) const;
-    const double *getOutputLayerSymbolicUb( unsigned layerIndex ) const;
-    const double *getOutputLayerSymbolicLowerBias( unsigned layerIndex ) const;
-    const double *getOutputLayerSymbolicUpperBias( unsigned layerIndex ) const;
+    Vector<double> getOutputLayerSymbolicLb( unsigned layerIndex ) const;
+    Vector<double> getOutputLayerSymbolicUb( unsigned layerIndex ) const;
+    Vector<double> getOutputLayerSymbolicLowerBias( unsigned layerIndex ) const;
+    Vector<double> getOutputLayerSymbolicUpperBias( unsigned layerIndex ) const;
 
-    const double *getSymbolicLbInTermsOfPredecessor( unsigned layerIndex ) const;
-    const double *getSymbolicUbInTermsOfPredecessor( unsigned layerIndex ) const;
-    const double *getSymbolicLowerBiasInTermsOfPredecessor( unsigned layerIndex ) const;
-    const double *getSymbolicUpperBiasInTermsOfPredecessor( unsigned layerIndex ) const;
+    Vector<double> getSymbolicLbInTermsOfPredecessor( unsigned layerIndex ) const;
+    Vector<double> getSymbolicUbInTermsOfPredecessor( unsigned layerIndex ) const;
+    Vector<double> getSymbolicLowerBiasInTermsOfPredecessor( unsigned layerIndex ) const;
+    Vector<double> getSymbolicUpperBiasInTermsOfPredecessor( unsigned layerIndex ) const;
+
+    Map<NeuronIndex, double> getBBPSBranchingPoint( NeuronIndex index ) const;
+    double getBBPSScore( NeuronIndex index ) const;
 
     /*
       Finds logically consecutive WS layers and merges them, in order
@@ -251,10 +257,6 @@ private:
 
     void freeMemoryIfNeeded();
 
-    // Manage memory for symbolic bounds maps.
-    void allocateMemoryForSymbolicBoundMapsIfNeeded();
-    void freeMemoryForSymbolicBoundMapsIfNeeded();
-
     List<PiecewiseLinearConstraint *> _constraintsInTopologicalOrder;
 
     // Map each neuron to a linear expression representing its weighted sum
@@ -285,33 +287,34 @@ private:
                              unsigned outputDimension );
     void reduceLayerIndex( unsigned layer, unsigned startIndex );
 
-    void optimizeBoundsWithPreimageApproximation( Map<unsigned, Layer *> &layers,
-                                                  LPFormulator &lpFormulator );
+    void optimizeBoundsWithPreimageApproximation( LPFormulator &lpFormulator );
 
     // Estimate Volume of parameterised symbolic bound tightening.
-    double EstimateVolume( const Map<unsigned, Layer *> &layers, const Vector<double> &coeffs );
+    double EstimateVolume( const Vector<double> &coeffs );
 
-    void optimizeBoundsWithPMNR( Map<unsigned, Layer *> &layers, LPFormulator &lpFormulator );
+    void optimizeBoundsWithPMNR( LPFormulator &lpFormulator );
 
     // Optimize biases of generated parameterised polygonal tightenings.
     double
-    OptimizeSingleParameterisedPolygonalTightening( const Map<unsigned, Layer *> &layers,
-                                                    PolygonalTightening &tightening,
+    OptimizeSingleParameterisedPolygonalTightening( PolygonalTightening &tightening,
                                                     Vector<PolygonalTightening> &prevTightenings );
 
     // Get current lower bound for selected parameterised polygonal tightenings' biases.
     double
-    getParameterisdPolygonalTighteningLowerBound( const Map<unsigned, Layer *> &layers,
-                                                  const Vector<double> &coeffs,
+    getParameterisdPolygonalTighteningLowerBound( const Vector<double> &coeffs,
                                                   const Vector<double> &gamma,
                                                   PolygonalTightening &tightening,
                                                   Vector<PolygonalTightening> &prevTightenings );
 
-    const Vector<PolygonalTightening>
-    generatePolygonalTightenings( const Map<unsigned, Layer *> &layers );
+    const Vector<PolygonalTightening> generatePolygonalTightenings();
+    const Vector<PolygonalTightening> generatePolygonalTighteningsForPMNR();
+    const Vector<PolygonalTightening> generatePolygonalTighteningsForInvprop();
 
     // Heuristically select neurons and polygonal tightenings for PMNR.
-    const List<NeuronIndex> selectConstraints( const Map<unsigned, Layer *> &layers );
+    const Vector<NeuronIndex> selectConstraints();
+    const Vector<NeuronIndex> selectConstraintsForPMNRRandom();
+    const Vector<NeuronIndex> selectConstraintsForPMNRGradient();
+    const Vector<NeuronIndex> selectConstraintsForPMNRBBPS();
 
     // Return difference between given point and upper and lower bounds determined by parameterised
     // SBT relaxation.
@@ -319,30 +322,20 @@ private:
                                             Map<unsigned, double> &point,
                                             unsigned i ) const;
 
-    double getBranchingPoint( Layer *layer, unsigned neuron ) const;
-
     // Get map containing vector of optimizable parameters for parameterised SBT relaxation for
     // every layer index.
     const Map<unsigned, Vector<double>>
-    getParametersForLayers( const Map<unsigned, Layer *> &layers,
-                            const Vector<double> &coeffs ) const;
-
-    // Get total number of optimizable parameters for parameterised SBT relaxation.
-    unsigned getNumberOfParameters( const Map<unsigned, Layer *> &layers ) const;
+    getParametersForLayers( const Vector<double> &coeffs ) const;
 
     // Get number of optimizable parameters for parameterised SBT relaxation per layer type.
     unsigned getNumberOfParametersPerType( Layer::Type t ) const;
 
     // Get all indices of active non-weighted sum layers for INVPROP.
-    const Vector<unsigned>
-    getLayersWithNonFixedNeurons( const Map<unsigned, Layer *> &layers ) const;
+    const Vector<unsigned> getLayersWithNonFixedNeurons() const;
 
     const Vector<unsigned> getNonFixedNeurons( Layer *layer ) const;
 
     bool isNeuronNonFixed( Layer *layer, unsigned neuron ) const;
-
-    // Get total number of non-weighted sum layers for INVPROP.
-    unsigned countNonlinearLayers( const Map<unsigned, Layer *> &layers ) const;
 
     /*
       Store previous biases for each ReLU neuron in a map for getPreviousBias()
@@ -351,6 +344,10 @@ private:
     Map<const ReluConstraint *, double> _previousBiases;
     void initializePreviousBiasMap();
 
+    void initializeBBPSMaps();
+
+    Map<NeuronIndex, double> getBranchingPoint( Layer *layer, unsigned neuron ) const;
+
     /*
       If the NLR is manipulated manually in order to generate a new
       input query, this method can be used to assign variable indices
@@ -358,15 +355,18 @@ private:
     */
     void reindexNeurons();
 
-    Map<unsigned, double *> _outputLayerSymbolicLb;
-    Map<unsigned, double *> _outputLayerSymbolicUb;
-    Map<unsigned, double *> _outputLayerSymbolicLowerBias;
-    Map<unsigned, double *> _outputLayerSymbolicUpperBias;
+    Map<NeuronIndex, Map<NeuronIndex, double>> _neuronToBBPSBranchingPoints;
+    Map<NeuronIndex, double> _neuronToBBPSScores;
 
-    Map<unsigned, double *> _symbolicLbInTermsOfPredecessor;
-    Map<unsigned, double *> _symbolicUbInTermsOfPredecessor;
-    Map<unsigned, double *> _symbolicLowerBiasInTermsOfPredecessor;
-    Map<unsigned, double *> _symbolicUpperBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> _outputLayerSymbolicLb;
+    Map<unsigned, Vector<double>> _outputLayerSymbolicUb;
+    Map<unsigned, Vector<double>> _outputLayerSymbolicLowerBias;
+    Map<unsigned, Vector<double>> _outputLayerSymbolicUpperBias;
+
+    Map<unsigned, Vector<double>> _symbolicLbInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> _symbolicUbInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> _symbolicLowerBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> _symbolicUpperBiasInTermsOfPredecessor;
 };
 
 } // namespace NLR

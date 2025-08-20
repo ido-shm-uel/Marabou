@@ -78,7 +78,7 @@ const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DEC
 
 const unsigned GlobalConfiguration::INVPROP_MAX_ITERATIONS = 25000;
 const double GlobalConfiguration::INVPROP_STEP_SIZE = 0.0025;
-const double GlobalConfiguration::INVPROP_LEARNING_RATE = 0.025;
+const double GlobalConfiguration::INVPROP_LEARNING_RATE = 0.25;
 const double GlobalConfiguration::INVPROP_WEIGHT_DECAY = 0;
 const double GlobalConfiguration::INVPROP_INITIAL_ALPHA = 0.5;
 const double GlobalConfiguration::INVPROP_INITIAL_GAMMA = 0.025;

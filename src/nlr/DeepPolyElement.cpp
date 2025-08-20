@@ -23,6 +23,9 @@ DeepPolyElement::DeepPolyElement()
     , _layerIndex( 0 )
     , _storeOutputLayerSymbolicBounds( false )
     , _storeSymbolicBoundsInTermsOfPredecessor( false )
+    , _useParameterisedSBT( false )
+    , _layerIndicesToParameters( NULL )
+    , _outputLayerSize( 0 )
     , _symbolicLb( NULL )
     , _symbolicUb( NULL )
     , _symbolicLowerBias( NULL )
@@ -105,6 +108,22 @@ void DeepPolyElement::setStoreSymbolicBoundsInTermsOfPredecessor(
     _storeSymbolicBoundsInTermsOfPredecessor = storeSymbolicBoundsInTermsOfPredecessor;
 }
 
+void DeepPolyElement::setUseParameterisedSBT( bool useParameterisedSBT )
+{
+    _useParameterisedSBT = useParameterisedSBT;
+}
+
+void DeepPolyElement::setLayerIndicesToParameters(
+    Map<unsigned, Vector<double>> *layerIndicesToParameters )
+{
+    _layerIndicesToParameters = layerIndicesToParameters;
+}
+
+void DeepPolyElement::setOutputLayerSize( unsigned outputLayerSize )
+{
+    _outputLayerSize = outputLayerSize;
+}
+
 double DeepPolyElement::getLowerBoundFromLayer( unsigned index ) const
 {
     ASSERT( index < getSize() );
@@ -170,14 +189,14 @@ void DeepPolyElement::setWorkingMemory( double *work1SymbolicLb,
 }
 
 void DeepPolyElement::setSymbolicBoundsMemory(
-    Map<unsigned, double *> *outputLayerSymbolicLb,
-    Map<unsigned, double *> *outputLayerSymbolicUb,
-    Map<unsigned, double *> *outputLayerSymbolicLowerBias,
-    Map<unsigned, double *> *outputLayerSymbolicUpperBias,
-    Map<unsigned, double *> *symbolicLbInTermsOfPredecessor,
-    Map<unsigned, double *> *symbolicUbInTermsOfPredecessor,
-    Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor,
-    Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor )
+    Map<unsigned, Vector<double>> *outputLayerSymbolicLb,
+    Map<unsigned, Vector<double>> *outputLayerSymbolicUb,
+    Map<unsigned, Vector<double>> *outputLayerSymbolicLowerBias,
+    Map<unsigned, Vector<double>> *outputLayerSymbolicUpperBias,
+    Map<unsigned, Vector<double>> *symbolicLbInTermsOfPredecessor,
+    Map<unsigned, Vector<double>> *symbolicUbInTermsOfPredecessor,
+    Map<unsigned, Vector<double>> *symbolicLowerBiasInTermsOfPredecessor,
+    Map<unsigned, Vector<double>> *symbolicUpperBiasInTermsOfPredecessor )
 {
     _outputLayerSymbolicLb = outputLayerSymbolicLb;
     _outputLayerSymbolicUb = outputLayerSymbolicUb;
@@ -190,7 +209,6 @@ void DeepPolyElement::setSymbolicBoundsMemory(
 }
 
 void DeepPolyElement::storeOutputSymbolicBounds(
-    unsigned sourceLayerSize,
     double *work1SymbolicLb,
     double *work1SymbolicUb,
     double *workSymbolicLowerBias,
@@ -200,10 +218,28 @@ void DeepPolyElement::storeOutputSymbolicBounds(
     Set<unsigned> &residualLayerIndices,
     const Map<unsigned, DeepPolyElement *> &deepPolyElementsBefore )
 {
-    double *workSymbolicLowerBias2 = new double[_size];
-    double *workSymbolicUpperBias2 = new double[_size];
-    memcpy( workSymbolicLowerBias2, workSymbolicLowerBias, _size * sizeof( double ) );
-    memcpy( workSymbolicUpperBias2, workSymbolicUpperBias, _size * sizeof( double ) );
+    for ( unsigned i = 0; i < _size; ++i )
+    {
+        if ( _layer->neuronEliminated( i ) )
+        {
+            double value = _layer->getEliminatedNeuronValue( i );
+            for ( unsigned j = 0; j < _outputLayerSize; ++j )
+            {
+                workSymbolicLowerBias[i] += work1SymbolicLb[i * _size + j] * value;
+                workSymbolicUpperBias[i] += work1SymbolicUb[i * _size + j] * value;
+                work1SymbolicLb[i * _size + j] = 0;
+                work1SymbolicUb[i * _size + j] = 0;
+            }
+        }
+    }
+
+    Vector<double> symbolicLowerBiasConcretizedResiduals( _outputLayerSize, 0 );
+    Vector<double> symbolicUpperBiasConcretizedResiduals( _outputLayerSize, 0 );
+    for ( unsigned i = 0; i < _outputLayerSize; ++i )
+    {
+        symbolicLowerBiasConcretizedResiduals[i] = workSymbolicLowerBias[i];
+        symbolicUpperBiasConcretizedResiduals[i] = workSymbolicUpperBias[i];
+    }
 
     for ( const auto &residualLayerIndex : residualLayerIndices )
     {
@@ -219,52 +255,45 @@ void DeepPolyElement::storeOutputSymbolicBounds(
             double sourceUb = residualElement->getUpperBoundFromLayer( i ) +
                               GlobalConfiguration::SYMBOLIC_TIGHTENING_ROUNDING_CONSTANT;
 
-            for ( unsigned j = 0; j < _size; ++j )
+            for ( unsigned j = 0; j < _outputLayerSize; ++j )
             {
                 // Compute lower bound
                 double weight = currentResidualLb[i * _size + j];
                 if ( weight >= 0 )
                 {
-                    workSymbolicLowerBias2[j] += ( weight * sourceLb );
+                    symbolicLowerBiasConcretizedResiduals[j] += ( weight * sourceLb );
                 }
                 else
                 {
-                    workSymbolicLowerBias2[j] += ( weight * sourceUb );
+                    symbolicLowerBiasConcretizedResiduals[j] += ( weight * sourceUb );
                 }
 
                 // Compute upper bound
                 weight = currentResidualUb[i * _size + j];
                 if ( weight >= 0 )
                 {
-                    workSymbolicUpperBias2[j] += ( weight * sourceUb );
+                    symbolicUpperBiasConcretizedResiduals[j] += ( weight * sourceUb );
                 }
                 else
                 {
-                    workSymbolicUpperBias2[j] += ( weight * sourceLb );
+                    symbolicUpperBiasConcretizedResiduals[j] += ( weight * sourceLb );
                 }
             }
         }
     }
 
-    double *currentSymbolicLb = ( *_outputLayerSymbolicLb )[_layerIndex];
-    double *currentSymbolicUb = ( *_outputLayerSymbolicUb )[_layerIndex];
-    double *currentSymbolicLowerBias = ( *_outputLayerSymbolicLowerBias )[_layerIndex];
-    double *currentSymbolicUpperBias = ( *_outputLayerSymbolicUpperBias )[_layerIndex];
-    memcpy( currentSymbolicLb, work1SymbolicLb, _size * sourceLayerSize * sizeof( double ) );
-    memcpy( currentSymbolicUb, work1SymbolicUb, _size * sourceLayerSize * sizeof( double ) );
-    memcpy( currentSymbolicLowerBias, workSymbolicLowerBias2, _size * sizeof( double ) );
-    memcpy( currentSymbolicUpperBias, workSymbolicUpperBias2, _size * sizeof( double ) );
-
-    if ( workSymbolicLowerBias2 )
+    for ( unsigned i = 0; i < _size * _outputLayerSize; ++i )
     {
-        delete[] workSymbolicLowerBias2;
-        workSymbolicLowerBias2 = NULL;
+        ( *_outputLayerSymbolicLb )[_layerIndex][i] = work1SymbolicLb[i];
+        ( *_outputLayerSymbolicUb )[_layerIndex][i] = work1SymbolicUb[i];
     }
 
-    if ( workSymbolicUpperBias2 )
+    for ( unsigned i = 0; i < _outputLayerSize; ++i )
     {
-        delete[] workSymbolicUpperBias2;
-        workSymbolicUpperBias2 = NULL;
+        ( *_outputLayerSymbolicLowerBias )[_layerIndex][i] =
+            symbolicLowerBiasConcretizedResiduals[i];
+        ( *_outputLayerSymbolicUpperBias )[_layerIndex][i] =
+            symbolicUpperBiasConcretizedResiduals[i];
     }
 }
 

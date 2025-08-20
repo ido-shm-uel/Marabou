@@ -105,8 +105,7 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
 
     if ( _storeOutputLayerSymbolicBounds )
     {
-        precedingElement->storeOutputSymbolicBounds( sourceLayerSize,
-                                                     _work1SymbolicLb,
+        precedingElement->storeOutputSymbolicBounds( _work1SymbolicLb,
                                                      _work1SymbolicUb,
                                                      _workSymbolicLowerBias,
                                                      _workSymbolicUpperBias,
@@ -246,8 +245,7 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
 
         if ( _storeOutputLayerSymbolicBounds )
         {
-            precedingElement->storeOutputSymbolicBounds( currentElement->getSize(),
-                                                         _work1SymbolicLb,
+            precedingElement->storeOutputSymbolicBounds( _work1SymbolicLb,
                                                          _work1SymbolicUb,
                                                          _workSymbolicLowerBias,
                                                          _workSymbolicUpperBias,

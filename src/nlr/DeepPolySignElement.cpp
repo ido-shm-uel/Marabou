@@ -46,47 +46,103 @@ void DeepPolySignElement::execute( const Map<unsigned, DeepPolyElement *> &deepP
         double sourceLb = predecessor->getLowerBound( sourceIndex._neuron );
         double sourceUb = predecessor->getUpperBound( sourceIndex._neuron );
 
-        if ( !FloatUtils::isNegative( sourceLb ) )
+        if ( !_useParameterisedSBT )
         {
-            // Phase positive
-            // Symbolic bound: 1 <= x_f <= 1
-            // Concrete bound: 1 <= x_f <= 1
-            _symbolicUb[i] = 0;
-            _symbolicUpperBias[i] = 1;
-            _ub[i] = 1;
+            if ( !FloatUtils::isNegative( sourceLb ) )
+            {
+                // Phase positive
+                // Symbolic bound: 1 <= x_f <= 1
+                // Concrete bound: 1 <= x_f <= 1
+                _symbolicUb[i] = 0;
+                _symbolicUpperBias[i] = 1;
+                _ub[i] = 1;
 
-            _symbolicLb[i] = 0;
-            _symbolicLowerBias[i] = 1;
-            _lb[i] = 1;
-        }
-        else if ( FloatUtils::isNegative( sourceUb ) )
-        {
-            // Phase negative
-            // Symbolic bound: -1 <= x_f <= -1
-            // Concrete bound: -1 <= x_f <= -1
-            _symbolicUb[i] = 0;
-            _symbolicUpperBias[i] = -1;
-            _ub[i] = -1;
+                _symbolicLb[i] = 0;
+                _symbolicLowerBias[i] = 1;
+                _lb[i] = 1;
+            }
+            else if ( FloatUtils::isNegative( sourceUb ) )
+            {
+                // Phase negative
+                // Symbolic bound: -1 <= x_f <= -1
+                // Concrete bound: -1 <= x_f <= -1
+                _symbolicUb[i] = 0;
+                _symbolicUpperBias[i] = -1;
+                _ub[i] = -1;
 
-            _symbolicLb[i] = 0;
-            _symbolicLowerBias[i] = -1;
-            _lb[i] = -1;
+                _symbolicLb[i] = 0;
+                _symbolicLowerBias[i] = -1;
+                _lb[i] = -1;
+            }
+            else
+            {
+                // Sign not fixed
+                // Use the relaxation defined in https://arxiv.org/pdf/2011.02948.pdf
+                // Symbolic upper bound: x_f <= -2 / l * x_b + 1
+                // Concrete upper bound: x_f <= 1
+                _symbolicUb[i] = -2 / sourceLb;
+                _symbolicUpperBias[i] = 1;
+                _ub[i] = 1;
+
+                // Symbolic lower bound: x_f >= (2 / u) * x_b - 1
+                // Concrete lower bound: x_f >= -1
+                _symbolicLb[i] = 2 / sourceUb;
+                _symbolicLowerBias[i] = -1;
+                _lb[i] = -1;
+            }
         }
         else
         {
-            // Sign not fixed
-            // Use the relaxation defined in https://arxiv.org/pdf/2011.02948.pdf
-            // Symbolic upper bound: x_f <= -2 / l * x_b + 1
-            // Concrete upper bound: x_f <= 1
-            _symbolicUb[i] = -2 / sourceLb;
-            _symbolicUpperBias[i] = 1;
-            _ub[i] = 1;
+            Vector<double> coeffs = ( *_layerIndicesToParameters )[_layerIndex];
+            ASSERT( coeffs.size() == 2 );
+            ASSERT( coeffs[0] >= 0 && coeffs[0] <= 1 );
+            ASSERT( coeffs[1] >= 0 && coeffs[1] <= 1 );
+            if ( !FloatUtils::isNegative( sourceLb ) )
+            {
+                // Phase positive
+                // Symbolic bound: 1 <= x_f <= 1
+                // Concrete bound: 1 <= x_f <= 1
+                _symbolicUb[i] = 0;
+                _symbolicUpperBias[i] = 1;
+                _ub[i] = 1;
 
-            // Symbolic lower bound: x_f >= (2 / u) * x_b - 1
-            // Concrete lower bound: x_f >= -1
-            _symbolicLb[i] = 2 / sourceUb;
-            _symbolicLowerBias[i] = -1;
-            _lb[i] = -1;
+                _symbolicLb[i] = 0;
+                _symbolicLowerBias[i] = 1;
+                _lb[i] = 1;
+            }
+            else if ( FloatUtils::isNegative( sourceUb ) )
+            {
+                // Phase negative
+                // Symbolic bound: -1 <= x_f <= -1
+                // Concrete bound: -1 <= x_f <= -1
+                _symbolicUb[i] = 0;
+                _symbolicUpperBias[i] = -1;
+                _ub[i] = -1;
+
+                _symbolicLb[i] = 0;
+                _symbolicLowerBias[i] = -1;
+                _lb[i] = -1;
+            }
+            else
+            {
+                // Sign not fixed
+                // The upper bound's phase is not fixed, use parameterised
+                // parallelogram approximation: y <= - 2 / l * coeffs[0] * x + 1
+                // (varies continuously between y <= 1 and y <= -2 / l * x + 1).
+                // Concrete upper bound: x_f <= 1
+                _symbolicUb[i] = -2.0 / sourceLb * coeffs[0];
+                _symbolicUpperBias[i] = 1;
+                _ub[i] = 1;
+
+                // The lower bound's phase is not fixed, use parameterised
+                // parallelogram approximation: y >= 2 / u * coeffs[1] * x - 1
+                // (varies continuously between y >= -1 and y >= 2 / u * x - 1).
+                // Symbolic lower bound: x_f >= (2 / u) * x_b - 1
+                // Concrete lower bound: x_f >= -1
+                _symbolicLb[i] = 2.0 / sourceUb * coeffs[1];
+                _symbolicLowerBias[i] = -1;
+                _lb[i] = -1;
+            }
         }
         log( Stringf( "Neuron%u LB: %f b + %f, UB: %f b + %f",
                       i,
@@ -107,17 +163,15 @@ void DeepPolySignElement::execute( const Map<unsigned, DeepPolyElement *> &deepP
 
 void DeepPolySignElement::storePredecessorSymbolicBounds()
 {
-    double *currentSymbolicLb = ( *_symbolicLbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUb = ( *_symbolicUbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicLowerBias = ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUpperBias = ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex];
-
     for ( unsigned i = 0; i < _size; ++i )
     {
-        currentSymbolicLb[i * _size] = _symbolicLb[i];
-        currentSymbolicUb[i * _size] = _symbolicUb[i];
-        currentSymbolicLowerBias[i] = _symbolicLowerBias[i];
-        currentSymbolicUpperBias[i] = _symbolicUpperBias[i];
+        NeuronIndex sourceIndex = *( _layer->getActivationSources( i ).begin() );
+        ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * sourceIndex._neuron + i] =
+            _symbolicLb[i];
+        ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * sourceIndex._neuron + i] =
+            _symbolicUb[i];
+        ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicLowerBias[i];
+        ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicUpperBias[i];
     }
 }
 

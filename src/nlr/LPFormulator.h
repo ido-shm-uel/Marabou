@@ -57,7 +57,7 @@ public:
                                     bool backward = false,
                                     const Map<unsigned, Vector<double>> &layerIndicesToParameters =
                                         Map<unsigned, Vector<double>>(),
-                                    const Vector<PolygonalTightening> &polygonal_tightenings =
+                                    const Vector<PolygonalTightening> &polygonalTightenings =
                                         Vector<PolygonalTightening>( {} ) );
     void optimizeBoundsWithPreimageApproximation( Map<unsigned, Layer *> &layers );
     void optimizeBoundsWithInvprop( Map<unsigned, Layer *> &layers );
@@ -84,14 +84,14 @@ public:
                              unsigned lastLayer = UINT_MAX,
                              const Map<unsigned, Vector<double>> &layerIndicesToParameters =
                                  Map<unsigned, Vector<double>>(),
-                             const Vector<PolygonalTightening> &polygonal_tightenings =
+                             const Vector<PolygonalTightening> &polygonalTightenings =
                                  Vector<PolygonalTightening>( {} ) );
     void createLPRelaxationAfter( const Map<unsigned, Layer *> &layers,
                                   GurobiWrapper &gurobi,
                                   unsigned firstLayer,
                                   const Map<unsigned, Vector<double>> &layerIndicesToParameters =
                                       Map<unsigned, Vector<double>>(),
-                                  const Vector<PolygonalTightening> &polygonal_tightenings =
+                                  const Vector<PolygonalTightening> &polygonalTightenings =
                                       Vector<PolygonalTightening>( {} ) );
     double solveLPRelaxation( GurobiWrapper &gurobi,
                               const Map<unsigned, Layer *> &layers,
@@ -149,7 +149,7 @@ private:
         bool backward,
         const Map<unsigned, Vector<double>> &layerIndicesToParameters =
             Map<unsigned, Vector<double>>(),
-        const Vector<PolygonalTightening> &polygonal_tightenings =
+        const Vector<PolygonalTightening> &polygonalTightenings =
             Vector<PolygonalTightening>( {} ) );
 
 
@@ -184,7 +184,7 @@ private:
         const Map<unsigned, Layer *> &layers,
         unsigned firstLayer,
         unsigned lastLayer,
-        const Vector<PolygonalTightening> &polygonal_tightenings );
+        const Vector<PolygonalTightening> &polygonalTightenings );
 
     /*
       Optimize for the min/max value of variableName with respect to the constraints
