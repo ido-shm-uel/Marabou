@@ -208,64 +208,6 @@ public:
         TS_ASSERT_EQUALS( expectedBounds.size(), bounds.size() );
         for ( const auto &bound : expectedBounds )
             TS_ASSERT( existsBound( bounds, bound ) );
-
-
-        // Reset bounds
-        tableau.setLowerBound( 0, -1 );
-        tableau.setUpperBound( 0, 1 );
-        tableau.setLowerBound( 1, -1 );
-        tableau.setUpperBound( 1, 1 );
-
-        double large = 1000000;
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
-        tableau.setLowerBound( 7, -large );
-        tableau.setUpperBound( 7, large );
-        tableau.setLowerBound( 8, -large );
-        tableau.setUpperBound( 8, large );
-        tableau.setLowerBound( 9, -large );
-        tableau.setUpperBound( 9, large );
-        tableau.setLowerBound( 10, -large );
-        tableau.setUpperBound( 10, large );
-        tableau.setLowerBound( 11, -large );
-        tableau.setUpperBound( 11, large );
-
-        // Invoke initializeSymbolicBoundsMaps
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
-
-        List<Tightening> expectedBounds2(
-            { Tightening( 2, -2, Tightening::LB ), Tightening( 2, 2, Tightening::UB ),
-              Tightening( 3, -2, Tightening::LB ), Tightening( 3, 2, Tightening::UB ),
-
-              Tightening( 4, 0, Tightening::LB ),  Tightening( 4, 2, Tightening::UB ),
-              Tightening( 5, 0, Tightening::LB ),  Tightening( 5, 2, Tightening::UB ),
-
-              Tightening( 6, 0, Tightening::LB ),  Tightening( 6, 3, Tightening::UB ),
-              Tightening( 7, -2, Tightening::LB ), Tightening( 7, 2, Tightening::UB ),
-
-              Tightening( 8, 0, Tightening::LB ),  Tightening( 8, 3, Tightening::UB ),
-              Tightening( 9, 0, Tightening::LB ),  Tightening( 9, 2, Tightening::UB ),
-
-              Tightening( 10, 1, Tightening::LB ), Tightening( 10, 5.5, Tightening::UB ),
-              Tightening( 11, 0, Tightening::LB ), Tightening( 11, 2, Tightening::UB )
-
-            } );
-
-        List<Tightening> bounds;
-        TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
-
-        TS_ASSERT_EQUALS( expectedBounds2.size(), bounds.size() );
-        for ( const auto &bound : expectedBounds2 )
-            TS_ASSERT( existsBound( bounds, bound ) );
     }
 
     void populateResidualNetwork1( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )

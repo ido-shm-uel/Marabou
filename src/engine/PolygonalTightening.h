@@ -15,6 +15,7 @@
 #ifndef __PolygonalTightening_h__
 #define __PolygonalTightening_h__
 
+#include "FloatUtils.h"
 #include "Map.h"
 #include "NeuronIndex.h"
 
@@ -88,14 +89,20 @@ public:
 
     void dump() const
     {
-        printf( "PolygonalTightening: x %s %.2lf\n", _type == LB ? ">=" : "<=", _value );
+        printf( "PolygonalTightening: " );
         for ( const auto &pair : _neuronToCoefficient )
         {
-            printf( "NeuronIndex: (layer %u, neuron %u), Coefficient: %.2lf )\n",
+            double coeff = pair.second;
+            if ( FloatUtils::isZero( coeff ) )
+                continue;
+
+            printf( "%s %.2lf neuron%u_%u ",
+                    coeff > 0 ? "+" : "-",
+                    FloatUtils::abs( coeff ),
                     pair.first._layer,
-                    pair.first._neuron,
-                    pair.second );
+                    pair.first._neuron );
         }
+        printf( "%s %.2lf\n", _type == LB ? ">=" : "<=", _value );
     }
 };
 #endif // __PolygonalTightening_h__s

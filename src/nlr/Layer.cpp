@@ -936,23 +936,23 @@ void Layer::computeIntervalArithmeticBoundsForSign()
         double lb = sourceLayer->getLb( sourceIndex._neuron );
         double ub = sourceLayer->getUb( sourceIndex._neuron );
 
-        double new_lb;
-        double new_ub;
+        double newLb;
+        double newUb;
 
         if ( !FloatUtils::isNegative( lb ) )
         {
-            new_lb = 1;
-            new_ub = 1;
+            newLb = 1;
+            newUb = 1;
         }
         else if ( FloatUtils::isNegative( ub ) )
         {
-            new_lb = -1;
-            new_ub = -1;
+            newLb = -1;
+            newUb = -1;
         }
         else
         {
-            new_lb = -1;
-            new_ub = 1;
+            newLb = -1;
+            newUb = 1;
         }
 
         /*
@@ -960,16 +960,16 @@ void Layer::computeIntervalArithmeticBoundsForSign()
           variable. If they are tigheter than what was previously
           known, store them.
         */
-        if ( _lb[i] < new_lb )
+        if ( _lb[i] < newLb )
         {
-            _lb[i] = new_lb;
+            _lb[i] = newLb;
             _layerOwner->receiveTighterBound(
                 Tightening( _neuronToVariable[i], _lb[i], Tightening::LB ) );
         }
 
-        if ( _ub[i] > new_ub )
+        if ( _ub[i] > newUb )
         {
-            _ub[i] = new_ub;
+            _ub[i] = newUb;
             _layerOwner->receiveTighterBound(
                 Tightening( _neuronToVariable[i], _ub[i], Tightening::UB ) );
         }
@@ -4160,57 +4160,65 @@ void Layer::computeParameterisedSymbolicBoundsForBilinear( const Vector<double> 
         }
 
         // Billinear linear relaxation (arXiv:2405.21063v2 [cs.LG])
-        // Lower bound: out >= a_l * x + b_l * y + c_l, where
-        // a_l = alpha1 * l_y + ( 1 - alpha1 ) * u_y
-        // b_l = alpha1 * l_x + ( 1 - alpha1 ) * u_x
-        // c_l = -alpha1 * l_x * l_y - ( 1 - alpha1 ) * u_x * u_y
+        // Lower bound: out >= aLower * x + bLower * y + c_l, where
+        // aLower = alpha1 * l_y + ( 1 - alpha1 ) * u_y
+        // bLower = alpha1 * l_x + ( 1 - alpha1 ) * u_x
+        // cLower = -alpha1 * l_x * l_y - ( 1 - alpha1 ) * u_x * u_y
 
-        // Upper bound: out <= a_u * x + b_u * y + c_u, where
-        // a_u = alpha2 * u_y + ( 1 - alpha2 ) * l_y
-        // b_u = alpha2 * l_x + ( 1 - alpha2 ) * u_x
-        // c_u = -alpha2 * -l_x * u_y - ( 1 - alpha2 ) * u_x * l_y
+        // Upper bound: out <= aUpper * x + bUpper * y + c_u, where
+        // aUpper = alpha2 * u_y + ( 1 - alpha2 ) * l_y
+        // bUpper = alpha2 * l_x + ( 1 - alpha2 ) * u_x
+        // cUpper = -alpha2 * l_x * u_y - ( 1 - alpha2 ) * u_x * l_y
 
-        double a_l = coeffs[0] * sourceLbs[1] + ( 1 - coeffs[0] ) * sourceUbs[1];
-        double a_u = coeffs[1] * sourceUbs[1] + ( 1 - coeffs[1] ) * sourceLbs[1];
-        double b_l = coeffs[0] * sourceLbs[0] + ( 1 - coeffs[0] ) * sourceUbs[0];
-        double b_u = coeffs[1] * sourceLbs[0] + ( 1 - coeffs[1] ) * sourceUbs[0];
+        double aLower = coeffs[0] * sourceLbs[1] + ( 1 - coeffs[0] ) * sourceUbs[1];
+        double aUpper = coeffs[1] * sourceUbs[1] + ( 1 - coeffs[1] ) * sourceLbs[1];
+        double bLower = coeffs[0] * sourceLbs[0] + ( 1 - coeffs[0] ) * sourceUbs[0];
+        double bUpper = coeffs[1] * sourceLbs[0] + ( 1 - coeffs[1] ) * sourceUbs[0];
 
         for ( unsigned j = 0; j < _inputLayerSize; ++j )
         {
-            if ( a_l >= 0 )
+            if ( aLower >= 0 )
             {
-                _symbolicLb[j * _size + i] += a_l * sourceSymbolicLb[j * sourceLayerSize + indexA];
+                _symbolicLb[j * _size + i] +=
+                    aLower * sourceSymbolicLb[j * sourceLayerSize + indexA];
             }
             else
             {
-                _symbolicLb[j * _size + i] += a_l * sourceSymbolicUb[j * sourceLayerSize + indexA];
+                _symbolicLb[j * _size + i] +=
+                    aLower * sourceSymbolicUb[j * sourceLayerSize + indexA];
             }
 
-            if ( a_u >= 0 )
+            if ( aUpper >= 0 )
             {
-                _symbolicUb[j * _size + i] += a_u * sourceSymbolicUb[j * sourceLayerSize + indexA];
+                _symbolicUb[j * _size + i] +=
+                    aUpper * sourceSymbolicUb[j * sourceLayerSize + indexA];
             }
             else
             {
-                _symbolicUb[j * _size + i] += a_u * sourceSymbolicLb[j * sourceLayerSize + indexA];
+                _symbolicUb[j * _size + i] +=
+                    aUpper * sourceSymbolicLb[j * sourceLayerSize + indexA];
             }
 
-            if ( b_l >= 0 )
+            if ( bLower >= 0 )
             {
-                _symbolicLb[j * _size + i] += b_l * sourceSymbolicLb[j * sourceLayerSize + indexB];
+                _symbolicLb[j * _size + i] +=
+                    bLower * sourceSymbolicLb[j * sourceLayerSize + indexB];
             }
             else
             {
-                _symbolicLb[j * _size + i] += b_l * sourceSymbolicUb[j * sourceLayerSize + indexB];
+                _symbolicLb[j * _size + i] +=
+                    bLower * sourceSymbolicUb[j * sourceLayerSize + indexB];
             }
 
-            if ( b_l >= 0 )
+            if ( bLower >= 0 )
             {
-                _symbolicUb[j * _size + i] += b_u * sourceSymbolicUb[j * sourceLayerSize + indexB];
+                _symbolicUb[j * _size + i] +=
+                    bUpper * sourceSymbolicUb[j * sourceLayerSize + indexB];
             }
             else
             {
-                _symbolicUb[j * _size + i] += b_u * sourceSymbolicLb[j * sourceLayerSize + indexB];
+                _symbolicUb[j * _size + i] +=
+                    bUpper * sourceSymbolicLb[j * sourceLayerSize + indexB];
             }
         }
 

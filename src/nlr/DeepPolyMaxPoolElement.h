@@ -34,8 +34,7 @@ public:
 
     void execute( const Map<unsigned, DeepPolyElement *> &deepPolyElementsBefore );
 
-    void storePredecessorSymbolicBounds( const Vector<unsigned> &phaseFixed,
-                                         const Vector<unsigned> &indexOfMaxLowerBound,
+    void storePredecessorSymbolicBounds( const Vector<unsigned> &indexOfMaxLowerBound,
                                          const Vector<double> &maxUpperBound );
 
     void symbolicBoundInTermsOfPredecessor( const double *symbolicLb,

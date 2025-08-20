@@ -110,17 +110,15 @@ void DeepPolySigmoidElement::execute(
 
 void DeepPolySigmoidElement::storePredecessorSymbolicBounds()
 {
-    double *currentSymbolicLb = ( *_symbolicLbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUb = ( *_symbolicUbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicLowerBias = ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUpperBias = ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex];
-
     for ( unsigned i = 0; i < _size; ++i )
     {
-        currentSymbolicLb[i * _size] = _symbolicLb[i];
-        currentSymbolicUb[i * _size] = _symbolicUb[i];
-        currentSymbolicLowerBias[i] = _symbolicLowerBias[i];
-        currentSymbolicUpperBias[i] = _symbolicUpperBias[i];
+        NeuronIndex sourceIndex = *( _layer->getActivationSources( i ).begin() );
+        ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * sourceIndex._neuron + i] =
+            _symbolicLb[i];
+        ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * sourceIndex._neuron + i] =
+            _symbolicUb[i];
+        ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicLowerBias[i];
+        ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicUpperBias[i];
     }
 }
 

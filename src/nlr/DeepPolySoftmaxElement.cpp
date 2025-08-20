@@ -199,14 +199,17 @@ void DeepPolySoftmaxElement::execute(
 
 void DeepPolySoftmaxElement::storePredecessorSymbolicBounds()
 {
-    double *currentSymbolicLb = ( *_symbolicLbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUb = ( *_symbolicUbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicLowerBias = ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUpperBias = ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex];
-    memcpy( currentSymbolicLb, _symbolicLb, _size * _size * sizeof( double ) );
-    memcpy( currentSymbolicUb, _symbolicUb, _size * _size * sizeof( double ) );
-    memcpy( currentSymbolicLowerBias, _symbolicLowerBias, _size * sizeof( double ) );
-    memcpy( currentSymbolicUpperBias, _symbolicUpperBias, _size * sizeof( double ) );
+    for ( unsigned i = 0; i < _size * _size; ++i )
+    {
+        ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][i] = _symbolicLb[i];
+        ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][i] = _symbolicUb[i];
+    }
+
+    for ( unsigned i = 0; i < _size; ++i )
+    {
+        ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicLowerBias[i];
+        ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicUpperBias[i];
+    }
 }
 
 void DeepPolySoftmaxElement::symbolicBoundInTermsOfPredecessor(

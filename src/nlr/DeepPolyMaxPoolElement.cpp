@@ -40,7 +40,6 @@ void DeepPolyMaxPoolElement::execute(
 
     // Update the symbolic and concrete upper- and lower- bounds
     // of each neuron
-    Vector<unsigned> phasesFixed( _size );
     Vector<unsigned> maxLowerBoundIndices( _size );
     Vector<double> maxUpperBounds( _size );
     for ( unsigned i = 0; i < _size; ++i )
@@ -86,7 +85,7 @@ void DeepPolyMaxPoolElement::execute(
             }
         }
 
-        phasesFixed[i] = phaseFixed ? 1 : 0;
+        _phaseFixed[i] = phaseFixed;
         maxLowerBoundIndices[i] = indexOfMaxLowerBound._neuron;
         maxUpperBounds[i] = maxUpperBound;
 
@@ -120,37 +119,35 @@ void DeepPolyMaxPoolElement::execute(
 
     if ( _storeSymbolicBoundsInTermsOfPredecessor )
     {
-        storePredecessorSymbolicBounds( phasesFixed, maxLowerBoundIndices, maxUpperBounds );
+        storePredecessorSymbolicBounds( maxLowerBoundIndices, maxUpperBounds );
     }
 
     log( "Executing - done" );
 }
 
 void DeepPolyMaxPoolElement::storePredecessorSymbolicBounds(
-    const Vector<unsigned> &phaseFixed,
     const Vector<unsigned> &indexOfMaxLowerBound,
     const Vector<double> &maxUpperBound )
 {
-    double *currentSymbolicLb = ( *_symbolicLbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUb = ( *_symbolicUbInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicLowerBias = ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex];
-    double *currentSymbolicUpperBias = ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex];
-
     for ( unsigned i = 0; i < _size; ++i )
     {
-        if ( phaseFixed[i] > 0 )
+        if ( _phaseFixed[i] > 0 )
         {
-            currentSymbolicLb[i * _size + indexOfMaxLowerBound[i]] = 1;
-            currentSymbolicUb[i * _size + indexOfMaxLowerBound[i]] = 1;
-            currentSymbolicLowerBias[i] = 0;
-            currentSymbolicUpperBias[i] = 0;
+            ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
+                1;
+            ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
+                1;
+            ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = 0;
+            ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = 0;
         }
         else
         {
-            currentSymbolicLb[i * _size + indexOfMaxLowerBound[i]] = 1;
-            currentSymbolicUb[i * _size + indexOfMaxLowerBound[i]] = 0;
-            currentSymbolicLowerBias[i] = 0;
-            currentSymbolicUpperBias[i] = maxUpperBound[i];
+            ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
+                1;
+            ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
+                0;
+            ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = 0;
+            ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = maxUpperBound[i];
         }
     }
 }

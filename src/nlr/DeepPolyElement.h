@@ -71,6 +71,9 @@ public:
 
     void setStoreOutputLayerSymbolicBounds( bool storeOutputLayerSymbolicBounds );
     void setStoreSymbolicBoundsInTermsOfPredecessor( bool storeSymbolicBoundsInTermsOfPredecessor );
+    void setUseParameterisedSBT( bool useParameterisedSBT );
+    void setLayerIndicesToParameters( Map<unsigned, Vector<double>> *layerIndicesToParameters );
+    void setOutputLayerSize( unsigned outputLayerSize );
 
     void setWorkingMemory( double *work1SymbolicLb,
                            double *work1SymbolicUb,
@@ -79,18 +82,18 @@ public:
                            double *workSymbolicLowerBias,
                            double *workSymbolicUpperBias );
 
-    void setSymbolicBoundsMemory( Map<unsigned, double *> *outputLayerSymbolicLb,
-                                  Map<unsigned, double *> *outputLayerSymbolicUb,
-                                  Map<unsigned, double *> *outputLayerSymbolicLowerBias,
-                                  Map<unsigned, double *> *outputLayerSymbolicUpperBias,
-                                  Map<unsigned, double *> *symbolicLbInTermsOfPredecessor,
-                                  Map<unsigned, double *> *symbolicUbInTermsOfPredecessor,
-                                  Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor,
-                                  Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor );
+    void
+    setSymbolicBoundsMemory( Map<unsigned, Vector<double>> *outputLayerSymbolicLb,
+                             Map<unsigned, Vector<double>> *outputLayerSymbolicUb,
+                             Map<unsigned, Vector<double>> *outputLayerSymbolicLowerBias,
+                             Map<unsigned, Vector<double>> *outputLayerSymbolicUpperBias,
+                             Map<unsigned, Vector<double>> *symbolicLbInTermsOfPredecessor,
+                             Map<unsigned, Vector<double>> *symbolicUbInTermsOfPredecessor,
+                             Map<unsigned, Vector<double>> *symbolicLowerBiasInTermsOfPredecessor,
+                             Map<unsigned, Vector<double>> *symbolicUpperBiasInTermsOfPredecessor );
 
     void
-    storeOutputSymbolicBounds( unsigned sourceLayerSize,
-                               double *work1SymbolicLb,
+    storeOutputSymbolicBounds( double *work1SymbolicLb,
                                double *work1SymbolicUb,
                                double *workSymbolicLowerBias,
                                double *workSymbolicUpperBias,
@@ -108,6 +111,9 @@ protected:
     unsigned _layerIndex;
     bool _storeOutputLayerSymbolicBounds;
     bool _storeSymbolicBoundsInTermsOfPredecessor;
+    bool _useParameterisedSBT;
+    Map<unsigned, Vector<double>> *_layerIndicesToParameters;
+    unsigned _outputLayerSize;
 
     /*
       Abstract element described in
@@ -128,15 +134,15 @@ protected:
     double *_workSymbolicLowerBias;
     double *_workSymbolicUpperBias;
 
-    Map<unsigned, double *> *_outputLayerSymbolicLb;
-    Map<unsigned, double *> *_outputLayerSymbolicUb;
-    Map<unsigned, double *> *_outputLayerSymbolicLowerBias;
-    Map<unsigned, double *> *_outputLayerSymbolicUpperBias;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicLb;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicUb;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicLowerBias;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicUpperBias;
 
-    Map<unsigned, double *> *_symbolicLbInTermsOfPredecessor;
-    Map<unsigned, double *> *_symbolicUbInTermsOfPredecessor;
-    Map<unsigned, double *> *_symbolicLowerBiasInTermsOfPredecessor;
-    Map<unsigned, double *> *_symbolicUpperBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicLbInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicUbInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicLowerBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicUpperBiasInTermsOfPredecessor;
 
     void allocateMemory();
     void freeMemoryIfNeeded();

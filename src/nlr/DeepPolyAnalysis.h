@@ -31,14 +31,16 @@ public:
     DeepPolyAnalysis( LayerOwner *layerOwner,
                       bool storeOutputLayerSymbolicBounds = false,
                       bool storeSymbolicBoundsInTermsOfPredecessor = false,
-                      Map<unsigned, double *> *outputLayerSymbolicLb = NULL,
-                      Map<unsigned, double *> *outputLayerSymbolicUb = NULL,
-                      Map<unsigned, double *> *outputLayerSymbolicLowerBias = NULL,
-                      Map<unsigned, double *> *outputLayerSymbolicUpperBias = NULL,
-                      Map<unsigned, double *> *symbolicLbInTermsOfPredecessor = NULL,
-                      Map<unsigned, double *> *symbolicUbInTermsOfPredecessor = NULL,
-                      Map<unsigned, double *> *symbolicLowerBiasInTermsOfPredecessor = NULL,
-                      Map<unsigned, double *> *symbolicUpperBiasInTermsOfPredecessor = NULL );
+                      bool useParameterisedSBT = false,
+                      Map<unsigned, Vector<double>> *layerIndicesToParameters = NULL,
+                      Map<unsigned, Vector<double>> *outputLayerSymbolicLb = NULL,
+                      Map<unsigned, Vector<double>> *outputLayerSymbolicUb = NULL,
+                      Map<unsigned, Vector<double>> *outputLayerSymbolicLowerBias = NULL,
+                      Map<unsigned, Vector<double>> *outputLayerSymbolicUpperBias = NULL,
+                      Map<unsigned, Vector<double>> *symbolicLbInTermsOfPredecessor = NULL,
+                      Map<unsigned, Vector<double>> *symbolicUbInTermsOfPredecessor = NULL,
+                      Map<unsigned, Vector<double>> *symbolicLowerBiasInTermsOfPredecessor = NULL,
+                      Map<unsigned, Vector<double>> *symbolicUpperBiasInTermsOfPredecessor = NULL );
     ~DeepPolyAnalysis();
 
     void run();
@@ -47,6 +49,8 @@ private:
     LayerOwner *_layerOwner;
     bool _storeOutputLayerSymbolicBounds;
     bool _storeSymbolicBoundsInTermsOfPredecessor;
+    bool _useParameterisedSBT;
+    Map<unsigned, Vector<double>> *_layerIndicesToParameters;
 
     /*
       Maps layer index to the abstract element
@@ -63,15 +67,15 @@ private:
     double *_workSymbolicLowerBias;
     double *_workSymbolicUpperBias;
 
-    Map<unsigned, double *> *_outputLayerSymbolicLb;
-    Map<unsigned, double *> *_outputLayerSymbolicUb;
-    Map<unsigned, double *> *_outputLayerSymbolicLowerBias;
-    Map<unsigned, double *> *_outputLayerSymbolicUpperBias;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicLb;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicUb;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicLowerBias;
+    Map<unsigned, Vector<double>> *_outputLayerSymbolicUpperBias;
 
-    Map<unsigned, double *> *_symbolicLbInTermsOfPredecessor;
-    Map<unsigned, double *> *_symbolicUbInTermsOfPredecessor;
-    Map<unsigned, double *> *_symbolicLowerBiasInTermsOfPredecessor;
-    Map<unsigned, double *> *_symbolicUpperBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicLbInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicUbInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicLowerBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_symbolicUpperBiasInTermsOfPredecessor;
 
     unsigned _maxLayerSize;
 
