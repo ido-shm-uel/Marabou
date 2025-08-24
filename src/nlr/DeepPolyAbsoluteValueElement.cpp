@@ -95,7 +95,7 @@ void DeepPolyAbsoluteValueElement::execute(
         log( Stringf( "Neuron%u LB: %f, UB: %f", i, _lb[i], _ub[i] ) );
     }
 
-    if ( _storeSymbolicBoundsInTermsOfPredecessor )
+    if ( _storePredecessorSymbolicBounds )
     {
         storePredecessorSymbolicBounds();
     }
@@ -108,12 +108,10 @@ void DeepPolyAbsoluteValueElement::storePredecessorSymbolicBounds()
     for ( unsigned i = 0; i < _size; ++i )
     {
         NeuronIndex sourceIndex = *( _layer->getActivationSources( i ).begin() );
-        ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * sourceIndex._neuron + i] =
-            _symbolicLb[i];
-        ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * sourceIndex._neuron + i] =
-            _symbolicUb[i];
-        ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicLowerBias[i];
-        ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicUpperBias[i];
+        ( *_predecessorSymbolicLb )[_layerIndex][_size * sourceIndex._neuron + i] = _symbolicLb[i];
+        ( *_predecessorSymbolicUb )[_layerIndex][_size * sourceIndex._neuron + i] = _symbolicUb[i];
+        ( *_predecessorSymbolicLowerBias )[_layerIndex][i] = _symbolicLowerBias[i];
+        ( *_predecessorSymbolicUpperBias )[_layerIndex][i] = _symbolicUpperBias[i];
     }
 }
 

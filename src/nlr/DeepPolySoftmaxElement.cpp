@@ -189,7 +189,7 @@ void DeepPolySoftmaxElement::execute(
         }
     }
 
-    if ( _storeSymbolicBoundsInTermsOfPredecessor )
+    if ( _storePredecessorSymbolicBounds )
     {
         storePredecessorSymbolicBounds();
     }
@@ -201,14 +201,14 @@ void DeepPolySoftmaxElement::storePredecessorSymbolicBounds()
 {
     for ( unsigned i = 0; i < _size * _size; ++i )
     {
-        ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][i] = _symbolicLb[i];
-        ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][i] = _symbolicUb[i];
+        ( *_predecessorSymbolicLb )[_layerIndex][i] = _symbolicLb[i];
+        ( *_predecessorSymbolicUb )[_layerIndex][i] = _symbolicUb[i];
     }
 
     for ( unsigned i = 0; i < _size; ++i )
     {
-        ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicLowerBias[i];
-        ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicUpperBias[i];
+        ( *_predecessorSymbolicLowerBias )[_layerIndex][i] = _symbolicLowerBias[i];
+        ( *_predecessorSymbolicUpperBias )[_layerIndex][i] = _symbolicUpperBias[i];
     }
 }
 

@@ -103,7 +103,7 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
                              currentElement,
                              deepPolyElementsBefore );
 
-    if ( _storeOutputLayerSymbolicBounds )
+    if ( _storeOutputSymbolicBounds )
     {
         precedingElement->storeOutputSymbolicBounds( _work1SymbolicLb,
                                                      _work1SymbolicUb,
@@ -243,7 +243,7 @@ void DeepPolyWeightedSumElement::computeBoundWithBackSubstitution(
             std::fill_n( _residualUb[newCurrentIndex], currentMatrixSize, 0 );
         }
 
-        if ( _storeOutputLayerSymbolicBounds )
+        if ( _storeOutputSymbolicBounds )
         {
             precedingElement->storeOutputSymbolicBounds( _work1SymbolicLb,
                                                          _work1SymbolicUb,

@@ -134,7 +134,7 @@ void DeepPolyBilinearElement::execute(
         }
     }
 
-    if ( _storeSymbolicBoundsInTermsOfPredecessor )
+    if ( _storePredecessorSymbolicBounds )
     {
         storePredecessorSymbolicBounds();
     }
@@ -155,16 +155,16 @@ void DeepPolyBilinearElement::storePredecessorSymbolicBounds()
     for ( unsigned i = 0; i < _size; ++i )
     {
         List<NeuronIndex> sources = _layer->getActivationSources( i );
-        ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * sources.begin()->_neuron + i] =
+        ( *_predecessorSymbolicLb )[_layerIndex][_size * sources.begin()->_neuron + i] =
             _symbolicLbA[i];
-        ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * sources.begin()->_neuron + i] =
+        ( *_predecessorSymbolicUb )[_layerIndex][_size * sources.begin()->_neuron + i] =
             _symbolicUbA[i];
-        ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * sources.back()._neuron + i] =
+        ( *_predecessorSymbolicLb )[_layerIndex][_size * sources.back()._neuron + i] =
             _symbolicLbB[i];
-        ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * sources.back()._neuron + i] =
+        ( *_predecessorSymbolicUb )[_layerIndex][_size * sources.back()._neuron + i] =
             _symbolicUbB[i];
-        ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicLowerBias[i];
-        ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = _symbolicUpperBias[i];
+        ( *_predecessorSymbolicLowerBias )[_layerIndex][i] = _symbolicLowerBias[i];
+        ( *_predecessorSymbolicUpperBias )[_layerIndex][i] = _symbolicUpperBias[i];
     }
 }
 

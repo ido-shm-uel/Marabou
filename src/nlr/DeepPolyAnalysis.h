@@ -29,26 +29,26 @@ class DeepPolyAnalysis
 {
 public:
     DeepPolyAnalysis( LayerOwner *layerOwner,
-                      bool storeOutputLayerSymbolicBounds = false,
-                      bool storeSymbolicBoundsInTermsOfPredecessor = false,
+                      bool storeOutputSymbolicBounds = false,
+                      bool storePredecessorSymbolicBounds = false,
                       bool useParameterisedSBT = false,
                       Map<unsigned, Vector<double>> *layerIndicesToParameters = NULL,
-                      Map<unsigned, Vector<double>> *outputLayerSymbolicLb = NULL,
-                      Map<unsigned, Vector<double>> *outputLayerSymbolicUb = NULL,
-                      Map<unsigned, Vector<double>> *outputLayerSymbolicLowerBias = NULL,
-                      Map<unsigned, Vector<double>> *outputLayerSymbolicUpperBias = NULL,
-                      Map<unsigned, Vector<double>> *symbolicLbInTermsOfPredecessor = NULL,
-                      Map<unsigned, Vector<double>> *symbolicUbInTermsOfPredecessor = NULL,
-                      Map<unsigned, Vector<double>> *symbolicLowerBiasInTermsOfPredecessor = NULL,
-                      Map<unsigned, Vector<double>> *symbolicUpperBiasInTermsOfPredecessor = NULL );
+                      Map<unsigned, Vector<double>> *outputSymbolicLb = NULL,
+                      Map<unsigned, Vector<double>> *outputSymbolicUb = NULL,
+                      Map<unsigned, Vector<double>> *outputSymbolicLowerBias = NULL,
+                      Map<unsigned, Vector<double>> *outputSymbolicUpperBias = NULL,
+                      Map<unsigned, Vector<double>> *predecessorSymbolicLb = NULL,
+                      Map<unsigned, Vector<double>> *predecessorSymbolicUb = NULL,
+                      Map<unsigned, Vector<double>> *predecessorSymbolicLowerBias = NULL,
+                      Map<unsigned, Vector<double>> *predecessorSymbolicUpperBias = NULL );
     ~DeepPolyAnalysis();
 
     void run();
 
 private:
     LayerOwner *_layerOwner;
-    bool _storeOutputLayerSymbolicBounds;
-    bool _storeSymbolicBoundsInTermsOfPredecessor;
+    bool _storeOutputSymbolicBounds;
+    bool _storePredecessorSymbolicBounds;
     bool _useParameterisedSBT;
     Map<unsigned, Vector<double>> *_layerIndicesToParameters;
 
@@ -67,15 +67,15 @@ private:
     double *_workSymbolicLowerBias;
     double *_workSymbolicUpperBias;
 
-    Map<unsigned, Vector<double>> *_outputLayerSymbolicLb;
-    Map<unsigned, Vector<double>> *_outputLayerSymbolicUb;
-    Map<unsigned, Vector<double>> *_outputLayerSymbolicLowerBias;
-    Map<unsigned, Vector<double>> *_outputLayerSymbolicUpperBias;
+    Map<unsigned, Vector<double>> *_outputSymbolicLb;
+    Map<unsigned, Vector<double>> *_outputSymbolicUb;
+    Map<unsigned, Vector<double>> *_outputSymbolicLowerBias;
+    Map<unsigned, Vector<double>> *_outputSymbolicUpperBias;
 
-    Map<unsigned, Vector<double>> *_symbolicLbInTermsOfPredecessor;
-    Map<unsigned, Vector<double>> *_symbolicUbInTermsOfPredecessor;
-    Map<unsigned, Vector<double>> *_symbolicLowerBiasInTermsOfPredecessor;
-    Map<unsigned, Vector<double>> *_symbolicUpperBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> *_predecessorSymbolicLb;
+    Map<unsigned, Vector<double>> *_predecessorSymbolicUb;
+    Map<unsigned, Vector<double>> *_predecessorSymbolicLowerBias;
+    Map<unsigned, Vector<double>> *_predecessorSymbolicUpperBias;
 
     unsigned _maxLayerSize;
 

@@ -21,8 +21,8 @@ DeepPolyElement::DeepPolyElement()
     : _layer( NULL )
     , _size( 0 )
     , _layerIndex( 0 )
-    , _storeOutputLayerSymbolicBounds( false )
-    , _storeSymbolicBoundsInTermsOfPredecessor( false )
+    , _storeOutputSymbolicBounds( false )
+    , _storePredecessorSymbolicBounds( false )
     , _useParameterisedSBT( false )
     , _layerIndicesToParameters( NULL )
     , _outputLayerSize( 0 )
@@ -97,15 +97,14 @@ double DeepPolyElement::getUpperBound( unsigned index ) const
     return _ub[index];
 }
 
-void DeepPolyElement::setStoreOutputLayerSymbolicBounds( bool storeOutputLayerSymbolicBounds )
+void DeepPolyElement::setStoreOutputSymbolicBounds( bool storeOutputSymbolicBounds )
 {
-    _storeOutputLayerSymbolicBounds = storeOutputLayerSymbolicBounds;
+    _storeOutputSymbolicBounds = storeOutputSymbolicBounds;
 }
 
-void DeepPolyElement::setStoreSymbolicBoundsInTermsOfPredecessor(
-    bool storeSymbolicBoundsInTermsOfPredecessor )
+void DeepPolyElement::setStorePredecessorSymbolicBounds( bool storePredecessorSymbolicBounds )
 {
-    _storeSymbolicBoundsInTermsOfPredecessor = storeSymbolicBoundsInTermsOfPredecessor;
+    _storePredecessorSymbolicBounds = storePredecessorSymbolicBounds;
 }
 
 void DeepPolyElement::setUseParameterisedSBT( bool useParameterisedSBT )
@@ -189,23 +188,23 @@ void DeepPolyElement::setWorkingMemory( double *work1SymbolicLb,
 }
 
 void DeepPolyElement::setSymbolicBoundsMemory(
-    Map<unsigned, Vector<double>> *outputLayerSymbolicLb,
-    Map<unsigned, Vector<double>> *outputLayerSymbolicUb,
-    Map<unsigned, Vector<double>> *outputLayerSymbolicLowerBias,
-    Map<unsigned, Vector<double>> *outputLayerSymbolicUpperBias,
-    Map<unsigned, Vector<double>> *symbolicLbInTermsOfPredecessor,
-    Map<unsigned, Vector<double>> *symbolicUbInTermsOfPredecessor,
-    Map<unsigned, Vector<double>> *symbolicLowerBiasInTermsOfPredecessor,
-    Map<unsigned, Vector<double>> *symbolicUpperBiasInTermsOfPredecessor )
+    Map<unsigned, Vector<double>> *outputSymbolicLb,
+    Map<unsigned, Vector<double>> *outputSymbolicUb,
+    Map<unsigned, Vector<double>> *outputSymbolicLowerBias,
+    Map<unsigned, Vector<double>> *outputSymbolicUpperBias,
+    Map<unsigned, Vector<double>> *predecessorSymbolicLb,
+    Map<unsigned, Vector<double>> *predecessorSymbolicUb,
+    Map<unsigned, Vector<double>> *predecessorSymbolicLowerBias,
+    Map<unsigned, Vector<double>> *predecessorSymbolicUpperBias )
 {
-    _outputLayerSymbolicLb = outputLayerSymbolicLb;
-    _outputLayerSymbolicUb = outputLayerSymbolicUb;
-    _outputLayerSymbolicLowerBias = outputLayerSymbolicLowerBias;
-    _outputLayerSymbolicUpperBias = outputLayerSymbolicUpperBias;
-    _symbolicLbInTermsOfPredecessor = symbolicLbInTermsOfPredecessor;
-    _symbolicUbInTermsOfPredecessor = symbolicUbInTermsOfPredecessor;
-    _symbolicLowerBiasInTermsOfPredecessor = symbolicLowerBiasInTermsOfPredecessor;
-    _symbolicUpperBiasInTermsOfPredecessor = symbolicUpperBiasInTermsOfPredecessor;
+    _outputSymbolicLb = outputSymbolicLb;
+    _outputSymbolicUb = outputSymbolicUb;
+    _outputSymbolicLowerBias = outputSymbolicLowerBias;
+    _outputSymbolicUpperBias = outputSymbolicUpperBias;
+    _predecessorSymbolicLb = predecessorSymbolicLb;
+    _predecessorSymbolicUb = predecessorSymbolicUb;
+    _predecessorSymbolicLowerBias = predecessorSymbolicLowerBias;
+    _predecessorSymbolicUpperBias = predecessorSymbolicUpperBias;
 }
 
 void DeepPolyElement::storeOutputSymbolicBounds(
@@ -284,16 +283,14 @@ void DeepPolyElement::storeOutputSymbolicBounds(
 
     for ( unsigned i = 0; i < _size * _outputLayerSize; ++i )
     {
-        ( *_outputLayerSymbolicLb )[_layerIndex][i] = work1SymbolicLb[i];
-        ( *_outputLayerSymbolicUb )[_layerIndex][i] = work1SymbolicUb[i];
+        ( *_outputSymbolicLb )[_layerIndex][i] = work1SymbolicLb[i];
+        ( *_outputSymbolicUb )[_layerIndex][i] = work1SymbolicUb[i];
     }
 
     for ( unsigned i = 0; i < _outputLayerSize; ++i )
     {
-        ( *_outputLayerSymbolicLowerBias )[_layerIndex][i] =
-            symbolicLowerBiasConcretizedResiduals[i];
-        ( *_outputLayerSymbolicUpperBias )[_layerIndex][i] =
-            symbolicUpperBiasConcretizedResiduals[i];
+        ( *_outputSymbolicLowerBias )[_layerIndex][i] = symbolicLowerBiasConcretizedResiduals[i];
+        ( *_outputSymbolicUpperBias )[_layerIndex][i] = symbolicUpperBiasConcretizedResiduals[i];
     }
 }
 

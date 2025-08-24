@@ -117,7 +117,7 @@ void DeepPolyMaxPoolElement::execute(
         log( Stringf( "Handling Neuron %u_%u - done", _layerIndex, i ) );
     }
 
-    if ( _storeSymbolicBoundsInTermsOfPredecessor )
+    if ( _storePredecessorSymbolicBounds )
     {
         storePredecessorSymbolicBounds( maxLowerBoundIndices, maxUpperBounds );
     }
@@ -133,21 +133,17 @@ void DeepPolyMaxPoolElement::storePredecessorSymbolicBounds(
     {
         if ( _phaseFixed[i] > 0 )
         {
-            ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
-                1;
-            ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
-                1;
-            ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = 0;
-            ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = 0;
+            ( *_predecessorSymbolicLb )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] = 1;
+            ( *_predecessorSymbolicUb )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] = 1;
+            ( *_predecessorSymbolicLowerBias )[_layerIndex][i] = 0;
+            ( *_predecessorSymbolicUpperBias )[_layerIndex][i] = 0;
         }
         else
         {
-            ( *_symbolicLbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
-                1;
-            ( *_symbolicUbInTermsOfPredecessor )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] =
-                0;
-            ( *_symbolicLowerBiasInTermsOfPredecessor )[_layerIndex][i] = 0;
-            ( *_symbolicUpperBiasInTermsOfPredecessor )[_layerIndex][i] = maxUpperBound[i];
+            ( *_predecessorSymbolicLb )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] = 1;
+            ( *_predecessorSymbolicUb )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] = 0;
+            ( *_predecessorSymbolicLowerBias )[_layerIndex][i] = 0;
+            ( *_predecessorSymbolicUpperBias )[_layerIndex][i] = maxUpperBound[i];
         }
     }
 }

@@ -1012,37 +1012,52 @@ public:
           Using x2 = 2x0 + 3x1, x3 = x0 + x1:
           x0 + 2x1 <= x6 <= x0 + 2x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        {
+            Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                       "backward-pmnr-random" );
+            comparePMNRScores( nlr, Map<NLR::NeuronIndex, double>( {} ) );
+        }
+        {
+            Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                       "backward-pmnr-gradient" );
+            comparePMNRScores( nlr, Map<NLR::NeuronIndex, double>( {} ) );
+        }
+        {
+            Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                       "backward-pmnr-bbps" );
+            comparePMNRScores( nlr, Map<NLR::NeuronIndex, double>( {} ) );
+        }
     }
 
     void test_symbolic_bound_maps_relus_active_and_inactive()
@@ -1144,37 +1159,37 @@ public:
           Using x3 = x0 + x1:
           -x0 - x1 <= x6 <= -x0 - x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_symbolic_bound_maps_relus_active_and_not_fixed()
@@ -1280,37 +1295,37 @@ public:
           Using x2 = 2x0 + 3x1, x3 = x0 + x1:
           x0 + 2x1 - 15 <= x6 <= 0.5x0 + 1.25x1 - 8.25
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 0.75, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 3, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0.75, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 3 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 0.5, 1.25 } ),
-                                          Vector<double>( { -15 } ),
-                                          Vector<double>( { -8.25 } ) );
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 0.75, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 3, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0.75, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 3 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 0.5, 1.25 } ),
+                                     Vector<double>( { -15 } ),
+                                     Vector<double>( { -8.25 } ) );
     }
 
     void test_symbolic_bound_maps_relus_active_and_externally_fixed()
@@ -1414,37 +1429,37 @@ public:
           Using x3 = x0 + x1:
           -x0 - x1 <= x6 <= -x0 - x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_symbolic_bound_maps_relu_residual1()
@@ -1560,55 +1575,55 @@ public:
           Using x1 = x0:
           -1.5x0 + 2.5 <= x5 <= x0 + 5
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.5 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 1 } ),
-                                               Vector<double>( { 0.6667 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.6667 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 4 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -3 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 10 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 1.5 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { -0.5 } ),
-                                          Vector<double>( { 7 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1.5 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.5 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.5 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
                                           Vector<double>( { 1 } ),
-                                          Vector<double>( { 2.5 } ),
-                                          Vector<double>( { 5 } ) );
+                                          Vector<double>( { 0.6667 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.6667 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 4 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { -3 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 10 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 1.5 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { -0.5 } ),
+                                     Vector<double>( { 7 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1.5 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 2.5 } ),
+                                     Vector<double>( { 5 } ) );
     }
 
     void test_symbolic_bound_maps_relu_residual2()
@@ -1736,61 +1751,61 @@ public:
           Using x1 = x0:
           -3.5x0 + 2.5 <= x6 <= -x0 + 5
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.5 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 1 } ),
-                                               Vector<double>( { 0.6667 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.6667 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          6,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 2 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 4 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -3 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { -1.5 } ),
                                           Vector<double>( { 0 } ),
                                           Vector<double>( { 0.5 } ),
-                                          Vector<double>( { 6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -3.5 } ),
-                                          Vector<double>( { -1 } ),
-                                          Vector<double>( { 2.5 } ),
-                                          Vector<double>( { 5 } ) );
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.5 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
+                                          Vector<double>( { 1 } ),
+                                          Vector<double>( { 0.6667 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.6667 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     6,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 2 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 4 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { -3 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { -1.5 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0.5 } ),
+                                     Vector<double>( { 6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -3.5 } ),
+                                     Vector<double>( { -1 } ),
+                                     Vector<double>( { 2.5 } ),
+                                     Vector<double>( { 5 } ) );
     }
 
     void test_symbolic_bound_maps_relu_reindex()
@@ -1944,56 +1959,56 @@ public:
           1 <= x10 <= x0 + 0.5x1 + 4
           0 <= x11 <= 0.25x2 + 0.25x3 + 1.5
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 0 } ),
-                                               Vector<double>( { 0, 0.5, 0.5, 0 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 1, 1 } ) );
-
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 0, 1, 0, 0 } ),
-                                               Vector<double>( { 0, 1, 0.5, 0 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 1, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1, 1, 1, 0 } ),
-                                          Vector<double>( { 1, 1, 1, 0 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 1, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1, 0, 0, 0 } ),
-                                          Vector<double>( { 1, 0, 0.5, 0.5 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 2, 1 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 1, 0 } ),
-                                          Vector<double>( { 0.5, -0.5, 1.5, 0.5 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 2, 1 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
                                           Vector<double>( { 0, 0, 0, 0 } ),
-                                          Vector<double>( { 0.75, 0.25, 0.25, 0 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 4, 1.5 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0, 0, 0, 0 } ),
-                                          Vector<double>( { 1, 0.25, 0.5, 0.25 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 4, 1.5 } ) );
+                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 1, 1 } ) );
+
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
+                                          Vector<double>( { 0, 1, 0, 0 } ),
+                                          Vector<double>( { 0, 1, 0.5, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 1, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1, 1, 1, 0 } ),
+                                     Vector<double>( { 1, 1, 1, 0 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 1, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1, 0, 0, 0 } ),
+                                     Vector<double>( { 1, 0, 0.5, 0.5 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 2, 1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, 0, 1, 0 } ),
+                                     Vector<double>( { 0.5, -0.5, 1.5, 0.5 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 2, 1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, 0, 0, 0 } ),
+                                     Vector<double>( { 0.75, 0.25, 0.25, 0 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 4, 1.5 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0, 0, 0, 0 } ),
+                                     Vector<double>( { 1, 0.25, 0.5, 0.25 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 4, 1.5 } ) );
     }
 
     void test_symbolic_bound_maps_abs_all_positive()
@@ -2138,37 +2153,37 @@ public:
           Using x2 = 2x0 + 3x1, x3 = x0 + x1:
           x0 + 2x1 <= x6 <= x0 + 2x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_symbolic_bound_maps_abs_positive_and_negative()
@@ -2316,37 +2331,37 @@ public:
           Using x2 = 2x0 + 3x1 - 30, x3 = x0 + x1:
           -3x0 - 4x1 + 30 <= x6 <= -3x0 - 4x1 + 30
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -3, -4 } ),
-                                          Vector<double>( { -3, -4 } ),
-                                          Vector<double>( { 30 } ),
-                                          Vector<double>( { 30 } ) );
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -3, -4 } ),
+                                     Vector<double>( { -3, -4 } ),
+                                     Vector<double>( { 30 } ),
+                                     Vector<double>( { 30 } ) );
     }
 
     void test_symbolic_bound_maps_absolute_values_positive_and_not_fixed()
@@ -2498,37 +2513,37 @@ public:
           Using x3 = x0 + x1:
           -x0 - x1 <= x6 <= -x0 - x1 + 12
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 12, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 12 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 12 } ) );
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 12, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 12 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 12 } ) );
     }
 
     void test_symbolic_bound_maps_absolute_values_active_and_externally_fixed()
@@ -2682,37 +2697,37 @@ public:
           Using x3 = x0 + x1:
           - x0 - x1 + 3 <= x6 <= - x0 - x1 + 3
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ) );
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ) );
     }
 
     void test_symbolic_bound_maps_signs_positive_and_not_fixed()
@@ -2868,37 +2883,37 @@ public:
           Using x2 = 2x0 + 3x1 - 15:
           1/3 x0 + 1/2 x1 - 4.5 <= x6 <= x0 + 1.5x1 - 7.5
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.1667, 0, 0, 0 } ),
-                                               Vector<double>( { 0.5, 0, 0, 0 } ),
-                                               Vector<double>( { -1, 1 } ),
-                                               Vector<double>( { 1, 1 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0.1667, 0 } ),
-                                          Vector<double>( { 0.5, 0 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0.3333, 0.5 } ),
-                                          Vector<double>( { 1, 1.5 } ),
-                                          Vector<double>( { -4.5 } ),
-                                          Vector<double>( { -7.5 } ) );
+                                          Vector<double>( { 0.1667, 0, 0, 0 } ),
+                                          Vector<double>( { 0.5, 0, 0, 0 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { 1, 1 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0.1667, 0 } ),
+                                     Vector<double>( { 0.5, 0 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0.3333, 0.5 } ),
+                                     Vector<double>( { 1, 1.5 } ),
+                                     Vector<double>( { -4.5 } ),
+                                     Vector<double>( { -7.5 } ) );
     }
 
     void test_symbolic_bound_maps_signs_active_and_externally_fixed()
@@ -3046,37 +3061,37 @@ public:
           Layer 0:
           -2 <= x6 <= -2
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 0 } ),
-                                               Vector<double>( { 0, 0, 0, 0 } ),
-                                               Vector<double>( { -1, 1 } ),
-                                               Vector<double>( { -1, 1 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { -2 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { -2 } ) );
+                                          Vector<double>( { 0, 0, 0, 0 } ),
+                                          Vector<double>( { 0, 0, 0, 0 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { -1, 1 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { -2 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { -2 } ) );
     }
 
     void test_symbolic_bound_maps_leaky_relu()
@@ -3239,56 +3254,56 @@ public:
           2x0 + 2x1 + 1 <= x10 <= 0.8 x0 + 0.72 x1 + 4.12
           0.4x0 + 1.6x1 - 0.8 <= x11 <= -0.24 x0 + 0.96 x1 + 1.6
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 0.6, 0, 0, 0.6 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0.8, 0.8 } ) );
-
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 0.6667, 0, 0, 0.6 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0.9333, 1.12 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1, 0, 1, 1 } ),
-                                          Vector<double>( { 1, 0, 1, 1 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 1, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1, 0, 1, 1 } ),
-                                          Vector<double>( { 0.6667, 0, 0.6, 0.6 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 3.0533, 1.12 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 2, 1, 0, -1 } ),
-                                          Vector<double>( { 1.2667, 0.6, 0.0667, -0.6 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 3.0533, 1.12 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 2, 1, 0, -0.6 } ),
-                                          Vector<double>( { 0.76, 0.36, 0.04, -0.6 } ),
-                                          Vector<double>( { 1, -0.8 } ),
-                                          Vector<double>( { 4.12, 1.6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 2, 0.4, 2, 1.6 } ),
-                                          Vector<double>( { 0.8, -0.24, 0.72, 0.96 } ),
-                                          Vector<double>( { 1, -0.8 } ),
-                                          Vector<double>( { 4.12, 1.6 } ) );
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0.8, 0.8 } ) );
+
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 0.6667, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0.9333, 1.12 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1, 0, 1, 1 } ),
+                                     Vector<double>( { 1, 0, 1, 1 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 1, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1, 0, 1, 1 } ),
+                                     Vector<double>( { 0.6667, 0, 0.6, 0.6 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 3.0533, 1.12 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 2, 1, 0, -1 } ),
+                                     Vector<double>( { 1.2667, 0.6, 0.0667, -0.6 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 3.0533, 1.12 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 2, 1, 0, -0.6 } ),
+                                     Vector<double>( { 0.76, 0.36, 0.04, -0.6 } ),
+                                     Vector<double>( { 1, -0.8 } ),
+                                     Vector<double>( { 4.12, 1.6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 2, 0.4, 2, 1.6 } ),
+                                     Vector<double>( { 0.8, -0.24, 0.72, 0.96 } ),
+                                     Vector<double>( { 1, -0.8 } ),
+                                     Vector<double>( { 4.12, 1.6 } ) );
     }
 
     void test_symbolic_bound_maps_sigmoids_and_round()
@@ -3438,49 +3453,49 @@ public:
             0.2100 x0 + 0.1584 <= x8 <= 0.2100 x0 + 1.8416
             0.2100 x1 - 0.8416 <= x9 <= 0.2100 x1 + 0.8516
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
-                                               Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
-                                               Vector<double>( { 0.3292, 0.3292 } ),
-                                               Vector<double>( { 0.6708, 0.6708 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { -0.5, -0.5 } ),
-                                               Vector<double>( { 0.5, 0.5 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
+                                          2,
+                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
+                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
+                                          Vector<double>( { 0.3292, 0.3292 } ),
+                                          Vector<double>( { 0.6708, 0.6708 } ) );
+        comparePredecessorSymbolicBounds( nlr,
                                           4,
                                           Vector<double>( { 1, 0, 0, 1 } ),
                                           Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
                                           Vector<double>( { -0.5, -0.5 } ),
                                           Vector<double>( { 0.5, 0.5 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          2,
-                                          Vector<double>( { 1, 1, 1, -1 } ),
-                                          Vector<double>( { 1, 1, 1, -1 } ),
-                                          Vector<double>( { -0.5, -0.5 } ),
-                                          Vector<double>( { 0.5, 0.5 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
-                                          Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
-                                          Vector<double>( { 0.1584, -0.8416 } ),
-                                          Vector<double>( { 1.8416, 0.8416 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
-                                          Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
-                                          Vector<double>( { 0.1584, -0.8416 } ),
-                                          Vector<double>( { 1.8416, 0.8416 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { -0.5, -0.5 } ),
+                                     Vector<double>( { 0.5, 0.5 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, 1, 1, -1 } ),
+                                     Vector<double>( { 1, 1, 1, -1 } ),
+                                     Vector<double>( { -0.5, -0.5 } ),
+                                     Vector<double>( { 0.5, 0.5 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
+                                     Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
+                                     Vector<double>( { 0.1584, -0.8416 } ),
+                                     Vector<double>( { 1.8416, 0.8416 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
+                                     Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
+                                     Vector<double>( { 0.1584, -0.8416 } ),
+                                     Vector<double>( { 1.8416, 0.8416 } ) );
     }
 
     void test_symbolic_bound_maps_max_not_fixed()
@@ -3600,49 +3615,49 @@ public:
           Layer 0:
           0 <= x7 <= 6
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 0, 0, 0 } ),
-                                               Vector<double>( { 0.6, 0, 0, 0.4 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 1.2, 1.2 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               3,
-                                               Vector<double>( { 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 3 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 2 } ),
+                                          Vector<double>( { 1, 0, 0, 0 } ),
+                                          Vector<double>( { 0.6, 0, 0, 0.4 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 1.2, 1.2 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          3,
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0 } ),
-                                          Vector<double>( { 6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 6 } ) );
+                                          Vector<double>( { 3 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 6 } ) );
     }
 
     void test_symbolic_bound_maps_max_fixed()
@@ -3755,49 +3770,49 @@ public:
           Using x3 = x0 - x1
           2x0 - 2x1 <= x7 <= 2x0 - 2x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               3,
-                                               Vector<double>( { 0, 1 } ),
-                                               Vector<double>( { 0, 1 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 2 } ),
-                                          Vector<double>( { 0, 2 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          3,
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0 } ),
                                           Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, 2 } ),
-                                          Vector<double>( { 0, 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 2, -2 } ),
-                                          Vector<double>( { 2, -2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 2, -2 } ),
+                                     Vector<double>( { 2, -2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_symbolic_bound_maps_softmax1()
@@ -4021,53 +4036,53 @@ public:
               1 <= x9 <= 1
               -1 <= x10 <= -1
             */
-            comparePredecessorLayerSymbolicBounds( nlr,
-                                                   2,
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
-                                                   Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
-
-            compareOutputLayerSymbolicBounds( nlr,
-                                              3,
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
+            comparePredecessorSymbolicBounds( nlr,
                                               2,
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              1,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              0,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
+                                              Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
+
+            compareOutputSymbolicBounds( nlr,
+                                         3,
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         2,
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         1,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         0,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
         }
         {
             Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "er" );
@@ -4264,53 +4279,53 @@ public:
               1 <= x9 <= 1
               -1 <= x10 <= -1
             */
-            comparePredecessorLayerSymbolicBounds( nlr,
-                                                   2,
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
-                                                   Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
-
-            compareOutputLayerSymbolicBounds( nlr,
-                                              3,
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
+            comparePredecessorSymbolicBounds( nlr,
                                               2,
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              1,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              0,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
+                                              Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
+
+            compareOutputSymbolicBounds( nlr,
+                                         3,
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         2,
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         1,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         0,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
         }
     }
 
@@ -4603,7 +4618,7 @@ public:
           1 <= x15 <= 1
           -1 <= x16 <= -1
         */
-        comparePredecessorLayerSymbolicBounds(
+        comparePredecessorSymbolicBounds(
             nlr,
             2,
             Vector<double>( { 0.1155,  0.0000,  -0.1017, 0.0000,  -0.0138, 0.0000, 0.0177,
@@ -4617,32 +4632,32 @@ public:
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ),
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ) );
 
-        compareOutputLayerSymbolicBounds(
+        compareOutputSymbolicBounds(
             nlr,
             3,
             Vector<double>( { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 } ),
             Vector<double>( { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 } ),
             Vector<double>( { 0, 0, 0, 0 } ),
             Vector<double>( { 0, 0, 0, 0 } ) );
-        compareOutputLayerSymbolicBounds(
+        compareOutputSymbolicBounds(
             nlr,
             2,
             Vector<double>( { 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0 } ),
             Vector<double>( { 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0 } ),
             Vector<double>( { 0, 0, 0, 0 } ),
             Vector<double>( { 0, 0, 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( 20, 0 ),
-                                          Vector<double>( 20, 0 ),
-                                          Vector<double>( { 1, -1, 1, -1 } ),
-                                          Vector<double>( { 1, -1, 1, -1 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( 12, 0 ),
-                                          Vector<double>( 12, 0 ),
-                                          Vector<double>( { 1, -1, 1, -1 } ),
-                                          Vector<double>( { 1, -1, 1, -1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( 20, 0 ),
+                                     Vector<double>( 20, 0 ),
+                                     Vector<double>( { 1, -1, 1, -1 } ),
+                                     Vector<double>( { 1, -1, 1, -1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( 12, 0 ),
+                                     Vector<double>( 12, 0 ),
+                                     Vector<double>( { 1, -1, 1, -1 } ),
+                                     Vector<double>( { 1, -1, 1, -1 } ) );
     }
 
     void test_symbolic_bound_maps_bilinear()
@@ -4738,37 +4753,37 @@ public:
           Using x2 = x0 - 2x1, x3 = x0 + x1:
           -2x0 + 7x1 - 3 <= x5 <= 2x0 - x1 + 1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { -1, -1 } ),
-                                               Vector<double>( { 3, -1 } ),
-                                               Vector<double>( { -1 } ),
-                                               Vector<double>( { 3 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
+                                          Vector<double>( { -1, -1 } ),
+                                          Vector<double>( { 3, -1 } ),
                                           Vector<double>( { -1 } ),
-                                          Vector<double>( { -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { -3, 1 } ),
-                                          Vector<double>( { 1, 1 } ),
-                                          Vector<double>( { -3 } ),
-                                          Vector<double>( { 1 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -2, 7 } ),
-                                          Vector<double>( { 2, -1 } ),
-                                          Vector<double>( { -3 } ),
-                                          Vector<double>( { 1 } ) );
+                                          Vector<double>( { 3 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { -1 } ),
+                                     Vector<double>( { -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { -3, 1 } ),
+                                     Vector<double>( { 1, 1 } ),
+                                     Vector<double>( { -3 } ),
+                                     Vector<double>( { 1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -2, 7 } ),
+                                     Vector<double>( { 2, -1 } ),
+                                     Vector<double>( { -3 } ),
+                                     Vector<double>( { 1 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_all_active()
@@ -4869,37 +4884,37 @@ public:
           Using x2 = 2x0 + 3x1, x3 = x0 + x1:
           x0 + 2x1 <= x6 <= x0 + 2x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_active_and_inactive()
@@ -5004,37 +5019,37 @@ public:
           Using x3 = x0 + x1:
           -x0 - x1 <= x6 <= -x0 - x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_active_and_not_fixed()
@@ -5143,37 +5158,37 @@ public:
           Using x2 = 2x0 + 3x1, x3 = x0 + x1:
           0.5 x1 - 7.5 <= x6 <= 0.5x0 + 1.25x1 - 8.25
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.5, 0, 0, 1 } ),
-                                               Vector<double>( { 0.75, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 3, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0.5, -1 } ),
-                                          Vector<double>( { 0.75, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 3 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0, 0.5 } ),
-                                          Vector<double>( { 0.5, 1.25 } ),
-                                          Vector<double>( { -7.5 } ),
-                                          Vector<double>( { -8.25 } ) );
+                                          Vector<double>( { 0.5, 0, 0, 1 } ),
+                                          Vector<double>( { 0.75, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 3, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0.5, -1 } ),
+                                     Vector<double>( { 0.75, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 3 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0, 0.5 } ),
+                                     Vector<double>( { 0.5, 1.25 } ),
+                                     Vector<double>( { -7.5 } ),
+                                     Vector<double>( { -8.25 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_active_and_externally_fixed()
@@ -5280,37 +5295,37 @@ public:
           Using x3 = x0 + x1:
           -x0 - x1 <= x6 <= -x0 - x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relu_residual1()
@@ -5430,55 +5445,55 @@ public:
           Using x1 = x0:
           0.75 x0 + 1.75 <= x5 <= -3/14 x0 + 37/7
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.5 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0.7143 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.7143 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 4 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1.5 } ),
-                                          Vector<double>( { 2.1429 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 6.1429 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -1.5 } ),
-                                          Vector<double>( { -2.1429 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 10.4286 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 2.25 } ),
-                                          Vector<double>( { 1.9286 } ),
-                                          Vector<double>( { 0.25 } ),
-                                          Vector<double>( { 7.4286 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0.75 } ),
-                                          Vector<double>( { -0.2143 } ),
-                                          Vector<double>( { 1.75 } ),
-                                          Vector<double>( { 5.2857 } ) );
+                                          Vector<double>( { 0.5 } ),
+                                          Vector<double>( { 0.5 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.5 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
+                                          Vector<double>( { 0.5 } ),
+                                          Vector<double>( { 0.7143 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.7143 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 4 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1.5 } ),
+                                     Vector<double>( { 2.1429 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 6.1429 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { -1.5 } ),
+                                     Vector<double>( { -2.1429 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 10.4286 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 2.25 } ),
+                                     Vector<double>( { 1.9286 } ),
+                                     Vector<double>( { 0.25 } ),
+                                     Vector<double>( { 7.4286 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0.75 } ),
+                                     Vector<double>( { -0.2143 } ),
+                                     Vector<double>( { 1.75 } ),
+                                     Vector<double>( { 5.2857 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relu_residual2()
@@ -5609,61 +5624,61 @@ public:
           Using x1 = x0:
           -1.25 x0 + 1.75 <= x6 <= -31/14 x0 + 37/7
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.5 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 0.5 } ),
-                                               Vector<double>( { 0.7143 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0.7143 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          6,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 2 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1.5 } ),
-                                          Vector<double>( { 2.1429 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 4.1429 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -1.5 } ),
-                                          Vector<double>( { -2.1429 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 6.4286 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { -0.75 } ),
-                                          Vector<double>( { -1.0714 } ),
-                                          Vector<double>( { 1.25 } ),
-                                          Vector<double>( { 6.4286 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1.25 } ),
-                                          Vector<double>( { -2.2143 } ),
-                                          Vector<double>( { 1.75 } ),
-                                          Vector<double>( { 5.2857 } ) );
+                                          Vector<double>( { 0.5 } ),
+                                          Vector<double>( { 0.5 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.5 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
+                                          Vector<double>( { 0.5 } ),
+                                          Vector<double>( { 0.7143 } ),
+                                          Vector<double>( { 0 } ),
+                                          Vector<double>( { 0.7143 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     6,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 2 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1.5 } ),
+                                     Vector<double>( { 2.1429 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 4.1429 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { -1.5 } ),
+                                     Vector<double>( { -2.1429 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 6.4286 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { -0.75 } ),
+                                     Vector<double>( { -1.0714 } ),
+                                     Vector<double>( { 1.25 } ),
+                                     Vector<double>( { 6.4286 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1.25 } ),
+                                     Vector<double>( { -2.2143 } ),
+                                     Vector<double>( { 1.75 } ),
+                                     Vector<double>( { 5.2857 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relu_reindex()
@@ -5824,56 +5839,56 @@ public:
           0.5 x0 + 0.5 x1 + 1 <= x10 <= 0.75 x0 + 0.5 x1 + 4.25
           0.5 x1 - 0.5 <= x11 <= 0.5 x1 + 1.5
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0.5, 0.5, 0 } ),
-                                               Vector<double>( { 0, 0.5, 0.5, 0 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 1, 1 } ) );
-
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 0, 0.5, 0.5, 0 } ),
-                                               Vector<double>( { 0, 0.75, 0.5, 0 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 1, 0.75 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1, 1, 1, 0 } ),
-                                          Vector<double>( { 1, 1, 1, 0 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 1, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 0.5, 0, 0.5, 0.5 } ),
-                                          Vector<double>( { 0.75, 0, 0.5, 0.5 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 2.75, 1 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, -0.5, 1, 0.5 } ),
-                                          Vector<double>( { 0.25, -0.5, 1.25, 0.5 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 2.75, 1 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0.5, 0.25, 0, -0.25 } ),
-                                          Vector<double>( { 0.625, 0.25, 0.125, -0.25 } ),
-                                          Vector<double>( { 1, -0.5 } ),
-                                          Vector<double>( { 4.25, 1.5 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0.5, 0, 0.5, 0.5 } ),
-                                          Vector<double>( { 0.75, 0, 0.5, 0.5 } ),
-                                          Vector<double>( { 1, -0.5 } ),
-                                          Vector<double>( { 4.25, 1.5 } ) );
+                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
+                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 1, 1 } ) );
+
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
+                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
+                                          Vector<double>( { 0, 0.75, 0.5, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 1, 0.75 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1, 1, 1, 0 } ),
+                                     Vector<double>( { 1, 1, 1, 0 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 1, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 0.5, 0, 0.5, 0.5 } ),
+                                     Vector<double>( { 0.75, 0, 0.5, 0.5 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 2.75, 1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 0, -0.5, 1, 0.5 } ),
+                                     Vector<double>( { 0.25, -0.5, 1.25, 0.5 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 2.75, 1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0.5, 0.25, 0, -0.25 } ),
+                                     Vector<double>( { 0.625, 0.25, 0.125, -0.25 } ),
+                                     Vector<double>( { 1, -0.5 } ),
+                                     Vector<double>( { 4.25, 1.5 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0.5, 0, 0.5, 0.5 } ),
+                                     Vector<double>( { 0.75, 0, 0.5, 0.5 } ),
+                                     Vector<double>( { 1, -0.5 } ),
+                                     Vector<double>( { 4.25, 1.5 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_abs_all_positive()
@@ -6021,37 +6036,37 @@ public:
           Using x2 = 2x0 + 3x1, x3 = x0 + x1:
           x0 + 2x1 <= x6 <= x0 + 2x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 1, 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 1, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_abs_positive_and_negative()
@@ -6202,37 +6217,37 @@ public:
           Using x2 = 2x0 + 3x1 - 30, x3 = x0 + x1:
           -3x0 - 4x1 + 30 <= x6 <= -3x0 - 4x1 + 30
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -3, -4 } ),
-                                          Vector<double>( { -3, -4 } ),
-                                          Vector<double>( { 30 } ),
-                                          Vector<double>( { 30 } ) );
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -3, -4 } ),
+                                     Vector<double>( { -3, -4 } ),
+                                     Vector<double>( { 30 } ),
+                                     Vector<double>( { 30 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_absolute_values_positive_and_not_fixed()
@@ -6387,37 +6402,37 @@ public:
           Using x3 = x0 + x1:
           -x0 - x1 <= x6 <= -x0 - x1 + 12
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 12, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 12 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 12 } ) );
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 12, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 12 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 12 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_absolute_values_active_and_externally_fixed()
@@ -6574,37 +6589,37 @@ public:
           Using x3 = x0 + x1:
           - x0 - x1 + 3 <= x6 <= - x0 - x1 + 3
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { -1, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 0, -1 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { -1, -1 } ),
-                                          Vector<double>( { 3 } ),
-                                          Vector<double>( { 3 } ) );
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 0, -1 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { 3 } ),
+                                     Vector<double>( { 3 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_signs_positive_and_not_fixed()
@@ -6765,37 +6780,37 @@ public:
           Using x2 = 2x0 + 3x1 - 15:
           1/6 x0 + 1/4 x1 - 3.25 <= x6 <= 0.5 x0 + 0.75x1 - 3.75
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.0833, 0, 0, 0 } ),
-                                               Vector<double>( { 0.25, 0, 0, 0 } ),
-                                               Vector<double>( { -1, 1 } ),
-                                               Vector<double>( { 1, 1 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0.0833, 0 } ),
-                                          Vector<double>( { 0.25, 0 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0.1667, 0.25 } ),
-                                          Vector<double>( { 0.5, 0.75 } ),
-                                          Vector<double>( { -3.25 } ),
-                                          Vector<double>( { -3.75 } ) );
+                                          Vector<double>( { 0.0833, 0, 0, 0 } ),
+                                          Vector<double>( { 0.25, 0, 0, 0 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { 1, 1 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0.0833, 0 } ),
+                                     Vector<double>( { 0.25, 0 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0.1667, 0.25 } ),
+                                     Vector<double>( { 0.5, 0.75 } ),
+                                     Vector<double>( { -3.25 } ),
+                                     Vector<double>( { -3.75 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_signs_active_and_externally_fixed()
@@ -6946,37 +6961,37 @@ public:
           Layer 0:
           -2 <= x6 <= -2
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 0 } ),
-                                               Vector<double>( { 0, 0, 0, 0 } ),
-                                               Vector<double>( { -1, 1 } ),
-                                               Vector<double>( { -1, 1 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 1, -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { -2 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { -2 } ),
-                                          Vector<double>( { -2 } ) );
+                                          Vector<double>( { 0, 0, 0, 0 } ),
+                                          Vector<double>( { 0, 0, 0, 0 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { -1, 1 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 1, -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { -2 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { -2 } ),
+                                     Vector<double>( { -2 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_leaky_relu()
@@ -7156,56 +7171,56 @@ public:
           0.72 x0 + 0.72 x1 + 1 <= x10 <= 0.912 x0 + 0.72 x1 + 3.688
           0.72 x1 - 0.48 <= x11 <= 0.72 x1 + 1.28
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.6, 0, 0, 0.6 } ),
-                                               Vector<double>( { 0.6, 0, 0, 0.6 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0.8, 0.8 } ) );
-
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 0.6, 0, 0, 0.6 } ),
-                                               Vector<double>( { 0.76, 0, 0, 0.6 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0.672, 0.8 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          5,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1, 0, 1, 1 } ),
-                                          Vector<double>( { 1, 0, 1, 1 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 1, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 0.6, 0, 0.6, 0.6 } ),
-                                          Vector<double>( { 0.76, 0, 0.6, 0.6 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 2.472, 0.8 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1.2, 0.6, 0, -0.6 } ),
-                                          Vector<double>( { 1.36, 0.6, 0.16, -0.6 } ),
-                                          Vector<double>( { 1, 0 } ),
-                                          Vector<double>( { 2.472, 0.8 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0.72, 0.36, 0, -0.36 } ),
-                                          Vector<double>( { 0.816, 0.36, 0.096, -0.36 } ),
-                                          Vector<double>( { 1, -0.48 } ),
-                                          Vector<double>( { 3.688, 1.28 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0.72, 0, 0.72, 0.72 } ),
-                                          Vector<double>( { 0.912, 0, 0.72, 0.72 } ),
-                                          Vector<double>( { 1, -0.48 } ),
-                                          Vector<double>( { 3.688, 1.28 } ) );
+                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0.8, 0.8 } ) );
+
+        comparePredecessorSymbolicBounds( nlr,
+                                          4,
+                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0.76, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0.672, 0.8 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     5,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1, 0, 1, 1 } ),
+                                     Vector<double>( { 1, 0, 1, 1 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 1, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 0.6, 0, 0.6, 0.6 } ),
+                                     Vector<double>( { 0.76, 0, 0.6, 0.6 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 2.472, 0.8 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1.2, 0.6, 0, -0.6 } ),
+                                     Vector<double>( { 1.36, 0.6, 0.16, -0.6 } ),
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 2.472, 0.8 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0.72, 0.36, 0, -0.36 } ),
+                                     Vector<double>( { 0.816, 0.36, 0.096, -0.36 } ),
+                                     Vector<double>( { 1, -0.48 } ),
+                                     Vector<double>( { 3.688, 1.28 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0.72, 0, 0.72, 0.72 } ),
+                                     Vector<double>( { 0.912, 0, 0.72, 0.72 } ),
+                                     Vector<double>( { 1, -0.48 } ),
+                                     Vector<double>( { 3.688, 1.28 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_sigmoids_and_round()
@@ -7358,49 +7373,49 @@ public:
             0.2100 x0 + 0.1584 <= x8 <= 0.2100 x0 + 1.8416
             0.2100 x1 - 0.8416 <= x9 <= 0.2100 x1 + 0.8516
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
-                                               Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
-                                               Vector<double>( { 0.3292, 0.3292 } ),
-                                               Vector<double>( { 0.6708, 0.6708 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               4,
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { 1, 0, 0, 1 } ),
-                                               Vector<double>( { -0.5, -0.5 } ),
-                                               Vector<double>( { 0.5, 0.5 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
+                                          2,
+                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
+                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
+                                          Vector<double>( { 0.3292, 0.3292 } ),
+                                          Vector<double>( { 0.6708, 0.6708 } ) );
+        comparePredecessorSymbolicBounds( nlr,
                                           4,
                                           Vector<double>( { 1, 0, 0, 1 } ),
                                           Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
                                           Vector<double>( { -0.5, -0.5 } ),
                                           Vector<double>( { 0.5, 0.5 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          2,
-                                          Vector<double>( { 1, 1, 1, -1 } ),
-                                          Vector<double>( { 1, 1, 1, -1 } ),
-                                          Vector<double>( { -0.5, -0.5 } ),
-                                          Vector<double>( { 0.5, 0.5 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
-                                          Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
-                                          Vector<double>( { 0.1584, -0.8416 } ),
-                                          Vector<double>( { 1.8416, 0.8416 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
-                                          Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
-                                          Vector<double>( { 0.1584, -0.8416 } ),
-                                          Vector<double>( { 1.8416, 0.8416 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { 1, 0, 0, 1 } ),
+                                     Vector<double>( { -0.5, -0.5 } ),
+                                     Vector<double>( { 0.5, 0.5 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 1, 1, 1, -1 } ),
+                                     Vector<double>( { 1, 1, 1, -1 } ),
+                                     Vector<double>( { -0.5, -0.5 } ),
+                                     Vector<double>( { 0.5, 0.5 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
+                                     Vector<double>( { 0.1050, 0.1050, 0.1050, -0.1050 } ),
+                                     Vector<double>( { 0.1584, -0.8416 } ),
+                                     Vector<double>( { 1.8416, 0.8416 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
+                                     Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
+                                     Vector<double>( { 0.1584, -0.8416 } ),
+                                     Vector<double>( { 1.8416, 0.8416 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_max_not_fixed()
@@ -7523,49 +7538,49 @@ public:
           Using x2 = x0 + x1:
           x0 + x1 <= x7 <= 6
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0.5, 0, 0, 0.5 } ),
-                                               Vector<double>( { 0.6, 0, 0, 0.4 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 1.2, 1.2 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               3,
-                                               Vector<double>( { 1, 0 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 3 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 2, 0 } ),
+                                          Vector<double>( { 0.5, 0, 0, 0.5 } ),
+                                          Vector<double>( { 0.6, 0, 0, 0.4 } ),
                                           Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
+                                          Vector<double>( { 1.2, 1.2 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          3,
                                           Vector<double>( { 1, 0 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0 } ),
-                                          Vector<double>( { 6 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 1, 1 } ),
-                                          Vector<double>( { 0, 0 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 6 } ) );
+                                          Vector<double>( { 3 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 2, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 1, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 6 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 1, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 6 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_max_fixed()
@@ -7681,49 +7696,49 @@ public:
           Using x3 = x0 - x1
           2x0 - 2x1 <= x7 <= 2x0 - 2x1
         */
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0, 0, 1 } ),
-                                               Vector<double>( { 0, 0 } ),
-                                               Vector<double>( { 0, 0 } ) );
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               3,
-                                               Vector<double>( { 0, 1 } ),
-                                               Vector<double>( { 0, 1 } ),
-                                               Vector<double>( { 0 } ),
-                                               Vector<double>( { 0 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          4,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 2 } ),
-                                          Vector<double>( { 0, 2 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ) );
+        comparePredecessorSymbolicBounds( nlr,
+                                          3,
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0 } ),
                                           Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { 0, 2 } ),
-                                          Vector<double>( { 0, 2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { 2, -2 } ),
-                                          Vector<double>( { 2, -2 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     4,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0, 2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { 2, -2 } ),
+                                     Vector<double>( { 2, -2 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_softmax1()
@@ -7953,53 +7968,53 @@ public:
               1 <= x9 <= 1
               -1 <= x10 <= -1
             */
-            comparePredecessorLayerSymbolicBounds( nlr,
-                                                   2,
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
-                                                   Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
-
-            compareOutputLayerSymbolicBounds( nlr,
-                                              3,
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
+            comparePredecessorSymbolicBounds( nlr,
                                               2,
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              1,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              0,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
+                                              Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
+
+            compareOutputSymbolicBounds( nlr,
+                                         3,
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         2,
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         1,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         0,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
         }
         {
             Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "er" );
@@ -8199,53 +8214,53 @@ public:
               1 <= x9 <= 1
               -1 <= x10 <= -1
             */
-            comparePredecessorLayerSymbolicBounds( nlr,
-                                                   2,
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.1922,
-                                                                     -0.1830,
-                                                                     -0.0091,
-                                                                     -0.1830,
-                                                                     0.2078,
-                                                                     -0.0248,
-                                                                     -0.0091,
-                                                                     -0.0248,
-                                                                     0.0339 } ),
-                                                   Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
-                                                   Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
-
-            compareOutputLayerSymbolicBounds( nlr,
-                                              3,
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 1, 0, 0, 1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
+            comparePredecessorSymbolicBounds( nlr,
                                               2,
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
-                                              Vector<double>( { 0, 0 } ),
-                                              Vector<double>( { 0, 0 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              1,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
-            compareOutputLayerSymbolicBounds( nlr,
-                                              0,
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
-                                              Vector<double>( { 1, -1 } ),
-                                              Vector<double>( { 1, -1 } ) );
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.1922,
+                                                                -0.1830,
+                                                                -0.0091,
+                                                                -0.1830,
+                                                                0.2078,
+                                                                -0.0248,
+                                                                -0.0091,
+                                                                -0.0248,
+                                                                0.0339 } ),
+                                              Vector<double>( { 0.4243, 0.4481, 0.1277 } ),
+                                              Vector<double>( { 0.4243, 0.4480, 0.1277 } ) );
+
+            compareOutputSymbolicBounds( nlr,
+                                         3,
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 1, 0, 0, 1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         2,
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 1, -1, 1, -1, 1, -1 } ),
+                                         Vector<double>( { 0, 0 } ),
+                                         Vector<double>( { 0, 0 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         1,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
+            compareOutputSymbolicBounds( nlr,
+                                         0,
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
+                                         Vector<double>( { 1, -1 } ),
+                                         Vector<double>( { 1, -1 } ) );
         }
     }
 
@@ -8541,7 +8556,7 @@ public:
           1 <= x15 <= 1
           -1 <= x16 <= -1
         */
-        comparePredecessorLayerSymbolicBounds(
+        comparePredecessorSymbolicBounds(
             nlr,
             2,
             Vector<double>( { 0.1155,  0.0000,  -0.1017, 0.0000,  -0.0138, 0.0000, 0.0177,
@@ -8555,32 +8570,32 @@ public:
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ),
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ) );
 
-        compareOutputLayerSymbolicBounds(
+        compareOutputSymbolicBounds(
             nlr,
             3,
             Vector<double>( { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 } ),
             Vector<double>( { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 } ),
             Vector<double>( { 0, 0, 0, 0 } ),
             Vector<double>( { 0, 0, 0, 0 } ) );
-        compareOutputLayerSymbolicBounds(
+        compareOutputSymbolicBounds(
             nlr,
             2,
             Vector<double>( { 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0 } ),
             Vector<double>( { 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0 } ),
             Vector<double>( { 0, 0, 0, 0 } ),
             Vector<double>( { 0, 0, 0, 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( 20, 0 ),
-                                          Vector<double>( 20, 0 ),
-                                          Vector<double>( { 1, -1, 1, -1 } ),
-                                          Vector<double>( { 1, -1, 1, -1 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( 12, 0 ),
-                                          Vector<double>( 12, 0 ),
-                                          Vector<double>( { 1, -1, 1, -1 } ),
-                                          Vector<double>( { 1, -1, 1, -1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( 20, 0 ),
+                                     Vector<double>( 20, 0 ),
+                                     Vector<double>( { 1, -1, 1, -1 } ),
+                                     Vector<double>( { 1, -1, 1, -1 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( 12, 0 ),
+                                     Vector<double>( 12, 0 ),
+                                     Vector<double>( { 1, -1, 1, -1 } ),
+                                     Vector<double>( { 1, -1, 1, -1 } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_bilinear()
@@ -8685,37 +8700,37 @@ public:
           -3.5 x0 - 0.5 x1 - 4.5 <= x5 <= -3.5 x0 - 0.5 x1 + 9.5
         */
 
-        comparePredecessorLayerSymbolicBounds( nlr,
-                                               2,
-                                               Vector<double>( { 1, 2.5 } ),
-                                               Vector<double>( { 1, 2.5 } ),
-                                               Vector<double>( { -9.5 } ),
-                                               Vector<double>( { 4.5 } ) );
-
-        compareOutputLayerSymbolicBounds( nlr,
-                                          3,
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
+        comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -1 } ),
-                                          Vector<double>( { -1 } ),
-                                          Vector<double>( { 0 } ),
-                                          Vector<double>( { 0 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          1,
-                                          Vector<double>( { -1, -2.5 } ),
-                                          Vector<double>( { -1, -2.5 } ),
-                                          Vector<double>( { -4.5 } ),
-                                          Vector<double>( { 9.5 } ) );
-        compareOutputLayerSymbolicBounds( nlr,
-                                          0,
-                                          Vector<double>( { -3.5, -0.5 } ),
-                                          Vector<double>( { -3.5, -0.5 } ),
-                                          Vector<double>( { -4.5 } ),
-                                          Vector<double>( { 9.5 } ) );
+                                          Vector<double>( { 1, 2.5 } ),
+                                          Vector<double>( { 1, 2.5 } ),
+                                          Vector<double>( { -9.5 } ),
+                                          Vector<double>( { 4.5 } ) );
+
+        compareOutputSymbolicBounds( nlr,
+                                     3,
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     2,
+                                     Vector<double>( { -1 } ),
+                                     Vector<double>( { -1 } ),
+                                     Vector<double>( { 0 } ),
+                                     Vector<double>( { 0 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     1,
+                                     Vector<double>( { -1, -2.5 } ),
+                                     Vector<double>( { -1, -2.5 } ),
+                                     Vector<double>( { -4.5 } ),
+                                     Vector<double>( { 9.5 } ) );
+        compareOutputSymbolicBounds( nlr,
+                                     0,
+                                     Vector<double>( { -3.5, -0.5 } ),
+                                     Vector<double>( { -3.5, -0.5 } ),
+                                     Vector<double>( { -4.5 } ),
+                                     Vector<double>( { 9.5 } ) );
     }
 
     bool boundsEqual( const List<Tightening> &bounds, const List<Tightening> &expectedBounds )
@@ -8755,54 +8770,63 @@ public:
         }
     }
 
-    void comparePredecessorLayerSymbolicBounds( NLR::NetworkLevelReasoner &nlr,
-                                                unsigned layerIndex,
-                                                const Vector<double> &symbolicLb,
-                                                const Vector<double> &symbolicUb,
-                                                const Vector<double> &symbolicLowerBias,
-                                                const Vector<double> &symbolicUpperBias )
+    void compareOutputSymbolicBounds( NLR::NetworkLevelReasoner &nlr,
+                                      unsigned layerIndex,
+                                      const Vector<double> &symbolicLb,
+                                      const Vector<double> &symbolicUb,
+                                      const Vector<double> &symbolicLowerBias,
+                                      const Vector<double> &symbolicUpperBias )
     {
-        Vector<double> predecessorLayerSymbolicLb;
-        Vector<double> predecessorLayerSymbolicUb;
-        Vector<double> predecessorLayerSymbolicLowerBias;
-        Vector<double> predecessorLayerSymbolicUpperBias;
-        TS_ASSERT_THROWS_NOTHING( predecessorLayerSymbolicLb =
-                                      nlr.getSymbolicLbInTermsOfPredecessor( layerIndex ) );
-        TS_ASSERT_THROWS_NOTHING( predecessorLayerSymbolicUb =
-                                      nlr.getSymbolicUbInTermsOfPredecessor( layerIndex ) );
-        TS_ASSERT_THROWS_NOTHING( predecessorLayerSymbolicLowerBias =
-                                      nlr.getSymbolicLowerBiasInTermsOfPredecessor( layerIndex ) );
-        TS_ASSERT_THROWS_NOTHING( predecessorLayerSymbolicUpperBias =
-                                      nlr.getSymbolicUpperBiasInTermsOfPredecessor( layerIndex ) );
-        TS_ASSERT( compareVectors( predecessorLayerSymbolicLb, symbolicLb ) );
-        TS_ASSERT( compareVectors( predecessorLayerSymbolicUb, symbolicUb ) );
-        TS_ASSERT( compareVectors( predecessorLayerSymbolicLowerBias, symbolicLowerBias ) );
-        TS_ASSERT( compareVectors( predecessorLayerSymbolicUpperBias, symbolicUpperBias ) );
+        Vector<double> outputSymbolicLb;
+        Vector<double> outputSymbolicUb;
+        Vector<double> outputSymbolicLowerBias;
+        Vector<double> outputSymbolicUpperBias;
+        TS_ASSERT_THROWS_NOTHING( outputSymbolicLb = nlr.getOutputSymbolicLb( layerIndex ) );
+        TS_ASSERT_THROWS_NOTHING( outputSymbolicUb = nlr.getOutputSymbolicUb( layerIndex ) );
+        TS_ASSERT_THROWS_NOTHING( outputSymbolicLowerBias =
+                                      nlr.getOutputSymbolicLowerBias( layerIndex ) );
+        TS_ASSERT_THROWS_NOTHING( outputSymbolicUpperBias =
+                                      nlr.getOutputSymbolicUpperBias( layerIndex ) );
+        TS_ASSERT( compareVectors( outputSymbolicLb, symbolicLb ) );
+        TS_ASSERT( compareVectors( outputSymbolicUb, symbolicUb ) );
+        TS_ASSERT( compareVectors( outputSymbolicLowerBias, symbolicLowerBias ) );
+        TS_ASSERT( compareVectors( outputSymbolicUpperBias, symbolicUpperBias ) );
     }
 
-    void compareOutputLayerSymbolicBounds( NLR::NetworkLevelReasoner &nlr,
+    void comparePredecessorSymbolicBounds( NLR::NetworkLevelReasoner &nlr,
                                            unsigned layerIndex,
                                            const Vector<double> &symbolicLb,
                                            const Vector<double> &symbolicUb,
                                            const Vector<double> &symbolicLowerBias,
                                            const Vector<double> &symbolicUpperBias )
     {
-        Vector<double> outputLayerSymbolicLb;
-        Vector<double> outputLayerSymbolicUb;
-        Vector<double> outputLayerSymbolicLowerBias;
-        Vector<double> outputLayerSymbolicUpperBias;
-        TS_ASSERT_THROWS_NOTHING( outputLayerSymbolicLb =
-                                      nlr.getOutputLayerSymbolicLb( layerIndex ) );
-        TS_ASSERT_THROWS_NOTHING( outputLayerSymbolicUb =
-                                      nlr.getOutputLayerSymbolicUb( layerIndex ) );
-        TS_ASSERT_THROWS_NOTHING( outputLayerSymbolicLowerBias =
-                                      nlr.getOutputLayerSymbolicLowerBias( layerIndex ) );
-        TS_ASSERT_THROWS_NOTHING( outputLayerSymbolicUpperBias =
-                                      nlr.getOutputLayerSymbolicUpperBias( layerIndex ) );
-        TS_ASSERT( compareVectors( outputLayerSymbolicLb, symbolicLb ) );
-        TS_ASSERT( compareVectors( outputLayerSymbolicUb, symbolicUb ) );
-        TS_ASSERT( compareVectors( outputLayerSymbolicLowerBias, symbolicLowerBias ) );
-        TS_ASSERT( compareVectors( outputLayerSymbolicUpperBias, symbolicUpperBias ) );
+        Vector<double> predecessorSymbolicLb;
+        Vector<double> predecessorSymbolicUb;
+        Vector<double> predecessorSymbolicLowerBias;
+        Vector<double> predecessorSymbolicUpperBias;
+        TS_ASSERT_THROWS_NOTHING( predecessorSymbolicLb =
+                                      nlr.getPredecessorSymbolicLb( layerIndex ) );
+        TS_ASSERT_THROWS_NOTHING( predecessorSymbolicUb =
+                                      nlr.getPredecessorSymbolicUb( layerIndex ) );
+        TS_ASSERT_THROWS_NOTHING( predecessorSymbolicLowerBias =
+                                      nlr.getPredecessorSymbolicLowerBias( layerIndex ) );
+        TS_ASSERT_THROWS_NOTHING( predecessorSymbolicUpperBias =
+                                      nlr.getPredecessorSymbolicUpperBias( layerIndex ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicLb, symbolicLb ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicUb, symbolicUb ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicLowerBias, symbolicLowerBias ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicUpperBias, symbolicUpperBias ) );
+    }
+
+    void comparePMNRScores( NLR::NetworkLevelReasoner &nlr,
+                            const Map<NLR::NeuronIndex, double> &neuronScores )
+    {
+        double PMNRScore;
+        for ( const auto &pair : neuronScores )
+        {
+            TS_ASSERT_THROWS_NOTHING( PMNRScore = nlr.getPMNRScore( pair.first ) );
+            TS_ASSERT( FloatUtils::areEqual( PMNRScore, pair.second, 0.0001 ) );
+        }
     }
 
     bool compareVectors( const Vector<double> &vectorA, const Vector<double> &vectorB )

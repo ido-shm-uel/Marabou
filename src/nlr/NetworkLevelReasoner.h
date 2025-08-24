@@ -210,18 +210,18 @@ public:
     */
     double getPreviousBias( const ReluConstraint *reluConstraint ) const;
 
-    Vector<double> getOutputLayerSymbolicLb( unsigned layerIndex ) const;
-    Vector<double> getOutputLayerSymbolicUb( unsigned layerIndex ) const;
-    Vector<double> getOutputLayerSymbolicLowerBias( unsigned layerIndex ) const;
-    Vector<double> getOutputLayerSymbolicUpperBias( unsigned layerIndex ) const;
+    Vector<double> getOutputSymbolicLb( unsigned layerIndex ) const;
+    Vector<double> getOutputSymbolicUb( unsigned layerIndex ) const;
+    Vector<double> getOutputSymbolicLowerBias( unsigned layerIndex ) const;
+    Vector<double> getOutputSymbolicUpperBias( unsigned layerIndex ) const;
 
-    Vector<double> getSymbolicLbInTermsOfPredecessor( unsigned layerIndex ) const;
-    Vector<double> getSymbolicUbInTermsOfPredecessor( unsigned layerIndex ) const;
-    Vector<double> getSymbolicLowerBiasInTermsOfPredecessor( unsigned layerIndex ) const;
-    Vector<double> getSymbolicUpperBiasInTermsOfPredecessor( unsigned layerIndex ) const;
+    Vector<double> getPredecessorSymbolicLb( unsigned layerIndex ) const;
+    Vector<double> getPredecessorSymbolicUb( unsigned layerIndex ) const;
+    Vector<double> getPredecessorSymbolicLowerBias( unsigned layerIndex ) const;
+    Vector<double> getPredecessorSymbolicUpperBias( unsigned layerIndex ) const;
 
     Map<NeuronIndex, double> getBBPSBranchingPoint( NeuronIndex index ) const;
-    double getBBPSScore( NeuronIndex index ) const;
+    double getPMNRScore( NeuronIndex index ) const;
 
     /*
       Finds logically consecutive WS layers and merges them, in order
@@ -312,6 +312,11 @@ private:
 
     // Heuristically select neurons and polygonal tightenings for PMNR.
     const Vector<NeuronIndex> selectConstraints();
+
+
+    double getPMNRGradientScore( NeuronIndex index ) const;
+    double getPMNRBBPSScore( NeuronIndex index ) const;
+
     const Vector<NeuronIndex> selectConstraintsForPMNRRandom();
     const Vector<NeuronIndex> selectConstraintsForPMNRGradient();
     const Vector<NeuronIndex> selectConstraintsForPMNRBBPS();
@@ -333,9 +338,9 @@ private:
     // Get all indices of active non-weighted sum layers for INVPROP.
     const Vector<unsigned> getLayersWithNonFixedNeurons() const;
 
-    const Vector<unsigned> getNonFixedNeurons( Layer *layer ) const;
+    const Vector<NeuronIndex> getNonFixedNeurons( const Layer *layer ) const;
 
-    bool isNeuronNonFixed( Layer *layer, unsigned neuron ) const;
+    bool isNeuronNonFixed( NeuronIndex index ) const;
 
     /*
       Store previous biases for each ReLU neuron in a map for getPreviousBias()
@@ -344,9 +349,13 @@ private:
     Map<const ReluConstraint *, double> _previousBiases;
     void initializePreviousBiasMap();
 
-    void initializeBBPSMaps();
+    void initializePMNRScoreMap();
+    void initializeBBPSBranchingMap();
 
-    Map<NeuronIndex, double> getBranchingPoint( Layer *layer, unsigned neuron ) const;
+    double calculateNeuronPMNRScore( NeuronIndex index ) const;
+    double calculatePMNRGradientScore( NeuronIndex index ) const;
+    double calculatePMNRBBPSScore( NeuronIndex index ) const;
+    Map<NeuronIndex, double> calculateBranchingPoint( NeuronIndex index ) const;
 
     /*
       If the NLR is manipulated manually in order to generate a new
@@ -356,17 +365,17 @@ private:
     void reindexNeurons();
 
     Map<NeuronIndex, Map<NeuronIndex, double>> _neuronToBBPSBranchingPoints;
-    Map<NeuronIndex, double> _neuronToBBPSScores;
+    Map<NeuronIndex, double> _neuronToPMNRScores;
 
-    Map<unsigned, Vector<double>> _outputLayerSymbolicLb;
-    Map<unsigned, Vector<double>> _outputLayerSymbolicUb;
-    Map<unsigned, Vector<double>> _outputLayerSymbolicLowerBias;
-    Map<unsigned, Vector<double>> _outputLayerSymbolicUpperBias;
+    Map<unsigned, Vector<double>> _outputSymbolicLb;
+    Map<unsigned, Vector<double>> _outputSymbolicUb;
+    Map<unsigned, Vector<double>> _outputSymbolicLowerBias;
+    Map<unsigned, Vector<double>> _outputSymbolicUpperBias;
 
-    Map<unsigned, Vector<double>> _symbolicLbInTermsOfPredecessor;
-    Map<unsigned, Vector<double>> _symbolicUbInTermsOfPredecessor;
-    Map<unsigned, Vector<double>> _symbolicLowerBiasInTermsOfPredecessor;
-    Map<unsigned, Vector<double>> _symbolicUpperBiasInTermsOfPredecessor;
+    Map<unsigned, Vector<double>> _predecessorSymbolicLb;
+    Map<unsigned, Vector<double>> _predecessorSymbolicUb;
+    Map<unsigned, Vector<double>> _predecessorSymbolicLowerBias;
+    Map<unsigned, Vector<double>> _predecessorSymbolicUpperBias;
 };
 
 } // namespace NLR
