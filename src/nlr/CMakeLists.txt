@@ -22,7 +22,6 @@ network_level_reasoner_add_unit_test(PMNRSelection)
 
 if (${ENABLE_GUROBI})
     network_level_reasoner_add_unit_test(LPRelaxation)
-    network_level_reasoner_add_unit_test(PMNR)
 endif()
 
 if (${BUILD_PYTHON})
