@@ -271,11 +271,11 @@ void ReluConstraint::notifyUpperBound( unsigned variable, double newBound )
                         _boundManager->tightenUpperBound( _b, bound, *_tighteningRow );
                     else
                     {
-                        if ( FloatUtils::isZero( bound ) )
+                        if ( !FloatUtils::isPositive( bound ) )
                             _boundManager->addLemmaExplanationAndTightenBound(
                                 _b, 0, Tightening::UB, { variable }, Tightening::UB, getType() );
                         // Bound cannot be negative if ReLU is inactive
-                        else if ( FloatUtils::isNegative( bound ) )
+                        if ( FloatUtils::isNegative( bound ) )
                             throw InfeasibleQueryException();
                     }
                 }
@@ -326,11 +326,11 @@ void ReluConstraint::notifyUpperBound( unsigned variable, double newBound )
                         _boundManager->tightenLowerBound( _b, -bound, *_tighteningRow );
                     else
                     {
-                        if ( FloatUtils::isZero( bound ) )
+                        if ( !FloatUtils::isPositive( bound ) )
                             _boundManager->addLemmaExplanationAndTightenBound(
                                 _b, 0, Tightening::LB, { variable }, Tightening::UB, getType() );
                         // Bound cannot be negative if ReLU is active
-                        else if ( FloatUtils::isNegative( bound ) )
+                        if ( FloatUtils::isNegative( bound ) )
                             throw InfeasibleQueryException();
                     }
                 }
@@ -381,7 +381,8 @@ List<PiecewiseLinearConstraint::Fix> ReluConstraint::getPossibleFixes() const
     double bValue = getAssignment( _b );
     double fValue = getAssignment( _f );
 
-    ASSERT( !FloatUtils::isNegative( fValue ) );
+    ASSERT(
+        !FloatUtils::isNegative( fValue, GlobalConfiguration::CONSTRAINT_COMPARISON_TOLERANCE ) );
 
     List<PiecewiseLinearConstraint::Fix> fixes;
 
