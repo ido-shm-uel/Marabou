@@ -1104,7 +1104,6 @@ void Layer::computeIntervalArithmeticBoundsForMax()
 
         ASSERT( _neuronToActivationSources.exists( i ) );
         List<NeuronIndex> sources = getActivationSources( i );
-        const Layer *sourceLayer = _layerOwner->getLayer( sources.begin()->_layer );
 
         NeuronIndex indexOfMaxLowerBound = *( sources.begin() );
         double maxLowerBound = FloatUtils::negativeInfinity();
@@ -1115,6 +1114,7 @@ void Layer::computeIntervalArithmeticBoundsForMax()
         unsigned counter = 0;
         for ( const auto &sourceIndex : sources )
         {
+            const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
             unsigned sourceNeuron = sourceIndex._neuron;
             double sourceLb = sourceLayer->getLb( sourceNeuron );
             double sourceUb = sourceLayer->getUb( sourceNeuron );
@@ -1196,14 +1196,12 @@ void Layer::computeIntervalArithmeticBoundsForSoftmax()
 
         ASSERT( _neuronToActivationSources.exists( i ) );
         List<NeuronIndex> sources = getActivationSources( i );
-        const Layer *sourceLayer = _layerOwner->getLayer( sources.begin()->_layer );
-
-        ASSERT( sourceLayer->getSize() == _size );
 
         Vector<double> sourceLbs;
         Vector<double> sourceUbs;
         for ( const auto &sourceIndex : sources )
         {
+            const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
             unsigned sourceNeuron = sourceIndex._neuron;
             double sourceLb = sourceLayer->getLb( sourceNeuron );
             double sourceUb = sourceLayer->getUb( sourceNeuron );
@@ -1253,14 +1251,13 @@ void Layer::computeIntervalArithmeticBoundsForBilinear()
         List<NeuronIndex> sources = getActivationSources( i );
         ASSERT( sources.size() == 2 );
 
-        const Layer *sourceLayer = _layerOwner->getLayer( sources.begin()->_layer );
-
         Vector<double> sourceLbs;
         Vector<double> sourceUbs;
         Vector<double> sourceValues;
         bool allConstant = true;
         for ( const auto &sourceIndex : sources )
         {
+            const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
             unsigned sourceNeuron = sourceIndex._neuron;
             double sourceLb = sourceLayer->getLb( sourceNeuron );
             double sourceUb = sourceLayer->getUb( sourceNeuron );
@@ -2546,11 +2543,6 @@ void Layer::computeSymbolicBoundsForMax()
 
         ASSERT( _neuronToActivationSources.exists( i ) );
         List<NeuronIndex> sources = getActivationSources( i );
-        const Layer *sourceLayer = _layerOwner->getLayer( sources.begin()->_layer );
-
-        unsigned sourceLayerSize = sourceLayer->getSize();
-        const double *sourceSymbolicLb = sourceLayer->getSymbolicLb();
-        const double *sourceSymbolicUb = sourceLayer->getSymbolicUb();
 
         NeuronIndex indexOfMaxLowerBound = *( sources.begin() );
         double maxLowerBound = FloatUtils::negativeInfinity();
@@ -2560,6 +2552,7 @@ void Layer::computeSymbolicBoundsForMax()
         Map<NeuronIndex, double> sourceUbs;
         for ( const auto &sourceIndex : sources )
         {
+            const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
             unsigned sourceNeuron = sourceIndex._neuron;
             double sourceLb = sourceLayer->getLb( sourceNeuron );
             double sourceUb = sourceLayer->getUb( sourceNeuron );
@@ -2590,6 +2583,11 @@ void Layer::computeSymbolicBoundsForMax()
                 break;
             }
         }
+
+        const Layer *sourceLayer = _layerOwner->getLayer( indexOfMaxLowerBound._layer );
+        unsigned sourceLayerSize = sourceLayer->getSize();
+        const double *sourceSymbolicLb = sourceLayer->getSymbolicLb();
+        const double *sourceSymbolicUb = sourceLayer->getSymbolicUb();
 
         if ( phaseFixed )
         {
@@ -2670,7 +2668,6 @@ void Layer::computeSymbolicBoundsForSoftmax()
     std::fill_n( _work, _size * _size, 0 );
 
     Set<unsigned> handledInputNeurons;
-    unsigned sourceLayerSize = _size;
     SoftmaxBoundType boundType = Options::get()->getSoftmaxBoundType();
 
     for ( unsigned i = 0; i < _size; ++i )
@@ -2694,10 +2691,6 @@ void Layer::computeSymbolicBoundsForSoftmax()
 
         ASSERT( _neuronToActivationSources.exists( i ) );
         List<NeuronIndex> sources = getActivationSources( i );
-        const Layer *sourceLayer = _layerOwner->getLayer( sources.begin()->_layer );
-
-        sourceLayerSize = sourceLayer->getSize();
-        ASSERT( sourceLayerSize == _size );
 
         Vector<double> sourceLbs;
         Vector<double> sourceUbs;
@@ -2706,6 +2699,7 @@ void Layer::computeSymbolicBoundsForSoftmax()
         Vector<double> targetUbs;
         for ( const auto &sourceIndex : sources )
         {
+            const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
             unsigned sourceNeuron = sourceIndex._neuron;
             double sourceLb = sourceLayer->getLb( sourceNeuron );
             double sourceUb = sourceLayer->getUb( sourceNeuron );
@@ -2840,6 +2834,7 @@ void Layer::computeSymbolicBoundsForSoftmax()
     for ( const auto &sourceLayerEntry : _sourceLayers )
     {
         const Layer *sourceLayer = _layerOwner->getLayer( sourceLayerEntry.first );
+        unsigned sourceLayerSize = sourceLayer->getSize();
 
         /*
           Perform the multiplication
