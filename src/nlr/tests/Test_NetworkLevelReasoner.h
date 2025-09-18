@@ -7461,20 +7461,20 @@ public:
         */
 
         List<Tightening> expectedBounds(
-            { Tightening( 3, 2, Tightening::LB ),        Tightening( 3, 2, Tightening::UB ),
-              Tightening( 4, 3, Tightening::LB ),        Tightening( 4, 3, Tightening::UB ),
-              Tightening( 5, 0, Tightening::LB ),        Tightening( 5, 0, Tightening::UB ),
-              Tightening( 6, -1, Tightening::LB ),       Tightening( 6, -1, Tightening::UB ),
-              Tightening( 7, -2, Tightening::LB ),       Tightening( 7, -2, Tightening::UB ),
-              Tightening( 8, 0.8668, Tightening::LB ),   Tightening( 8, 0.8668, Tightening::UB ),
-              Tightening( 9, 0.9820, Tightening::LB ),   Tightening( 9, 0.9820, Tightening::UB ),
-              Tightening( 10, 0.1173, Tightening::LB ),  Tightening( 10, 0.1173, Tightening::UB ),
-              Tightening( 11, 0.0179, Tightening::LB ),  Tightening( 11, 0.0179, Tightening::UB ),
-              Tightening( 12, 0.0159, Tightening::LB ),  Tightening( 12, 0.0159, Tightening::UB ),
-              Tightening( 13, 1, Tightening::LB ),       Tightening( 13, 1, Tightening::UB ),
-              Tightening( 14, -1, Tightening::LB ),      Tightening( 14, -1, Tightening::UB ),
-              Tightening( 15, 1, Tightening::LB ),       Tightening( 15, 1, Tightening::UB ),
-              Tightening( 16, -1, Tightening::LB ),      Tightening( 16, -1, Tightening::UB )
+            { Tightening( 3, 2, Tightening::LB ),       Tightening( 3, 2, Tightening::UB ),
+              Tightening( 4, 3, Tightening::LB ),       Tightening( 4, 3, Tightening::UB ),
+              Tightening( 5, 0, Tightening::LB ),       Tightening( 5, 0, Tightening::UB ),
+              Tightening( 6, -1, Tightening::LB ),      Tightening( 6, -1, Tightening::UB ),
+              Tightening( 7, -2, Tightening::LB ),      Tightening( 7, -2, Tightening::UB ),
+              Tightening( 8, 0.8668, Tightening::LB ),  Tightening( 8, 0.8668, Tightening::UB ),
+              Tightening( 9, 0.9820, Tightening::LB ),  Tightening( 9, 0.9820, Tightening::UB ),
+              Tightening( 10, 0.1173, Tightening::LB ), Tightening( 10, 0.1173, Tightening::UB ),
+              Tightening( 11, 0.0179, Tightening::LB ), Tightening( 11, 0.0179, Tightening::UB ),
+              Tightening( 12, 0.0159, Tightening::LB ), Tightening( 12, 0.0159, Tightening::UB ),
+              Tightening( 13, 1, Tightening::LB ),      Tightening( 13, 1, Tightening::UB ),
+              Tightening( 14, -1, Tightening::LB ),     Tightening( 14, -1, Tightening::UB ),
+              Tightening( 15, 1, Tightening::LB ),      Tightening( 15, 1, Tightening::UB ),
+              Tightening( 16, -1, Tightening::LB ),     Tightening( 16, -1, Tightening::UB )
 
             } );
 
