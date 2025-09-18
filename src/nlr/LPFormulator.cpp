@@ -977,9 +977,9 @@ void LPFormulator::addAbsoluteValueLayerToLpRelaxation( GurobiWrapper &gurobi,
                 double lb = std::max( 0.0, layer->getLb( i ) );
                 gurobi.addVariable( Stringf( "x%u", targetVariable ), lb, ub );
 
-                
+
                 // The phase of this AbsoluteValue is not yet fixed, 0 <= y <= max(-lb, ub).
-                
+
                 // y >= 0
                 List<GurobiWrapper::Term> terms;
                 terms.append( GurobiWrapper::Term( 1, Stringf( "x%u", targetVariable ) ) );
