@@ -8,6 +8,7 @@
   - Implemented backward analysis using preimage-approximation algorithm for `Relu`, `LeakyRelu`, `Sign` and `Bilinear` Layers.
   - Added the BaBSR heuristic as a new branching strategy for ReLU Splitting
   - Support Sub of two variables, "Mul" of two constants, Slice, and ConstantOfShape in the python onnx parser
+  - Renamed SmtCore module to SearchTreeHandler
 
 ## Version 2.0.0
 
