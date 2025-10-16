@@ -36,7 +36,7 @@ public:
     virtual const ITableau *getTableau() const = 0;
     virtual unsigned getNumberOfLayers() const = 0;
     virtual void receiveTighterBound( Tightening tightening ) = 0;
-    virtual void receivePolygonalTighterBound( PolygonalTightening polygonal_tightening ) = 0;
+    virtual void receivePolygonalTightening( PolygonalTightening &polygonalTightening ) = 0;
 };
 
 } // namespace NLR

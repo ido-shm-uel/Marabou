@@ -62,7 +62,7 @@ const unsigned GlobalConfiguration::MAX_SIMPLEX_PIVOT_SEARCH_ITERATIONS = 5;
 const DivideStrategy GlobalConfiguration::SPLITTING_HEURISTICS = DivideStrategy::ReLUViolation;
 const unsigned GlobalConfiguration::INTERVAL_SPLITTING_FREQUENCY = 10;
 const unsigned GlobalConfiguration::INTERVAL_SPLITTING_THRESHOLD = 10;
-const unsigned GlobalConfiguration::BOUND_TIGHTING_ON_CONSTRAINT_MATRIX_FREQUENCY = 100;
+const unsigned GlobalConfiguration::BOUND_TIGHTENING_ON_CONSTRAINT_MATRIX_FREQUENCY = 100;
 const unsigned GlobalConfiguration::ROW_BOUND_TIGHTENER_SATURATION_ITERATIONS = 20;
 const double GlobalConfiguration::COST_FUNCTION_ERROR_THRESHOLD = 0.0000000001;
 
@@ -76,16 +76,17 @@ const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_STEP_SIZE 
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_LEARNING_RATE = 0.25;
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY = 0;
 
-const unsigned GlobalConfiguration::INVPROP_MAX_ITERATIONS = 25000;
-const double GlobalConfiguration::INVPROP_STEP_SIZE = 0.0025;
-const double GlobalConfiguration::INVPROP_LEARNING_RATE = 0.25;
-const double GlobalConfiguration::INVPROP_WEIGHT_DECAY = 0;
+const unsigned GlobalConfiguration::INVPROP_MAX_ITERATIONS = 10;
+const double GlobalConfiguration::INVPROP_STEP_SIZE = 0.025;
+const double GlobalConfiguration::INVPROP_LEARNING_RATE = 0.005;
+const double GlobalConfiguration::INVPROP_WEIGHT_DECAY = 0.5;
 const double GlobalConfiguration::INVPROP_INITIAL_ALPHA = 0.5;
 const double GlobalConfiguration::INVPROP_INITIAL_GAMMA = 0.025;
 
 const unsigned GlobalConfiguration::PMNR_RANDOM_SEED = 1;
-const unsigned GlobalConfiguration::PMNR_MAX_ITERATIONS = 100;
-const unsigned GlobalConfiguration::PMNR_SELECTED_NEURONS = 3;
+const unsigned GlobalConfiguration::PMNR_MAX_ITERATIONS = 1;
+const unsigned GlobalConfiguration::PMNR_SELECTED_NEURONS = 2;
+const unsigned GlobalConfiguration::PMNR_BBPS_BRANCHING_CANDIDATES = 10;
 
 const bool GlobalConfiguration::USE_HARRIS_RATIO_TEST = true;
 
@@ -139,6 +140,9 @@ const unsigned GlobalConfiguration::BACKWARD_BOUND_PROPAGATION_DEPTH = 3;
 const unsigned GlobalConfiguration::MAX_ROUNDS_OF_BACKWARD_ANALYSIS = 10;
 const unsigned GlobalConfiguration::MAX_ROUNDS_OF_PMNR_BACKWARD_ANALYSIS = 10;
 
+const bool GlobalConfiguration::ANALYZE_PROOF_DEPENDENCIES = false;
+const bool GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES = false;
+
 #ifdef ENABLE_GUROBI
 const unsigned GlobalConfiguration::GUROBI_NUMBER_OF_THREADS = 1;
 const bool GlobalConfiguration::GUROBI_LOGGING = false;
@@ -148,7 +152,7 @@ const bool GlobalConfiguration::GUROBI_LOGGING = false;
 const bool GlobalConfiguration::DNC_MANAGER_LOGGING = false;
 const bool GlobalConfiguration::ENGINE_LOGGING = false;
 const bool GlobalConfiguration::TABLEAU_LOGGING = false;
-const bool GlobalConfiguration::SMT_CORE_LOGGING = false;
+const bool GlobalConfiguration::SEARCH_TREE_HANDLER_LOGGING = false;
 const bool GlobalConfiguration::DANTZIGS_RULE_LOGGING = false;
 const bool GlobalConfiguration::BASIS_FACTORIZATION_LOGGING = false;
 const bool GlobalConfiguration::PREPROCESSOR_LOGGING = false;
@@ -194,8 +198,8 @@ void GlobalConfiguration::print()
     printf( "  GAUSSIAN_ELIMINATION_PIVOT_SCALE_THRESHOLD: %.15lf\n",
             GAUSSIAN_ELIMINATION_PIVOT_SCALE_THRESHOLD );
     printf( "  MAX_SIMPLEX_PIVOT_SEARCH_ITERATIONS: %u\n", MAX_SIMPLEX_PIVOT_SEARCH_ITERATIONS );
-    printf( "  BOUND_TIGHTING_ON_CONSTRAINT_MATRIX_FREQUENCY: %u\n",
-            BOUND_TIGHTING_ON_CONSTRAINT_MATRIX_FREQUENCY );
+    printf( "  BOUND_TIGHTENING_ON_CONSTRAINT_MATRIX_FREQUENCY: %u\n",
+            BOUND_TIGHTENING_ON_CONSTRAINT_MATRIX_FREQUENCY );
     printf( "  COST_FUNCTION_ERROR_THRESHOLD: %.15lf\n", COST_FUNCTION_ERROR_THRESHOLD );
     printf( "  USE_HARRIS_RATIO_TEST: %s\n", USE_HARRIS_RATIO_TEST ? "Yes" : "No" );
 

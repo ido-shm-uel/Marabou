@@ -397,7 +397,6 @@ void DeepPolyWeightedSumElement::concretizeSymbolicBoundForSourceLayer(
     }
 }
 
-
 void DeepPolyWeightedSumElement::symbolicBoundInTermsOfPredecessor(
     const double *symbolicLb,
     const double *symbolicUb,

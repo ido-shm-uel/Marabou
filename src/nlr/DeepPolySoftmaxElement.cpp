@@ -199,10 +199,18 @@ void DeepPolySoftmaxElement::execute(
 
 void DeepPolySoftmaxElement::storePredecessorSymbolicBounds()
 {
-    for ( unsigned i = 0; i < _size * _size; ++i )
+    for ( unsigned i = 0; i < _size; ++i )
     {
-        ( *_predecessorSymbolicLb )[_layerIndex][i] = _symbolicLb[i];
-        ( *_predecessorSymbolicUb )[_layerIndex][i] = _symbolicUb[i];
+        List<NeuronIndex> sources = _layer->getActivationSources( i );
+        unsigned inputIndex = 0;
+        for ( const auto &sourceIndex : sources )
+        {
+            ( *_predecessorSymbolicLb )[_layerIndex][_size * inputIndex + i] =
+                _symbolicLb[_size * sourceIndex._neuron + i];
+            ( *_predecessorSymbolicUb )[_layerIndex][_size * inputIndex + i] =
+                _symbolicUb[_size * sourceIndex._neuron + i];
+            ++inputIndex;
+        }
     }
 
     for ( unsigned i = 0; i < _size; ++i )
@@ -303,7 +311,6 @@ void DeepPolySoftmaxElement::symbolicBoundInTermsOfPredecessor(
     log( Stringf( "Computing symbolic bounds with respect to layer %u - done",
                   predecessor->getLayerIndex() ) );
 }
-
 
 void DeepPolySoftmaxElement::allocateMemory( unsigned maxLayerSize )
 {

@@ -43,7 +43,6 @@ unsigned DeepPolyElement::getSize() const
 {
     return _size;
 }
-
 unsigned DeepPolyElement::getLayerIndex() const
 {
     return _layerIndex;
@@ -217,6 +216,7 @@ void DeepPolyElement::storeOutputSymbolicBounds(
     Set<unsigned> &residualLayerIndices,
     const Map<unsigned, DeepPolyElement *> &deepPolyElementsBefore )
 {
+    // Remove externally fixed neurons from symbolic bounds, replace them with their value.
     for ( unsigned i = 0; i < _size; ++i )
     {
         if ( _layer->neuronEliminated( i ) )
@@ -232,6 +232,7 @@ void DeepPolyElement::storeOutputSymbolicBounds(
         }
     }
 
+    // Remove residual layers from symbolic bounds, concretize them instead.
     Vector<double> symbolicLowerBiasConcretizedResiduals( _outputLayerSize, 0 );
     Vector<double> symbolicUpperBiasConcretizedResiduals( _outputLayerSize, 0 );
     for ( unsigned i = 0; i < _outputLayerSize; ++i )
@@ -239,14 +240,13 @@ void DeepPolyElement::storeOutputSymbolicBounds(
         symbolicLowerBiasConcretizedResiduals[i] = workSymbolicLowerBias[i];
         symbolicUpperBiasConcretizedResiduals[i] = workSymbolicUpperBias[i];
     }
-
     for ( const auto &residualLayerIndex : residualLayerIndices )
     {
         DeepPolyElement *residualElement = deepPolyElementsBefore[residualLayerIndex];
         double *currentResidualLb = residualLb[residualLayerIndex];
         double *currentResidualUb = residualUb[residualLayerIndex];
 
-        // Get concrete bounds
+        // Get concrete bounds for residual neurons.
         for ( unsigned i = 0; i < residualElement->getSize(); ++i )
         {
             double sourceLb = residualElement->getLowerBoundFromLayer( i ) -
@@ -256,37 +256,22 @@ void DeepPolyElement::storeOutputSymbolicBounds(
 
             for ( unsigned j = 0; j < _outputLayerSize; ++j )
             {
-                // Compute lower bound
-                double weight = currentResidualLb[i * _size + j];
-                if ( weight >= 0 )
-                {
-                    symbolicLowerBiasConcretizedResiduals[j] += ( weight * sourceLb );
-                }
-                else
-                {
-                    symbolicLowerBiasConcretizedResiduals[j] += ( weight * sourceUb );
-                }
-
-                // Compute upper bound
-                weight = currentResidualUb[i * _size + j];
-                if ( weight >= 0 )
-                {
-                    symbolicUpperBiasConcretizedResiduals[j] += ( weight * sourceUb );
-                }
-                else
-                {
-                    symbolicUpperBiasConcretizedResiduals[j] += ( weight * sourceLb );
-                }
+                double lowerWeight = currentResidualLb[i * _outputLayerSize + j];
+                double upperWeight = currentResidualUb[i * _outputLayerSize + j];
+                symbolicLowerBiasConcretizedResiduals[j] +=
+                    lowerWeight >= 0 ? lowerWeight * sourceLb : lowerWeight * sourceUb;
+                symbolicUpperBiasConcretizedResiduals[j] +=
+                    upperWeight >= 0 ? upperWeight * sourceUb : upperWeight * sourceLb;
             }
         }
     }
 
+    // Store updated bounds.
     for ( unsigned i = 0; i < _size * _outputLayerSize; ++i )
     {
         ( *_outputSymbolicLb )[_layerIndex][i] = work1SymbolicLb[i];
         ( *_outputSymbolicUb )[_layerIndex][i] = work1SymbolicUb[i];
     }
-
     for ( unsigned i = 0; i < _outputLayerSize; ++i )
     {
         ( *_outputSymbolicLowerBias )[_layerIndex][i] = symbolicLowerBiasConcretizedResiduals[i];

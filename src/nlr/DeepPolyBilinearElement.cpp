@@ -120,7 +120,7 @@ void DeepPolyBilinearElement::execute(
             // Upper bound: out <= aUpper * x + bUpper * y + c_u, where
             // aUpper = alpha2 * u_y + ( 1 - alpha2 ) * l_y
             // bUpper = alpha2 * l_x + ( 1 - alpha2 ) * u_x
-            // c_u = -alpha2 * -l_x * u_y - ( 1 - alpha2 ) * u_x * l_y
+            // c_u = -alpha2 * l_x * u_y - ( 1 - alpha2 ) * u_x * l_y
 
             _symbolicLbA[i] = coeffs[0] * sourceLbs[1] + ( 1 - coeffs[0] ) * sourceUbs[1];
             _symbolicUbA[i] = coeffs[1] * sourceUbs[1] + ( 1 - coeffs[1] ) * sourceLbs[1];
@@ -154,15 +154,10 @@ void DeepPolyBilinearElement::storePredecessorSymbolicBounds()
 {
     for ( unsigned i = 0; i < _size; ++i )
     {
-        List<NeuronIndex> sources = _layer->getActivationSources( i );
-        ( *_predecessorSymbolicLb )[_layerIndex][_size * sources.begin()->_neuron + i] =
-            _symbolicLbA[i];
-        ( *_predecessorSymbolicUb )[_layerIndex][_size * sources.begin()->_neuron + i] =
-            _symbolicUbA[i];
-        ( *_predecessorSymbolicLb )[_layerIndex][_size * sources.back()._neuron + i] =
-            _symbolicLbB[i];
-        ( *_predecessorSymbolicUb )[_layerIndex][_size * sources.back()._neuron + i] =
-            _symbolicUbB[i];
+        ( *_predecessorSymbolicLb )[_layerIndex][i] = _symbolicLbA[i];
+        ( *_predecessorSymbolicUb )[_layerIndex][i] = _symbolicUbA[i];
+        ( *_predecessorSymbolicLb )[_layerIndex][_size + i] = _symbolicLbB[i];
+        ( *_predecessorSymbolicUb )[_layerIndex][_size + i] = _symbolicUbB[i];
         ( *_predecessorSymbolicLowerBias )[_layerIndex][i] = _symbolicLowerBias[i];
         ( *_predecessorSymbolicUpperBias )[_layerIndex][i] = _symbolicUpperBias[i];
     }

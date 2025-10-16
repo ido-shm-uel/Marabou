@@ -131,7 +131,7 @@ void DeepPolyMaxPoolElement::storePredecessorSymbolicBounds(
 {
     for ( unsigned i = 0; i < _size; ++i )
     {
-        if ( _phaseFixed[i] > 0 )
+        if ( _phaseFixed[i] )
         {
             ( *_predecessorSymbolicLb )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] = 1;
             ( *_predecessorSymbolicUb )[_layerIndex][_size * indexOfMaxLowerBound[i] + i] = 1;

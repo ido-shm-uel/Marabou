@@ -28,7 +28,7 @@ public:
         LEAKY_RELU_SLOPES_NOT_UNIFORM = 3,
         RELU_NOT_FOUND = 4,
         LAYER_NOT_FOUND = 5,
-        NEURON_NOT_FOUND = 5,
+        NEURON_NOT_FOUND = 6,
     };
 
     NLRError( NLRError::Code code )

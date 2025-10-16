@@ -1,8 +1,8 @@
 /*********************                                                        */
-/*! \file Test_NetworkLevelReasoner2.h
+/*! \file Test_PMNRSelection.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Guy Katz, Andrew Wu
+ **   Guy Katz, Andrew Wu, Ido Shmuel
  ** This file is part of the Marabou project.
  ** Copyright (c) 2017-2024 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
@@ -144,13 +144,11 @@ public:
         nlr.setWeight( 0, 0, 3, 0, -1 );
         nlr.setWeight( 1, 0, 5, 0, 3 );
 
-
         nlr.setBias( 3, 0, 1 );
         nlr.setBias( 5, 0, 1 );
 
         // Mark the ReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
-
         nlr.addActivationSource( 3, 0, 4, 0 );
 
         // Variable indexing
@@ -219,7 +217,6 @@ public:
 
         // Mark the ReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
-
         nlr.addActivationSource( 3, 0, 4, 0 );
 
         // Variable indexing
@@ -348,6 +345,136 @@ public:
         tableau.setUpperBound( 10, large );
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
+    }
+
+    void populateNetworkSBTAbsoluteValue( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )
+    {
+        /*
+              2      R       1
+          x0 --- x2 ---> x4 --- x6
+            \    /              /
+           1 \  /              /
+              \/           -1 /
+              /\             /
+           3 /  \           /
+            /    \   R     /
+          x1 --- x3 ---> x5
+              1
+        */
+
+        // Create the layers
+        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
+        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
+        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
+        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
+
+        // Mark layer dependencies
+        for ( unsigned i = 1; i <= 3; ++i )
+            nlr.addLayerDependency( i - 1, i );
+
+        // Weights
+        nlr.setWeight( 0, 0, 1, 0, 2 );
+        nlr.setWeight( 0, 0, 1, 1, 1 );
+        nlr.setWeight( 0, 1, 1, 0, 3 );
+        nlr.setWeight( 0, 1, 1, 1, 1 );
+        nlr.setWeight( 2, 0, 3, 0, 1 );
+        nlr.setWeight( 2, 1, 3, 0, -1 );
+
+        // Mark the ReLU sources
+        nlr.addActivationSource( 1, 0, 2, 0 );
+        nlr.addActivationSource( 1, 1, 2, 1 );
+
+        // Variable indexing
+        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
+        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
+
+        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
+        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
+
+        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
+        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
+
+        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
+
+        // Very loose bounds for neurons except inputs
+        double large = 1000000;
+
+        tableau.getBoundManager().initialize( 7 );
+        tableau.setLowerBound( 2, -large );
+        tableau.setUpperBound( 2, large );
+        tableau.setLowerBound( 3, -large );
+        tableau.setUpperBound( 3, large );
+        tableau.setLowerBound( 4, -large );
+        tableau.setUpperBound( 4, large );
+        tableau.setLowerBound( 5, -large );
+        tableau.setUpperBound( 5, large );
+        tableau.setLowerBound( 6, -large );
+        tableau.setUpperBound( 6, large );
+    }
+
+    void populateNetworkSBTSign( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )
+    {
+        /*
+              2      R       1
+          x0 --- x2 ---> x4 --- x6
+            \    /              /
+           1 \  /              /
+              \/           -1 /
+              /\             /
+           3 /  \           /
+            /    \   R     /
+          x1 --- x3 ---> x5
+              1
+        */
+
+        // Create the layers
+        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
+        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
+        nlr.addLayer( 2, NLR::Layer::SIGN, 2 );
+        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
+
+        // Mark layer dependencies
+        for ( unsigned i = 1; i <= 3; ++i )
+            nlr.addLayerDependency( i - 1, i );
+
+        // Weights
+        nlr.setWeight( 0, 0, 1, 0, 2 );
+        nlr.setWeight( 0, 0, 1, 1, 1 );
+        nlr.setWeight( 0, 1, 1, 0, 3 );
+        nlr.setWeight( 0, 1, 1, 1, 1 );
+        nlr.setWeight( 2, 0, 3, 0, 1 );
+        nlr.setWeight( 2, 1, 3, 0, -1 );
+
+        // Mark the ReLU sources
+        nlr.addActivationSource( 1, 0, 2, 0 );
+        nlr.addActivationSource( 1, 1, 2, 1 );
+
+        // Variable indexing
+        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
+        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
+
+        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
+        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
+
+        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
+        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
+
+        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
+
+        // Very loose bounds for neurons except inputs
+        double large = 1000000;
+
+        tableau.getBoundManager().initialize( 7 );
+        tableau.setLowerBound( 2, -large );
+        tableau.setUpperBound( 2, large );
+        tableau.setLowerBound( 3, -large );
+        tableau.setUpperBound( 3, large );
+        tableau.setLowerBound( 4, -large );
+        tableau.setUpperBound( 4, large );
+        tableau.setLowerBound( 5, -large );
+        tableau.setUpperBound( 5, large );
+        tableau.setLowerBound( 6, -large );
+        tableau.setUpperBound( 6, large );
     }
 
     void populateNetworkSBTLeakyReLU( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )
@@ -497,6 +624,8 @@ public:
         // Mark the Sigmoid sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
+
+        // Mark the Round sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 1 );
 
@@ -612,7 +741,6 @@ public:
     {
         /*
 
-
           x0      x3  S  x6
 
           x1      x4  S  x7
@@ -661,6 +789,7 @@ public:
         nlr.setBias( 1, 1, 2 );
         nlr.setBias( 1, 2, 3 );
 
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 0 );
         nlr.addActivationSource( 1, 2, 2, 0 );
@@ -670,7 +799,6 @@ public:
         nlr.addActivationSource( 1, 0, 2, 2 );
         nlr.addActivationSource( 1, 1, 2, 2 );
         nlr.addActivationSource( 1, 2, 2, 2 );
-
 
         // Variable indexing
         nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
@@ -713,7 +841,6 @@ public:
     void populateNetworkSBTSoftmax2( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )
     {
         /*
-
 
           x0      x3  S  x8
 
@@ -785,6 +912,7 @@ public:
         nlr.setBias( 1, 3, 2 );
         nlr.setBias( 1, 4, 1 );
 
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 2, 2, 0 );
         nlr.addActivationSource( 1, 4, 2, 0 );
@@ -859,7 +987,6 @@ public:
     {
         /*
 
-
           x0    x2
                     x  x4 -- x5
           x1    x3
@@ -888,9 +1015,9 @@ public:
         nlr.setWeight( 0, 1, 1, 1, 1 );
         nlr.setWeight( 2, 0, 3, 0, -1 );
 
+        // Mark the Bilinear sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 0 );
-
 
         // Variable indexing
         nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
@@ -931,9 +1058,9 @@ public:
         tableau.setLowerBound( 1, 1 );
         tableau.setUpperBound( 1, 5 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -1014,8 +1141,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -1043,21 +1170,9 @@ public:
                                      Vector<double>( { 1, 2 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
-        {
-            Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                       "backward-pmnr-random" );
-            comparePMNRScores( nlr, Map<NLR::NeuronIndex, double>( {} ) );
-        }
-        {
-            Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                       "backward-pmnr-gradient" );
-            comparePMNRScores( nlr, Map<NLR::NeuronIndex, double>( {} ) );
-        }
-        {
-            Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                       "backward-pmnr-bbps" );
-            comparePMNRScores( nlr, Map<NLR::NeuronIndex, double>( {} ) );
-        }
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_symbolic_bound_maps_relus_active_and_inactive()
@@ -1077,9 +1192,9 @@ public:
         // Strong negative bias for x2, which is node (1,0)
         nlr.setBias( 1, 0, -30 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -1161,8 +1276,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -1190,6 +1305,9 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_symbolic_bound_maps_relus_active_and_not_fixed()
@@ -1209,9 +1327,9 @@ public:
         // Strong negative bias for x2, which is node (1,0)
         nlr.setBias( 1, 0, -15 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -1297,8 +1415,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0.75, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 0.75, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 3, 0 } ) );
 
@@ -1326,6 +1444,99 @@ public:
                                      Vector<double>( { 0.5, 1.25 } ),
                                      Vector<double>( { -15 } ),
                                      Vector<double>( { -8.25 } ) );
+
+        // Non-fixed activation neurons: x4 (RELU).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
+    }
+
+    void test_gradient_selection_relus_active_and_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTRelu( nlr, tableau );
+
+        tableau.setLowerBound( 0, 4 );
+        tableau.setUpperBound( 0, 6 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 5 );
+
+        // Strong negative bias for x2, which is node (1,0)
+        nlr.setBias( 1, 0, -15 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x4 - x5 <= x6 <= x4 - x5.
+          x4 gradient: lower = ( 1 ), upper = ( 1 ), average = ( 1 ).
+          Gradient-based PMNR score of x4: ( 1 )^2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
+    }
+
+    void test_bbps_selection_relus_active_and_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTRelu( nlr, tableau );
+
+        tableau.setLowerBound( 0, 4 );
+        tableau.setUpperBound( 0, 6 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 5 );
+
+        // Strong negative bias for x2, which is node (1,0)
+        nlr.setBias( 1, 0, -15 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x2, 0) for x4 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x4 <= 0.
+           Upper branch symbolic bounds: x2 <= x4 <= x2.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2: x4 - x5 <= x6 <= x4 - x5.
+           Concretizing x5: x4 - 11 <= x6 <= x4 - 5.
+
+           Lower branch, using x2: [-4, 0], 0 <= x4 <= 0:
+           Output symbolic bounds -11 <= x6 <= -5.
+           Concrete bounds: [-11, -5]. DeepPoly bounds: [-9, 1]. Improvement: 6.
+
+           Upper branch, using x2: [0, 12], x2 <= x4 <= x2:
+           Output symbolic bounds x2 - 11 <= x6 <= x2 - 5.
+           Concrete bounds: [-11, 7]. DeepPoly bounds: [-9, 1]. Improvement: 0.
+
+           Final score = ( 6 + 0 ) / 2 = 3.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 3 );
     }
 
     void test_symbolic_bound_maps_relus_active_and_externally_fixed()
@@ -1348,9 +1559,9 @@ public:
         // However, one of the ReLU's variables has been eliminated
         nlr.eliminateVariable( 2, -3 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -1431,8 +1642,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -1460,6 +1671,9 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_symbolic_bound_maps_relu_residual1()
@@ -1474,9 +1688,9 @@ public:
         tableau.setLowerBound( 0, -1 );
         tableau.setUpperBound( 0, 1 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -1624,6 +1838,130 @@ public:
                                      Vector<double>( { 1 } ),
                                      Vector<double>( { 2.5 } ),
                                      Vector<double>( { 5 } ) );
+
+        // Non-fixed activation neurons: x2 (RELU), x4 (RELU).
+        compareNonfixedNeurons(
+            nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ), NLR::NeuronIndex( 4, 0 ) } ) );
+    }
+
+    void test_gradient_selection_relu_residual1()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTReluResidual1( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x2:
+          Symbolic bounds of output layer in terms of Layer 2:
+          -3x2 - 2 <= x5 <= -2x2 + 10.
+          x2 gradient: lower = ( -3 ), upper = ( -2 ), average = ( -2.5 ).
+          Gradient-based PMNR score of x2: ( -2.5 )^2 = 6.25.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 6.25 );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 4:
+          3x4 - 2 <= x5 <= 3x4 + 4.
+          x4 gradient: lower = ( 3 ), upper = ( 3 ), average = ( 3 ).
+          Gradient-based PMNR score of x4: ( 3 )^2 = 9.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 9 );
+    }
+
+    void test_bbps_selection_relu_residual1()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTReluResidual1( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x1, 0) for x2 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        // Using branching point (x3, 0) for x4 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 4, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 3, 0 ), 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x2 <= 0.
+           Upper branch symbolic bounds: x1 <= x2 <= x1.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x4 <= 0.
+           Upper branch symbolic bounds: x3 <= x4 <= x3.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 4, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /* Calculating BBPS-based PMNR score of x2:
+           Symbolic bounds of output layer in terms of Layer 2: -3x2 - 2 <= x5 <= -2x2 + 10.
+
+           Lower branch, using x1: [-1, 0], 0 <= x4 <= 0:
+           Output symbolic bounds -2 <= x5 <= 10.
+           Concrete bounds: [-2, 10]. DeepPoly bounds: [1, 6]. Improvement: 0.
+
+           Upper branch, using x1: [0, 1], x2 <= x4 <= x2:
+           Output symbolic bounds -3x1 - 2 <= x5 <= -2x1 + 10.
+           Concrete bounds: [-5, 10]. DeepPoly bounds: [1, 6]. Improvement: 0.
+
+           Final score = ( 0 + 0 ) / 2 = 0.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 4: 3x4 - 2 <= x5 <= 3x4 + 4.
+
+           Lower branch, using x3: [-1, 0], 0 <= x4 <= 0:
+           Output symbolic bounds -2 <= x5 <= 4.
+           Concrete bounds: [-2, 4]. DeepPoly bounds: [1, 6]. Improvement: 2.
+
+           Upper branch, using x3: [0, 2], x2 <= x4 <= x2:
+           Output symbolic bounds 3x3 - 2 <= x5 <= 3x3 + 4.
+           Concrete bounds: [-2, 10]. DeepPoly bounds: [1, 6]. Improvement: 0.
+
+           Final score = ( 0 + 2 ) / 2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
     }
 
     void test_symbolic_bound_maps_relu_residual2()
@@ -1638,9 +1976,9 @@ public:
         tableau.setLowerBound( 0, -1 );
         tableau.setUpperBound( 0, 1 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -1806,6 +2144,130 @@ public:
                                      Vector<double>( { -1 } ),
                                      Vector<double>( { 2.5 } ),
                                      Vector<double>( { 5 } ) );
+
+        // Non-fixed activation neurons: x2 (RELU), x4 (RELU).
+        compareNonfixedNeurons(
+            nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ), NLR::NeuronIndex( 4, 0 ) } ) );
+    }
+
+    void test_gradient_selection_relu_residual2()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTReluResidual2( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x2:
+          Symbolic bounds of output layer in terms of Layer 2:
+          -3x2 + 2 <= x5 <= -2x2 + 6.
+          x4 gradient: lower = ( -3 ), upper = ( -2 ), average = ( -2.5 ).
+          Gradient-based PMNR score of x2: ( -2.5 )^2 = 6.25.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 6.25 );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 4:
+          3x4 <= x5 <= 3x4 + 2.
+          x4 gradient: lower = ( 3 ), upper = ( 3 ), average = ( 3 ).
+          Gradient-based PMNR score of x4: ( 3 )^2 = 9.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 9 );
+    }
+
+    void test_bbps_selection_relu_residual2()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTReluResidual2( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x1, 0) for x2 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        // Using branching point (x3, 0) for x4 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 4, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 3, 0 ), 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x2 <= 0.
+           Upper branch symbolic bounds: x1 <= x2 <= x1.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x4 <= 0.
+           Upper branch symbolic bounds: x3 <= x4 <= x3.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 4, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /* Calculating BBPS-based PMNR score of x2:
+           Symbolic bounds of output layer in terms of Layer 2: -3x2 + 2 <= x6 <= -2x2 + 6.
+
+           Lower branch, using x1: [-1, 0], 0 <= x4 <= 0:
+           Output symbolic bounds 2 <= x6 <= 6.
+           Concrete bounds: [2, 6]. DeepPoly bounds: [-1, 6]. Improvement: 3.
+
+           Upper branch, using x1: [0, 1], x2 <= x4 <= x2:
+           Output symbolic bounds -3x1 + 2 <= x6 <= -2x1 + 6.
+           Concrete bounds: [-1, 6]. DeepPoly bounds: [-1, 6]. Improvement: 0.
+
+           Final score = ( 3 + 0 ) / 2 = 1.5.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1.5 );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 4: 3x4 <= x6 <= 3x4 + 2.
+
+           Lower branch, using x3: [0, 1], 0 <= x4 <= 0:
+           Output symbolic bounds 0 <= x6 <= 2.
+           Concrete bounds: [0, 2]. DeepPoly bounds: [-1, 6]. Improvement: 5.
+
+           Upper branch, using x3: [0, 2], x2 <= x4 <= x2:
+           Output symbolic bounds 3x3 <= x6 <= 3x3 + 2.
+           Concrete bounds: [0, 8]. DeepPoly bounds: [-1, 6]. Improvement: 1.
+
+           Final score = ( 5 + 1 ) / 2 = 3.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 3 );
     }
 
     void test_symbolic_bound_maps_relu_reindex()
@@ -1822,9 +2284,9 @@ public:
         tableau.setLowerBound( 1, -1 );
         tableau.setUpperBound( 1, 1 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -1961,15 +2423,15 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 0 } ),
-                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0.5, 0.5 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 1, 1 } ) );
 
         comparePredecessorSymbolicBounds( nlr,
                                           4,
-                                          Vector<double>( { 0, 1, 0, 0 } ),
-                                          Vector<double>( { 0, 1, 0.5, 0 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0.5, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 1, 0 } ) );
 
@@ -2009,73 +2471,214 @@ public:
                                      Vector<double>( { 1, 0.25, 0.5, 0.25 } ),
                                      Vector<double>( { 1, 0 } ),
                                      Vector<double>( { 4, 1.5 } ) );
+
+        // Non-fixed activation neurons: x4 (RELU), x5 (RELU), x9 (RELU).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 4, 0 ) } ) );
     }
 
-    void test_symbolic_bound_maps_abs_all_positive()
+    void test_gradient_selection_relu_reindex()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTReluReindex( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
+          x4 gradient: lower = ( 1, 0 ), upper = ( 1.5, 0.5 ), average = ( 1.25, 0.25 ).
+          Gradient-based PMNR score of x4: ( 1.25 )^2 + ( 0.25 )^2 = 1.625.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0.625 );
+
+        /*
+          Calculating Gradient-based PMNR score of x5:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
+          x5 gradient: lower = ( 1, 0 ), upper = ( 0.5, -0.5 ), average = ( 0.75, -0.25 ).
+          Gradient-based PMNR score of x5: ( 0.75 )^2 + ( -0.25 )^2 = 0.625.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 1.625 );
+
+        /*
+          Calculating Gradient-based PMNR score of x9:
+          Symbolic bounds of output layer in terms of Layer 4:
+          x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
+          x9 gradient: lower = ( 1, 1 ), upper = ( 1, 1 ), average = ( 1, 1 ).
+          Gradient-based PMNR score of x9: ( ( 1 )^2 + ( 1 )^2 ) / 2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 2 );
+    }
+
+    void test_bbps_selection_relu_reindex()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTReluReindex( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x2, 0) for x4 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 0 } ) );
+
+        // Using branching point (x3, 0) for x5 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        // Using branching point (x7, 0) for x9 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 4, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 3, 1 ), 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x4 <= 0.
+           Upper branch symbolic bounds: x2 <= x4 <= x2.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x5 <= 0.
+           Upper branch symbolic bounds: x3 <= x5 <= x3.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 1 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x9 <= 0.
+           Upper branch symbolic bounds: x7 <= x9 <= x7.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 4, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2:
+           x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
+           Concretizing x5: x4 + 1 <= x10 <= 1.5x4 + 3, 0 <= x11 <= 0.5x4 + 1.
+
+           Lower branch, using x2: [-2, 0], 0 <= x4 <= 0: Output symbolic bounds:
+           1 <= x10 <= 3, 0 <= x11 <= 1.
+           Concrete bounds: x10: [1, 3], x11: [0, 1].
+           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
+           Improvement: 2.5 + 1 = 3.5.
+
+           Upper branch, using x2: [0, 2], x2 <= x4 <= x2: Output symbolic bounds:
+           x2 + 1 <= x10 <= 1.5x2 + 3, 0 <= x11 <= 0.5x2 + 1.
+           Concrete bounds: x10: [1, 6], x11: [0, 2].
+           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
+           Improvement: 0 + 0 = 0.
+
+           Final score = ( 3.5 + 0 ) / 2 = 1.75.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 1.75 );
+
+        /* Calculating BBPS-based PMNR score of x5:
+           Symbolic bounds of output layer in terms of Layer 2:
+           x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
+           Concretizing x4: x5 + 1 <= x10 <= 0.5x5 + 5, 0 <= x11 <= -0.5x5 + 2.
+
+           Lower branch, using x3: [-2, 0], 0 <= x5 <= 0: Output symbolic bounds:
+           1 <= x10 <= 5, 0 <= x11 <= 2.
+           Concrete bounds: x10: [1, 5], x11: [0, 2].
+           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
+           Improvement: 0.5 + 0 = 0.5.
+
+           Upper branch, using x3: [0, 2], x3 <= x5 <= x3: Output symbolic bounds:
+           x3 + 1 <= x10 <= 0.5x3 + 5, 0 <= x11 <= -0.5x3 + 2.
+           Concrete bounds: x10: [1, 6], x11: [0, 2].
+           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
+           Improvement: 0 + 0 = 0.
+
+           Final score = ( 0.5 + 0 ) / 2 = 0.25.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0.25 );
+
+        /* Calculating BBPS-based PMNR score of x9:
+           Symbolic bounds of output layer in terms of Layer 4:
+           x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
+           Concretizing x8: x9 + 1 <= x10 <= x9 + 4, x9 <= x11 <= x9.
+
+           Lower branch, using x7: [-2, 0], 0 <= x9 <= 0:
+           Output symbolic bounds: 1 <= x10 <= 4, 0 <= x11 <= 0.
+           Concrete bounds: x10: [1, 4], x11: [0, 0].
+           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
+           Improvement: 1.5 + 2 = 3.5.
+
+           Lower branch, using x7: [0, 2], 0 <= x9 <= 0:
+           Output symbolic bounds: x7 + 1 <= x10 <= x7 + 4, x7 <= x11 <= x7.
+           Concrete bounds: x10: [1, 6], x11: [0, 2].
+           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
+           Improvement: 0 + 0 = 0.
+
+           Final score = ( 3.5 + 0 ) / 2 = 1.75.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1.75 );
+    }
+
+    void test_symbolic_bound_maps_absolute_values_all_positive()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
         tableau.setLowerBound( 1, 1 );
         tableau.setUpperBound( 1, 5 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -2155,8 +2758,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -2184,64 +2787,19 @@ public:
                                      Vector<double>( { 1, 2 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
-    void test_symbolic_bound_maps_abs_positive_and_negative()
+    void test_symbolic_bound_maps_absolute_values_positive_and_negative()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -2251,9 +2809,9 @@ public:
         // Strong negative bias for x2, which is node (1,0)
         nlr.setBias( 1, 0, -30 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -2333,8 +2891,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -1, 0, 0, 1 } ),
-                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -2362,6 +2920,9 @@ public:
                                      Vector<double>( { -3, -4 } ),
                                      Vector<double>( { 30 } ),
                                      Vector<double>( { 30 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_symbolic_bound_maps_absolute_values_positive_and_not_fixed()
@@ -2370,56 +2931,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -2429,9 +2942,9 @@ public:
         // Strong negative bias for x2, which is node (1,0)
         nlr.setBias( 1, 0, -15 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -2515,8 +3028,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 12, 0 } ) );
 
@@ -2544,6 +3057,99 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 12 } ) );
+
+        // Non-fixed activation neurons: x4 (ABSOLUTE_VALUE).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
+    }
+
+    void test_gradient_selection_absolute_values_positive_and_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
+
+        tableau.setLowerBound( 0, 4 );
+        tableau.setUpperBound( 0, 6 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 5 );
+
+        // Strong negative bias for x2, which is node (1,0)
+        nlr.setBias( 1, 0, -15 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x4 - x5 <= x6 <= x4 - x5.
+          x4 gradient: lower = ( 1 ), upper = ( 1 ), average = ( 1 ).
+          Gradient-based PMNR score of x4: ( 1 )^2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
+    }
+
+    void test_bbps_selection_absolute_values_positive_and_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
+
+        tableau.setLowerBound( 0, 4 );
+        tableau.setUpperBound( 0, 6 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 5 );
+
+        // Strong negative bias for x2, which is node (1,0)
+        nlr.setBias( 1, 0, -15 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x2, 0) for x4 (ABSOLUTE_VALUE).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: -x2 <= x4 <= -x2.
+           Upper branch symbolic bounds: x2 <= x4 <= x2.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { -1, 1 } ),
+                                     Vector<double>( { -1, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2: x4 - x5 <= x6 <= x4 - x5.
+           Concretizing x5: x4 - 11 <= x6 <= x4 - 5.
+
+           Lower branch, using x2: [-4, 0], -x2 <= x4 <= -x2:
+           Output symbolic bounds -x2 - 11 <= x6 <= -x2 - 5.
+           Concrete bounds: [-11, -1]. DeepPoly bounds: [-11, 7]. Improvement: 8.
+
+           Upper branch, using x2: [0, 12], x2 <= x4 <= x2:
+           Output symbolic bounds x2 - 11 <= x6 <= x2 - 5.
+           Concrete bounds: [-11, 7]. DeepPoly bounds: [-11, 7]. Improvement: 0.
+
+           Final score = ( 8 + 0 ) / 2 = 4.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 4 );
     }
 
     void test_symbolic_bound_maps_absolute_values_active_and_externally_fixed()
@@ -2552,56 +3158,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -2614,9 +3172,9 @@ public:
         // However, the weighted sum variable has been eliminated
         nlr.eliminateVariable( 2, -3 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -2699,8 +3257,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -1, 0, 0, 1 } ),
-                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -2728,6 +3286,9 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 3 } ),
                                      Vector<double>( { 3 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_symbolic_bound_maps_signs_positive_and_not_fixed()
@@ -2736,56 +3297,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::SIGN, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Sign sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTSign( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -2795,9 +3308,9 @@ public:
         // Strong negative bias for x2, which is node (1,0)
         nlr.setBias( 1, 0, -15 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -2885,8 +3398,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0.1667, 0, 0, 0 } ),
-                                          Vector<double>( { 0.5, 0, 0, 0 } ),
+                                          Vector<double>( { 0.1667, 0 } ),
+                                          Vector<double>( { 0.5, 0 } ),
                                           Vector<double>( { -1, 1 } ),
                                           Vector<double>( { 1, 1 } ) );
 
@@ -2914,6 +3427,99 @@ public:
                                      Vector<double>( { 1, 1.5 } ),
                                      Vector<double>( { -4.5 } ),
                                      Vector<double>( { -7.5 } ) );
+
+        // Non-fixed activation neurons: x4 (SIGN).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
+    }
+
+    void test_gradient_selection_signs_positive_and_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSign( nlr, tableau );
+
+        tableau.setLowerBound( 0, 4 );
+        tableau.setUpperBound( 0, 6 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 5 );
+
+        // Strong negative bias for x2, which is node (1,0)
+        nlr.setBias( 1, 0, -15 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x4 - x5 <= x6 <= x4 - x5.
+          x4 gradient: lower = ( 1 ), upper = ( 1 ), average = ( 1 ).
+          Gradient-based PMNR score of x4: ( 1 )^2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
+    }
+
+    void test_bbps_selection_signs_positive_and_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSign( nlr, tableau );
+
+        tableau.setLowerBound( 0, 4 );
+        tableau.setUpperBound( 0, 6 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 5 );
+
+        // Strong negative bias for x2, which is node (1,0)
+        nlr.setBias( 1, 0, -15 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x2, 0) for x4 (SIGN).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: -1 <= x4 <= -1.
+           Upper branch symbolic bounds: 1 <= x4 <= 1.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { -1, 1 } ),
+                                     Vector<double>( { -1, 1 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2: x4 - x5 <= x6 <= x4 - x5.
+           Concretizing x5: x4 - 11 <= x6 <= x4 - 5.
+
+           Lower branch, using x2: [-4, 0], -1 <= x4 <= -1:
+           Output symbolic bounds -2 <= x6 <= -2.
+           Concrete bounds: [-2, -2]. DeepPoly bounds: [-2, 0]. Improvement: 2.
+
+           Upper branch, using x2: [0, 12], 1 <= x4 <= 1:
+           Output symbolic bounds 0 <= x6 <= 0.
+           Concrete bounds: [0, 0]. DeepPoly bounds: [-2, 0]. Improvement: 2.
+
+           Final score = ( 2 + 2 ) / 2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
     }
 
     void test_symbolic_bound_maps_signs_active_and_externally_fixed()
@@ -2922,56 +3528,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::SIGN, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Sign sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTSign( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -2984,9 +3542,9 @@ public:
         // However, the weighted sum variable has been eliminated
         nlr.eliminateVariable( 2, -3 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -3063,8 +3621,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 0 } ),
-                                          Vector<double>( { 0, 0, 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
                                           Vector<double>( { -1, 1 } ),
                                           Vector<double>( { -1, 1 } ) );
 
@@ -3092,10 +3650,15 @@ public:
                                      Vector<double>( { 0, 0 } ),
                                      Vector<double>( { -2 } ),
                                      Vector<double>( { -2 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_symbolic_bound_maps_leaky_relu()
     {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
         nlr.setTableau( &tableau );
@@ -3106,9 +3669,9 @@ public:
         tableau.setLowerBound( 1, -1 );
         tableau.setUpperBound( 1, 1 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -3256,15 +3819,15 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 0.6, 0.6 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0.8, 0.8 } ) );
 
         comparePredecessorSymbolicBounds( nlr,
                                           4,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 0.6667, 0, 0, 0.6 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 0.6667, 0.6 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0.9333, 1.12 } ) );
 
@@ -3304,6 +3867,243 @@ public:
                                      Vector<double>( { 0.8, -0.24, 0.72, 0.96 } ),
                                      Vector<double>( { 1, -0.8 } ),
                                      Vector<double>( { 4.12, 1.6 } ) );
+
+        // Non-fixed activation neurons: x4 (LEAKY_RELU), x5 (LEAKY_RELU), x8 (LEAKY_RELU), x9
+        // (LEAKY_RELU).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 4, 0 ),
+                                                         NLR::NeuronIndex( 4, 1 ) } ) );
+    }
+
+    void test_gradient_selection_leaky_relu()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTLeakyReLU( nlr, tableau ); // alpha = 0.2
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 2:
+          2x4 + 1 <= x10 <= 19/15 x4 + 1/15 x5 + 229/75, x4 - x5 <= x11 <= 0.6x4 - 0.6x5 + 1.12.
+          x4 gradient: lower = ( 2, 1 ), upper = ( 19/15, 0.6 ), average = ( 49/30, 0.8 ).
+          Gradient-based PMNR score of x4: ( 49/30 )^2 + ( 0.8 )^2 = 3.3078.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 3.3078 );
+
+        /*
+          Calculating Gradient-based PMNR score of x5:
+          Symbolic bounds of output layer in terms of Layer 2:
+          2x4 + 1 <= x10 <= 19/15 x4 + 1/15 x5 + 229/75, x4 - x5 <= x11 <= 0.6x4 - 0.6x5 + 1.12.
+          x5 gradient: lower = ( 0, -1 ), upper = ( 1/15, -0.6 ), average = ( 1/30, -0.8 ).
+          Gradient-based PMNR score of x5: ( 1/30 )^2 + ( 0.8 )^2 = 0.6411.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0.6411 );
+
+        /*
+          Calculating Gradient-based PMNR score of x8:
+          Symbolic bounds of output layer in terms of Layer 4:
+          x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
+          x8 gradient: lower = ( 1, 0 ), upper = ( 1, 0 ), average = ( 1, 0 ).
+          Gradient-based PMNR score of x8: ( 1 )^2 + ( 0 )^2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
+
+        /*
+          Calculating Gradient-based PMNR score of x9:
+          Symbolic bounds of output layer in terms of Layer 4:
+          x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
+          x9 gradient: lower = ( 1, 1 ), upper = ( 1, 1 ), average = ( 1, 1 ).
+          Gradient-based PMNR score of x9: ( 1 )^2 + ( 1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 2 );
+    }
+
+    void test_bbps_selection_leaky_relu()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTLeakyReLU( nlr, tableau ); // alpha = 0.2
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x2, 0) for x4 (LEAKY_RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        // Using branching point (x3, 0) for x5 (LEAKY_RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 0 } ) );
+
+        // Using branching point (x6, 0) for x8 (LEAKY_RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 4, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 3, 0 ), 0 } ) );
+
+        // Using branching point (x7, 0) for x9 (LEAKY_RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 4, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 3, 1 ), 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0.2 x2 <= x4 <= 0.2 x2.
+           Upper branch symbolic bounds: x2 <= x4 <= x2.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0.2 x3 <= x5 <= 0.2 x3.
+           Upper branch symbolic bounds: x3 <= x5 <= x3.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 1 ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0.2 x6 <= x8 <= 0.2 x6.
+           Upper branch symbolic bounds: x6 <= x8 <= x6.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 4, 0 ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0.2 x7 <= x9 <= 0.2 x7.
+           Upper branch symbolic bounds: x7 <= x9 <= x7.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 4, 1 ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0.2, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2:
+           2x4 + 1 <= x10 <= 19/15 x4 + 1/15 x5 + 229/75, x4 - x5 <= x11 <= 0.6x4 - 0.6x5 + 1.12.
+           Concretizing x5: 2x4 + 1 <= x10 <= 19/15 x4 + 239/75, x4 - 2 <= x11 <= 0.6x4 + 2.32.
+
+           Lower branch, using x2: [-2, 0], 0.2 x2 <= x4 <= 0.2 x2: Output symbolic bounds:
+           0.4 x2 + 1 <= x10 <= 19/75 x2 + 239/75, 0.2 x2 - 2 <= x11 <= 0.12 x2 + 2.32.
+           Concrete bounds: x10: [0.2, 239/75], x11: [-2.4, 2.32].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 424/75 + 0.88 = 490/75.
+
+           Upper branch, using x6: [0, 2], x2 <= x4 <= x2: Output symbolic bounds:
+           2x2 + 1 <= x10 <= 19/15 x2 + 239/75, x2 - 2 <= x11 <= 0.6x2 + 2.32.
+           Concrete bounds: x10: [1, 5.72], x11: [-2, 3.52].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 4 + 0.8 = 4.8.
+
+           Final score = ( 490/75 + 4.8 ) / 2 = 17/3 = 5.6667.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 5.6667 );
+
+        /* Calculating BBPS-based PMNR score of x5:
+           Symbolic bounds of output layer in terms of Layer 2:
+           2x4 + 1 <= x10 <= 19/15 x4 + 1/15 x5 + 229/75, x4 - x5 <= x11 <= 0.6x4 - 0.6x5 + 1.12.
+           Concretizing x4: -3 <= x10 <= 1/15 x5 + 419/75, -x5 - 2 <= x11 <= -0.6x5 + 2.32.
+
+           Lower branch, using x3: [-2, 0], 0.2 x3 <= x5 <= 0.2 x3: Output symbolic bounds:
+           -3 <= x10 <= 1/75 x3 + 419/75, -0.2 x3 - 2 <= x11 <= -0.12 x3 + 2.32.
+           Concrete bounds: x10: [-3, 419/75], x11: [-2, 2.56].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 4/75 + 1.04 = 82/75.
+
+           Upper branch, using x3: [0, 2], x3 <= x5 <= x3: Output symbolic bounds:
+           -3 <= x10 <= 1/15 x3 + 419/75, -x3 - 2 <= x11 <= -0.6x3 + 2.32.
+           Concrete bounds: x10: [-3, 5.72], x11: [-4, 2.32].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 0 + 0.48 = 0.48.
+
+           Final score = ( 82/75 + 0.48 ) / 2 = 59/75 = 0.7867.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0.7867 );
+
+        /* Calculating BBPS-based PMNR score of x8:
+           Symbolic bounds of output layer in terms of Layer 4:
+           x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
+           Concretizing x9: x8 - 1.8 <= x10 <= x8 + 3.8, -2.8 <= x11 <= 2.8.
+
+           Lower branch, using x6: [-2, 0], 0.2 x6 <= x8 <= 0.2 x6: Output symbolic bounds:
+           0.2 x6 - 1.8 <= x10 <= 0.2 x6 + 3.8, -2.8 <= x11 <= 2.8.
+           Concrete bounds: x10: [-2.2, 3.8], x11: [-2.8, 2.8].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 2.64 + 2.8 = 2.64.
+
+           Lower branch, using x6: [0, 2.8], x6 <= x8 <= x6: Output symbolic bounds:
+           x6 - 1.8 <= x10 <= x6 + 3.8, -2.8 <= x11 <= 2.8.
+           Concrete bounds: x10: [-1.8, 6.6], x11: [-2.8, 2.8].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 1.2 + 0 = 1.2.
+
+           Final score = ( 2.64 + 1.2 ) / 2 = 1.92.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1.92 );
+
+        /* Calculating BBPS-based PMNR score of x9:
+           Symbolic bounds of output layer in terms of Layer 4:
+           x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
+           Concretizing x8: x9 - 1 <= x10 <= x9 + 3.8, x9 <= x11 <= x9.
+
+           Lower branch, using x7: [-2.8, 0], 0.2 x7 <= x9 <= 0.2 x7: Output symbolic bounds:
+           0.2 x7 - 1 <= x10 <= 0.2 x7 + 3.8, 0.2 x7 <= x11 <= 0.2 x7.
+           Concrete bounds: x10: [-1.56, 3.8], x11: [-0.56, 0].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 3.28 + 5.04 = 8.32.
+
+           Lower branch, using x7: [0, 2.8], x7 <= x9 <= x7: Output symbolic bounds:
+           x7 - 1 <= x10 <= x7 + 3.8, x7 <= x11 <= x7.
+           Concrete bounds: x10: [-1, 6.6], x11: [0, 2.8].
+           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
+           Improvement: 2 + 2.8 = 4.8.
+
+           Final score = ( 8.32 + 4.8 ) / 2 = 6.56.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 6.56 );
     }
 
     void test_symbolic_bound_maps_sigmoids_and_round()
@@ -3320,9 +4120,9 @@ public:
         tableau.setLowerBound( 1, -1 );
         tableau.setUpperBound( 1, 1 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         List<Tightening> bounds;
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
@@ -3378,7 +4178,7 @@ public:
             x4 >= lambda7_prime * x2 + ( g(l3) - lambda7_prime * l3 )
             x4 <= lambda7_prime * x2 + ( g(u3) - lambda7_prime * u3 )
             x5 >= lambda8_prime * x3 + ( g(l4) - lambda8_prime * l4 )
-            x5 <= lambda8_prime * x3 + ( g(u4) - lambda7_prime * u4 )
+            x5 <= lambda8_prime * x3 + ( g(u4) - lambda8_prime * u4 )
             '''
             print('------------------')
             print(lambda7_prime)
@@ -3387,7 +4187,6 @@ public:
             print(g(u3) - lambda7_prime * u3)
             print(g(l4) - lambda8_prime * l4)
             print(g(u4) - lambda8_prime * u4)
-
 
             ---
             [output]:
@@ -3455,14 +4254,14 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
-                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
+                                          Vector<double>( { 0.1050, 0.1050 } ),
+                                          Vector<double>( { 0.1050, 0.1050 } ),
                                           Vector<double>( { 0.3292, 0.3292 } ),
                                           Vector<double>( { 0.6708, 0.6708 } ) );
         comparePredecessorSymbolicBounds( nlr,
                                           4,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
                                           Vector<double>( { -0.5, -0.5 } ),
                                           Vector<double>( { 0.5, 0.5 } ) );
 
@@ -3496,6 +4295,330 @@ public:
                                      Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
                                      Vector<double>( { 0.1584, -0.8416 } ),
                                      Vector<double>( { 1.8416, 0.8416 } ) );
+
+        // Non-fixed activation neurons: x4 (SIGMOID), x5 (SIGMOID), x8 (ROUND), x9 (ROUND).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 4, 0 ),
+                                                         NLR::NeuronIndex( 4, 1 ) } ) );
+    }
+
+    void test_gradient_selection_sigmoids_and_round()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSigmoidsAndRound( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x4 + x5 - 0.5 <= x8 <= x4 + x5 + 0.5, x4 - x5 - 0.5 <= x9 <= x4 - x5 + 0.5.
+          x4 gradient: lower = ( 1, 1 ), upper = ( 1, 1 ), average = ( 1, 1 ).
+          Gradient-based PMNR score of x4: ( 1 )^2 + ( 1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x5:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x4 + x5 - 0.5 <= x8 <= x4 + x5 + 0.5, x4 - x5 - 0.5 <= x9 <= x4 - x5 + 0.5.
+          x5 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
+          Gradient-based PMNR score of x5: ( 1 )^2 + ( -1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x8:
+          Symbolic bounds of output layer in terms of Layer 4:
+          x8 <= x8 <= x8, x9 <= x9 <= x9.
+          x8 gradient: lower = ( 1, 0 ), upper = ( 1, 0 ), average = ( 1, 0 ).
+          Gradient-based PMNR score of x8: ( 1 )^2 + ( 0 )^2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
+
+        /*
+          Calculating Gradient-based PMNR score of x9:
+          Symbolic bounds of output layer in terms of Layer 4:
+          x8 <= x8 <= x8, x9 <= x9 <= x9.
+          x9 gradient: lower = ( 1, 0 ), upper = ( 1, 0 ), average = ( 1, 0 ).
+          Gradient-based PMNR score of x9: ( 1 )^2 + ( 0 )^2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 1 );
+    }
+
+    void test_bbps_selection_sigmoids_and_round()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSigmoidsAndRound( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x2, -2/11) for x4 (SIGMOID).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), -0.1818 } ) );
+
+        // Using branching point (x3, -2/11) for x5 (SIGMOID).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), -0.1818 } ) );
+
+        // Using branching point (x6, 0.5) for x8 (ROUND).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 4, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 3, 0 ), 0.5 } ) );
+
+        // Using branching point (x7, -0.5) for x9 (ROUND).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 4, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 3, 1 ), -0.5 } ) );
+
+        /*
+           Double-check with Python
+            ---
+            from math import exp as e
+            def g(x):
+                return 1 / (1 + e(-x))
+
+            def g_prime(x):
+                return g(x) * (1 - g(x))
+
+            def lam(l, u):
+                return (g(u) - g(l)) / (u - l)
+
+            def lam_prime(l, u):
+                return min(g_prime(l), g_prime(u))
+
+            l3 = l4 = -2
+            u3 = u4 = -2/11
+            l5 = l6 = g(-2)
+            u5 = u6 = g(-2/11)
+            lambda7 = lam(l3, u3)
+            lambda7_prime = lam_prime(l3, u3)
+            lambda8 = lam(l4, u4)
+            lambda8_prime = lam_prime(l4, u4)
+
+            '''
+            Sigmoid linear relaxation ( Layer 2 ), lower branches ( x2: [-2, 2/11], x3: [-2, 2/11]
+           ): x4 >= lambda7_prime * x2 + ( g(l3) - lambda7_prime * l3 ) x4 <= lambda7 * x2 + ( g(u3)
+           - lambda7 * u3 ) x5 >= lambda8_prime * x3 + ( g(l4) - lambda8_prime * l4 ) x5 <= lambda8
+           * x3 + ( g(u4) - lambda8 * u4 )
+            '''
+            print('------------------')
+            print(lambda7_prime)
+            print(lambda7)
+            print(lambda8_prime)
+            print(lambda8)
+            print(g(l3) - lambda7_prime * l3)
+            print(g(u3) - lambda7 * u3)
+            print(g(l4) - lambda8_prime * l4)
+            print(g(u4) - lambda8 * u4)
+
+            l3 = l4 = -2/11
+            u3 = u4 = 2
+            l5 = l6 = g(-2/11)
+            u5 = u6 = g(2)
+            lambda7 = lam(l3, u3)
+            lambda7_prime = lam_prime(l3, u3)
+            lambda8 = lam(l4, u4)
+            lambda8_prime = lam_prime(l4, u4)
+
+            '''
+            Sigmoid linear relaxation ( Layer 2 ), upper branches ( x2: [2/11, 2], x3: [2/11, 2] ):
+            x4 >= lambda7_prime * x2 + ( g(l3) - lambda7_prime * l3 )
+            x4 <= lambda7_prime * x2 + ( g(u3) - lambda7_prime * u3 )
+            x5 >= lambda8_prime * x3 + ( g(l4) - lambda8_prime * l4 )
+            x5 <= lambda8_prime * x3 + ( g(u4) - lambda8_prime * u4 )
+            '''
+            print('------------------')
+            print(lambda7_prime)
+            print(lambda8_prime)
+            print(g(l3) - lambda7_prime * l3)
+            print(g(u3) - lambda7_prime * u3)
+            print(g(l4) - lambda8_prime * l4)
+            print(g(u4) - lambda8_prime * u4)
+
+            ---
+            [output]:
+            ------------------
+            0.1049935854035065
+            0.18450703649914935
+            0.1049935854035065
+            0.18450703649914935
+            0.3291900928291306
+            0.4882169950204162
+            0.3291900928291306
+            0.4882169950204162
+            ------------------
+            0.10499358540350662
+            0.10499358540350662
+            0.47376000391211753
+            0.6708099071708691
+            0.47376000391211753
+            0.6708099071708691
+
+           Lower branch symbolic bounds: 0.1050 x2 + 0.3292 <= x4 <= 0.1845 x2 + 0.4882.
+           Upper branch symbolic bounds: 0.1050 x2 + 0.4737 <= x4 <= 0.1050 x2 + 0.6708.
+
+           Lower branch symbolic bounds: 0.1050 x3 + 0.3292 <= x5 <= 0.1845 x3 + 0.4882.
+           Upper branch symbolic bounds: 0.1050 x3 + 0.4737 <= x5 <= 0.1050 x3 + 0.6708.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0.1050, 0.1050 } ),
+                                     Vector<double>( { 0.1845, 0.1050 } ),
+                                     Vector<double>( { 0.3292, 0.4737 } ),
+                                     Vector<double>( { 0.4882, 0.6708 } ) );
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 1 ),
+                                     Vector<double>( { 0.1050, 0.1050 } ),
+                                     Vector<double>( { 0.1845, 0.1050 } ),
+                                     Vector<double>( { 0.3292, 0.4737 } ),
+                                     Vector<double>( { 0.4882, 0.6708 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x8 <= 0.
+           Upper branch symbolic bounds: x6 - 0.5 <= x8 <= x6 + 0.5.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 4, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, -0.5 } ),
+                                     Vector<double>( { 0, 0.5 } ) );
+
+        /*
+           Lower branch symbolic bounds: -1 <= x9 <= -1.
+           Upper branch symbolic bounds: x7 - 0.5 <= x9 <= x7 + 0.5.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 4, 1 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { -1, -0.5 } ),
+                                     Vector<double>( { -1, 0.5 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2:
+           x4 + x5 - 0.5 <= x8 <= x4 + x5 + 0.5, x4 - x5 - 0.5 <= x9 <= x4 - x5 + 0.5.
+           Concretizing x5: x4 - 0.3808 <= x8 <= x4 + 1.3808, x4 - 1.3808 <= x9 <= x4 + 0.3808.
+
+           Lower branch, using x2: [-2, -2/11], 0.1050 x2 + 0.3292 <= x4 <= 0.1845 x2 + 0.4882:
+           Output symbolic bounds:
+           0.1050 x2 - 0.0516 <= x8 <= 0.1845 x2 + 1.8690,
+           0.1050 x2 - 1.0516 <= x9 <= 0.1845 x2 + 0.8690.
+           Concrete bounds: x8: [-0.2616, 1.8355], x9: [-1.2616, 0.8355].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 0.1645 + 0.1645 = 0.3290.
+
+           Upper branch, using x2: [-2/11, 2], 0.1050 x2 + 0.4737 <= x4 <= 0.1050 x2 + 0.6708:
+           Output symbolic bounds:
+           0.1050 x2 + 0.0929 <= x8 <= 0.1050 x2 + 2.0516,
+           0.1050 x2 - 0.9071 <= x9 <= 0.1050 x2 + 1.0516.
+           Concrete bounds: x8: [0.0738, 2.2616], x9: [-0.9262, 1.2616].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 0.0738 + 0.0738 = 0.1476.
+
+           Final score = ( 0.3290 + 0.1476 ) / 2 = 0.2384.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0.2384 );
+
+        /* Calculating BBPS-based PMNR score of x5:
+           Symbolic bounds of output layer in terms of Layer 2:
+           x4 + x5 - 0.5 <= x8 <= x4 + x5 + 0.5, x4 - x5 - 0.5 <= x9 <= x4 - x5 + 0.5.
+           Concretizing x4: x5 - 0.3808 <= x8 <= x5 + 1.3808, -x5 - 0.3808 <= x9 <= -x5 + 1.3808.
+
+           Lower branch, using x2: [-2, -2/11], 0.1050 x3 + 0.3292 <= x5 <= 0.1845 x3 + 0.4882:
+           Output symbolic bounds:
+           0.1050 x3 - 0.0516 <= x8 <= 0.1845 x3 + 1.8690,
+           -0.1845 x3 - 0.8690 <= x9 <= -0.1050 x3 + 1.0516.
+           Concrete bounds: x8: [-0.2616, 1.8355], x9: [-0.8355, 1.2616].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 0.1645 + 0.1645 = 0.3290.
+
+           Upper branch, using x2: [-2/11, 2], 0.1050 x3 + 0.4737 <= x5 <= 0.1050 x3 + 0.6708:
+           Output symbolic bounds:
+           0.1050 x3 + 0.0929 <= x8 <= 0.1050 x3 + 2.0516,
+           -0.1050 x3 - 1.0516 <= x9 <= -0.1050 x3 + 0.9071.
+           Concrete bounds: x8: [0.0738, 2.2616], x9: [-1.1171, 0.9262].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 0.0738 + 0.0738 = 0.1476.
+
+           Final score = ( 0.3290 + 0.1476 ) / 2 = 0.2384.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0.2384 );
+
+        /* Calculating BBPS-based PMNR score of x8:
+           Symbolic bounds of output layer in terms of Layer 4: x8 <= x8 <= x8, x9 <= x9 <= x9.
+           Concretizing x9: x8 <= x8 <= x8, -1 <= x9 <= 1.
+
+           Lower branch, using x6: [0.4483, 0.5], 0 <= x8 <= 0: Output symbolic bounds:
+           0 <= x8 <= 0, -1 <= x9 <= 1.
+           Concrete bounds: x8: [0, 0], x9: [-1, 1].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 2.
+
+           Upper branch, using x6: [0.5, 1.5516], x6 - 0.5 <= x8 <= x6 + 0.5:
+           Output symbolic bounds: x6 - 0.5 <= x8 <= x6 + 0.5, -1 <= x9 <= 1.
+           Concrete bounds: x8: [0, 2.0516], x9: [-1, 1].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 0.
+
+           Final score = ( 2 + 0 ) / 2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
+
+        /* Calculating BBPS-based PMNR score of x9:
+           Symbolic bounds of output layer in terms of Layer 4: x8 <= x8 <= x8, x9 <= x9 <= x9.
+           Concretizing x8: 0 <= x8 <= 2, x9 <= x9 <= x9.
+
+           Lower branch, using x7: [-0.5516, -0.5], -1 <= x9 <= -1:
+           Output symbolic bounds: 0 <= x8 <= 2, -1 <= x9 <= -1.
+           Concrete bounds: x8: [0, 0], x9: [-1, -1].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 2.
+
+           Upper branch, using x7: [-0.5, 0.5516], x7 - 0.5 <= x9 <= x7 + 0.5:
+           Output symbolic bounds: 0 <= x8 <= 2, x7 - 0.5 <= x9 <= x7 + 0.5.
+           Concrete bounds: x8: [0, 2], x9: [-1, 1.0516].
+           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
+           Improvement: 0.
+
+           Final score = ( 2 + 0 ) / 2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 1 );
     }
 
     void test_symbolic_bound_maps_max_not_fixed()
@@ -3512,9 +4635,9 @@ public:
         tableau.setLowerBound( 1, -1 );
         tableau.setUpperBound( 1, 2 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -3617,8 +4740,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 0, 0 } ),
-                                          Vector<double>( { 0.6, 0, 0, 0.4 } ),
+                                          Vector<double>( { 1, 0 } ),
+                                          Vector<double>( { 0.6, 0.4 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 1.2, 1.2 } ) );
         comparePredecessorSymbolicBounds( nlr,
@@ -3658,6 +4781,186 @@ public:
                                      Vector<double>( { 0, 0 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 6 } ) );
+
+        // Non-fixed activation neurons: x4 (RELU), x5 (RELU), x6 (MAX).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 3, 0 ) } ) );
+    }
+
+    void test_gradient_selection_max_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTMax( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 2 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x4:
+          Symbolic bounds of output layer in terms of Layer 2:
+          2x5 <= x7 <= 6.
+          x4 gradient: lower = ( 0 ), upper = ( 0 ), average = ( 0 ).
+          Gradient-based PMNR score of x4: ( 0 )^2 = 0.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
+
+        /*
+          Calculating Gradient-based PMNR score of x5:
+          Symbolic bounds of output layer in terms of Layer 2:
+          2x5 <= x7 <= 6.
+          x5 gradient: lower = ( 2 ), upper = ( 0 ), average = ( 1 ).
+          Gradient-based PMNR score of x5: ( 1 )^2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 1 );
+
+        /*
+          Calculating Gradient-based PMNR score of x6:
+          Symbolic bounds of output layer in terms of Layer 3:
+          2x6 <= x7 <= 2x6.
+          x6 gradient: lower = ( 2 ), upper = ( 2 ), average = ( 2 ).
+          Gradient-based PMNR score of x6: ( 2 )^2 = 4.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 3, 0 ), 4 );
+    }
+
+    void test_bbps_selection_max_not_fixed()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTMax( nlr, tableau );
+
+        tableau.setLowerBound( 0, -1 );
+        tableau.setUpperBound( 0, 1 );
+        tableau.setLowerBound( 1, -1 );
+        tableau.setUpperBound( 1, 2 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x2, 0) for x4 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 0 } ) );
+
+        // Using branching point (x3, 0) for x5 (RELU).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 0 } ) );
+
+        // Using branching point (x5, 6/11) for x6 (MAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 3, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 2, 1 ), 0.5455 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x4 <= 0.
+           Upper branch symbolic bounds: x2 <= x4 <= x2.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch symbolic bounds: 0 <= x5 <= 0.
+           Upper branch symbolic bounds: x3 <= x5 <= x3.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 1 ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ) );
+
+        /*
+           Lower branch, x4: [-2, 3], x5: [0, 6/11]:
+           Max is not fixed because x5.lb <= x4.ub and x4.lb <= x5.ub
+           Max inherits lower bound from x5, and its upper bound is constant 3.
+
+           Upper branch, x4: [-2, 3], x5: [6/11, 2]:
+           Max is not fixed because x5.lb <= x4.ub and x4.lb <= x5.ub
+           Max inherits lower bound from x5, and its upper bound is constant 3.
+
+           Lower branch symbolic bounds: x5 <= x6 <= 3.
+           Upper branch symbolic bounds: x5 <= x6 <= 3.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 3, 0 ),
+                                     Vector<double>( { 1, 1 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 0, 0 } ),
+                                     Vector<double>( { 3, 3 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2: 2x5 <= x7 <= 6.
+           Concretizing x5: 0 <= x6 <= 6.
+
+           Lower branch, using x2: [-2, 0], 0 <= x4 <= 0:
+           Output symbolic bounds 0 <= x6 <= 6.
+           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
+
+           Upper branch, using x2: [0, 3], x2 <= x4 <= x2:
+           Output symbolic bounds 0 <= x6 <= 6.
+           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
+
+           Final score = ( 0 + 0 ) / 2 = 0.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
+
+        /* Calculating BBPS-based PMNR score of x5:
+           Symbolic bounds of output layer in terms of Layer 2: 2x5 <= x7 <= 6.
+
+           Lower branch, using x3: [-3, 0], 0 <= x5 <= 0:
+           Output symbolic bounds 0 <= x6 <= 6.
+           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
+
+           Upper branch, using x3: [0, 2], x3 <= x5 <= x3:
+           Output symbolic bounds 2x3 <= x6 <= x6.
+           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
+
+           Final score = ( 0 + 0 ) / 2 = 0.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0 );
+
+        /* Calculating BBPS-based PMNR score of x6:
+           Symbolic bounds of output layer in terms of Layer 3: 2x6 <= x7 <= 2x6.
+
+           Lower branch, x5: [0, 6/11], using x5 <= x6 <= 3:
+           Output symbolic bounds 2x5 <= x6 <= 6.
+           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
+
+           Upper branch, x5: [6/11, 2], using x5 <= x6 <= 3:
+           Output symbolic bounds 2x5 <= x6 <= 6.
+           Concrete bounds: [12/11, 6]. DeepPoly bounds: [0, 6]. Improvement: 12/11.
+
+           Final score = ( 0 + 12/11 ) / 2 = 6/11.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 3, 0 ), 0.5455 );
     }
 
     void test_symbolic_bound_maps_max_fixed()
@@ -3674,9 +4977,9 @@ public:
         tableau.setLowerBound( 1, -3 );
         tableau.setUpperBound( 1, -2 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -3772,8 +5075,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
         comparePredecessorSymbolicBounds( nlr,
@@ -3813,6 +5116,9 @@ public:
                                      Vector<double>( { 2, -2 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_symbolic_bound_maps_softmax1()
@@ -3831,9 +5137,9 @@ public:
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
     }
 
     void test_symbolic_bound_maps_softmax2()
@@ -3854,9 +5160,9 @@ public:
             tableau.setLowerBound( 2, 1 );
             tableau.setUpperBound( 2, 1.000001 );
 
-            // Invoke initializeSymbolicBoundsMaps
+            // Invoke Parameterised DeepPoly
             TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-            TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+            TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
             /*
               Input ranges:
@@ -3944,17 +5250,17 @@ public:
             /*
                 Layer 2:
 
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
                x6.lb = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6.ub = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6 range: [ 0.2595, 0.2595 ]
 
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
                x7.lb = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6062
                x7.ub = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6063
                x7 range: [ 0.7054, 0.7054 ]
 
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
                x8.lb = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8.ub = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8 range: [ 0.0351, 0.0351 ]
@@ -4009,9 +5315,9 @@ public:
               Symbolic bounds of every activation layer in terms of predecessor:
 
               Layer 2 (SOFTMAX):
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
 
               Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
@@ -4026,11 +5332,10 @@ public:
 
               Layer 1:
               Using
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481.
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277:
-              1 <= x9 <= 1
-              -1 <= x10 <= -1
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 +
+    0.4481. -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5
+    + 0.1277: 1 <= x9 <= 1 -1 <= x10 <= -1
 
               Layer 0:
               1 <= x9 <= 1
@@ -4083,6 +5388,12 @@ public:
                                          Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
                                          Vector<double>( { 1, -1 } ),
                                          Vector<double>( { 1, -1 } ) );
+
+            // Non-fixed activation neurons: x6 (SOFTMAX), x7 (SOFTMAX), x8 (SOFTMAX).
+            compareNonfixedNeurons( nlr,
+                                    Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                             NLR::NeuronIndex( 2, 1 ),
+                                                             NLR::NeuronIndex( 2, 2 ) } ) );
         }
         {
             Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "er" );
@@ -4098,9 +5409,9 @@ public:
             tableau.setLowerBound( 2, 1 );
             tableau.setUpperBound( 2, 1.000001 );
 
-            // Invoke initializeSymbolicBoundsMaps
+            // Invoke Parameterised DeepPoly
             TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-            TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+            TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
             /*
               Input ranges:
@@ -4188,17 +5499,17 @@ public:
             /*
                 Layer 2:
 
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
                x6.lb = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6.ub = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6 range: [ 0.2595, 0.2595 ]
 
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
                x7.lb = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6062
                x7.ub = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6063
                x7 range: [ 0.7054, 0.7054 ]
 
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
                x8.lb = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8.ub = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8 range: [ 0.0351, 0.0351 ]
@@ -4252,9 +5563,9 @@ public:
               Symbolic bounds of every activation layer in terms of predecessor:
 
               Layer 2 (SOFTMAX):
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
 
               Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
@@ -4269,11 +5580,10 @@ public:
 
               Layer 1:
               Using
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481.
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277:
-              1 <= x9 <= 1
-              -1 <= x10 <= -1
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 +
+    0.4481. -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5
+    + 0.1277: 1 <= x9 <= 1 -1 <= x10 <= -1
 
               Layer 0:
               1 <= x9 <= 1
@@ -4326,7 +5636,156 @@ public:
                                          Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
                                          Vector<double>( { 1, -1 } ),
                                          Vector<double>( { 1, -1 } ) );
+
+            // Non-fixed activation neurons: x6 (SOFTMAX), x7 (SOFTMAX), x8 (SOFTMAX).
+            compareNonfixedNeurons( nlr,
+                                    Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                             NLR::NeuronIndex( 2, 1 ),
+                                                             NLR::NeuronIndex( 2, 2 ) } ) );
         }
+    }
+
+    void test_gradient_selection_softmax2()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSoftmax( nlr, tableau );
+
+        tableau.setLowerBound( 0, 1 );
+        tableau.setUpperBound( 0, 1.000001 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 1.000001 );
+        tableau.setLowerBound( 2, 1 );
+        tableau.setUpperBound( 2, 1.000001 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x6:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x6 + x7 + x8 <= x9 <= x6 + x7 + x8,
+          -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8.
+          x6 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
+          Gradient-based PMNR score of x6: ( 1 )^2 + ( -1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x7:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x6 + x7 + x8 <= x9 <= x6 + x7 + x8,
+          -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8.
+          x7 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
+          Gradient-based PMNR score of x7: ( 1 )^2 + ( -1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x8:
+          Symbolic bounds of output layer in terms of Layer 3:
+          x6 + x7 + x8 <= x9 <= x6 + x7 + x8,
+          -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8.
+          x8 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
+          Gradient-based PMNR score of x8: ( 1 )^2 + ( -1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 2 ), 2 );
+    }
+
+    void test_bbps_selection_softmax2()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSoftmax( nlr, tableau );
+
+        tableau.setLowerBound( 0, 1 );
+        tableau.setUpperBound( 0, 1.000001 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 1.000001 );
+        tableau.setLowerBound( 2, 1 );
+        tableau.setUpperBound( 2, 1.000001 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x3, 2) for x6 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 2 } ) );
+
+        // Using branching point (x4, 3) for x7 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 3 } ) );
+
+        // Using branching point (x5, 0) for x8 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 2 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 2 ), 0 } ) );
+
+        /*
+           Symbolic bounds of x6 in terms of predecessor (for both branches, since range(x3) <
+    0.0001): 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 +
+    0.4243. Concretizing x4, x5: 0.1922 x3 - 0.1248 <= x6 <= 0.1922 x3 - 0.1248.
+
+           Symbolic bounds of x7 in terms of predecessor (for both branches, since range(x4) <
+    0.0001): -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5
+    + 0.4481. Concretizing x3, x5: 0.2078 x4 + 0.0819 <= x7 <= 0.2078 x4 + 0.0819.
+
+           Symbolic bounds of x8 in terms of predecessor (for both branches, since range(x5) <
+    0.0001): -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.0091 x3 - 0.0248 x4 + 0.0339 x5
+    + 0.1277. Concretizing x3, x4: 0.0339 x5 + 0.0351 <= x8 <= 0.0339 x5 + 0.0351.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0.1922, 0.1922 } ),
+                                     Vector<double>( { 0.1922, 0.1922 } ),
+                                     Vector<double>( { -0.1248, -0.1248 } ),
+                                     Vector<double>( { -0.1248, -0.1248 } ) );
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 1 ),
+                                     Vector<double>( { 0.2078, 0.2078 } ),
+                                     Vector<double>( { 0.2078, 0.2078 } ),
+                                     Vector<double>( { 0.0819, 0.0819 } ),
+                                     Vector<double>( { 0.0819, 0.0819 } ) );
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 2 ),
+                                     Vector<double>( { 0.0339, 0.0339 } ),
+                                     Vector<double>( { 0.0339, 0.0339 } ),
+                                     Vector<double>( { 0.0351, 0.0351 } ),
+                                     Vector<double>( { 0.0351, 0.0351 } ) );
+
+        /*
+          Calculating BBPS-based PMNR score of x6, x7, x8:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x6 + x7 + x8 <= x9 <= x6 + x7 + x8
+          -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8
+
+          Because the lower/upper symbolic bounds for output layer are equal (up to ~10^-6),
+          and lower/upper predecessor symbolic bounds for both branches are equal, the concrete
+          bounds for every output neuron, every nonfixed neuron and branch are equal to DeepPoly.
+          Consequently, the BBSP-based PMNR scores for all neurons is 0.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 2 ), 0 );
     }
 
     void test_symbolic_bound_maps_softmax3()
@@ -4346,9 +5805,9 @@ public:
         tableau.setLowerBound( 2, 1 );
         tableau.setUpperBound( 2, 1.00001 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
               Input ranges:
@@ -4429,7 +5888,7 @@ public:
                                                      -0.0019,
                                                      0.0156 } ) ) );
         TS_ASSERT( compareVectors( symbolicUb,
-                                   Vector<double>( { 0.1154,
+                                   Vector<double>( { 0.1155,
                                                      -0.1017,
                                                      -0.0138,
                                                      -0.1017,
@@ -4487,28 +5946,26 @@ public:
             Layer 2:
 
             First Sigmoid: x8 x10 x12 = softmax( x3, x5, x7 ).
-0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1154 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
+    0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
            x8.lb = 0.2310 x0 + 0.0001 x1 + 0.2310 x2 + 0.4051
            x8.ub = 0.2310 x0 + 0.0000 x1 + 0.2310 x2 + 0.4050
            x8 range: [ 0.8668, 0.8668 ]
 
--0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 + 0.3170
-           x10.lb = -0.2033 x0 + 0.0001 x1 - 0.2033 x2 + 0.5239
-           x10.ub = -0.2033 x0 + 0.0000 x1 - 0.2033 x2 + 0.5241
-           x10 range: [ 0.1173, 0.1173 ]
+    -0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 +
+    0.3170 x10.lb = -0.2033 x0 + 0.0001 x1 - 0.2033 x2 + 0.5239 x10.ub = -0.2033 x0 + 0.0000 x1 -
+    0.2033 x2 + 0.5241 x10 range: [ 0.1173, 0.1173 ]
 
--0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
-           x12.lb = -0.0275 x0 + 0.0001 x1 - 0.0275 x2 + 0.0708
-           x12.ub = -0.0275 x0 + 0.0001 x1 - 0.0275 x2 + 0.0708
-           x12 range: [ 0.0159, 0.0159 ]
+    -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 +
+    0.0747 x12.lb = -0.0275 x0 + 0.0001 x1 - 0.0275 x2 + 0.0708 x12.ub = -0.0275 x0 + 0.0001 x1 -
+    0.0275 x2 + 0.0708 x12 range: [ 0.0159, 0.0159 ]
 
            Second Sigmoid: x9 x11 = softmax( x4, x6 ).
-0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
+    0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
            x9.lb = 0 x0 + 0.0354 x1 + 0.0354 x2 + 0.9114
            x9.ub = 0 x0 + 0.0354 x1 + 0.0354 x2 + 0.9114
            x9 range: [ 0.9820, 0.0180 ]
 
--0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
+    -0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
            x11.lb = 0 x0 - 0.0354 x1 - 0.0354 x2 + 0.0886
            x11.ub = 0 x0 - 0.0354 x1 - 0.0354 x2 + 0.0886
            x11 range: [ 0.9820, 0.0180 ]
@@ -4579,11 +6036,11 @@ public:
           Symbolic bounds of every activation layer in terms of predecessor:
 
           Layer 2 (SOFTMAX):
-0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1154 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
-0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
--0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 + 0.3170
--0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
--0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
+    0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
+    0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
+    -0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 +
+    0.3170 -0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886 -0.0138 x3 -
+    0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
 
           Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
@@ -4602,11 +6059,11 @@ public:
 
           Layer 1:
           Using
-0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1154 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
-0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
--0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 + 0.3170
--0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
--0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
+    0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
+    0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
+    -0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 +
+    0.3170 -0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886 -0.0138 x3 -
+    0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
           1 <= x13 <= 1
           -1 <= x14 <= -1
           1 <= x15 <= 1
@@ -4621,14 +6078,36 @@ public:
         comparePredecessorSymbolicBounds(
             nlr,
             2,
-            Vector<double>( { 0.1155,  0.0000,  -0.1017, 0.0000,  -0.0138, 0.0000, 0.0177,
-                              0.0000,  -0.0177, 0.0000,  -0.1017, 0.0000,  0.1035, 0.0000,
-                              -0.0019, 0.0000,  -0.0177, 0.0000,  0.0177,  0.0000, -0.0138,
-                              0.0000,  -0.0019, 0.0000,  0.0156 } ),
-            Vector<double>( { 0.1155,  0.0000,  -0.1017, 0.0000,  -0.0138, 0.0000, 0.0177,
-                              0.0000,  -0.0177, 0.0000,  -0.1017, 0.0000,  0.1035, 0.0000,
-                              -0.0019, 0.0000,  -0.0177, 0.0000,  0.0177,  0.0000, -0.0138,
-                              0.0000,  -0.0019, 0.0000,  0.0156 } ),
+            Vector<double>( { 0.1155,
+                              0.0177,
+                              -0.1017,
+                              -0.0177,
+                              -0.0138,
+                              -0.1017,
+                              -0.0177,
+                              0.1035,
+                              0.0177,
+                              -0.0019,
+                              -0.0138,
+                              0.0000,
+                              -0.0019,
+                              0.0000,
+                              0.0156 } ),
+            Vector<double>( { 0.1155,
+                              0.0177,
+                              -0.1017,
+                              -0.0177,
+                              -0.0138,
+                              -0.1017,
+                              -0.0177,
+                              0.1036,
+                              0.0177,
+                              -0.0019,
+                              -0.0138,
+                              0.0000,
+                              -0.0019,
+                              0.0000,
+                              0.0156 } ),
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ),
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ) );
 
@@ -4658,10 +6137,230 @@ public:
                                      Vector<double>( 12, 0 ),
                                      Vector<double>( { 1, -1, 1, -1 } ),
                                      Vector<double>( { 1, -1, 1, -1 } ) );
+
+        // Non-fixed activation neurons: x8 (SOFTMAX), x9 (SOFTMAX), x10 (SOFTMAX), x11 (SOFTMAX),
+        // x12 (SOFTMAX).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 2, 2 ),
+                                                         NLR::NeuronIndex( 2, 3 ),
+                                                         NLR::NeuronIndex( 2, 4 ) } ) );
+    }
+
+    void test_gradient_selection_softmax3()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSoftmax2( nlr, tableau );
+
+        tableau.setLowerBound( 0, 1 );
+        tableau.setUpperBound( 0, 1.00001 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 1.00001 );
+        tableau.setLowerBound( 2, 1 );
+        tableau.setUpperBound( 2, 1.00001 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        /*
+          Calculating Gradient-based PMNR score of x8:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
+          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
+          x9 + x11 <= x15 <= x9 + x11,
+          -x9 - x11 <= x16 <= -x9 - x11.
+          x8 gradient: lower = ( 1, -1, 0, 0 ), upper = ( 1, -1, 0, 0 ), avg. = ( 1, -1, 0, 0 ).
+          Gradient-based PMNR score of x8: ( 1 )^2 + ( -1 )^2 + ( 0 )^2 + ( 0 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x9:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
+          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
+          x9 + x11 <= x15 <= x9 + x11,
+          -x9 - x11 <= x16 <= -x9 - x11.
+          x9 gradient: lower = ( 0, 0, 1, -1 ), upper = ( 0, 0, 1, -1 ), avg. = ( 0, 0, 1, -1 ).
+          Gradient-based PMNR score of x9: ( 0 )^2 + ( 0 )^2 + ( 1 )^2 + ( -1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x10:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
+          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
+          x9 + x11 <= x15 <= x9 + x11,
+          -x9 - x11 <= x16 <= -x9 - x11.
+          x10 gradient: lower = ( 1, -1, 0, 0 ), upper = ( 1, -1, 0, 0 ), avg. = ( 1, -1, 0, 0 ).
+          Gradient-based PMNR score of x10: ( 1 )^2 + ( -1 )^2 + ( 0 )^2 + ( 0 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 2 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x11:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
+          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
+          x9 + x11 <= x15 <= x9 + x11,
+          -x9 - x11 <= x16 <= -x9 - x11.
+          x11 gradient: lower = ( 0, 0, 1, -1 ), upper = ( 0, 0, 1, -1 ), avg. = ( 0, 0, 1, -1 ).
+          Gradient-based PMNR score of x11: ( 0 )^2 + ( 0 )^2 + ( 1 )^2 + ( -1 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 3 ), 2 );
+
+        /*
+          Calculating Gradient-based PMNR score of x12:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
+          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
+          x9 + x11 <= x15 <= x9 + x11,
+          -x9 - x11 <= x16 <= -x9 - x11.
+          x12 gradient: lower = ( 1, -1, 0, 0 ), upper = ( 1, -1, 0, 0 ), avg. = ( 1, -1, 0, 0 ).
+          Gradient-based PMNR score of x12: ( 1 )^2 + ( -1 )^2 + ( 0 )^2 + ( 0 )^2 = 2.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 4 ), 2 );
+    }
+
+    void test_bbps_selection_softmax3()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTSoftmax2( nlr, tableau );
+
+        tableau.setLowerBound( 0, 1 );
+        tableau.setUpperBound( 0, 1.00001 );
+        tableau.setLowerBound( 1, 1 );
+        tableau.setUpperBound( 1, 1.00001 );
+        tableau.setLowerBound( 2, 1 );
+        tableau.setUpperBound( 2, 1.00001 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x3, 2) for x8 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), 2 } ) );
+
+        // Using branching point (x4, 3) for x9 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 1 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 3 } ) );
+
+        // Using branching point (x5, 0) for x10 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 2 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 2 ), 0 } ) );
+
+        // Using branching point (x6, -1) for x11 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 3 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 3 ), -1 } ) );
+
+        // Using branching point (x7, -2) for x12 (SOFTMAX).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 4 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 4 ), -2 } ) );
+
+        /*
+           Symbolic bounds of x8 in terms of predecessor (for both branches, since range(x3) <
+    0.0001): 0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1155 x3 - 0.1017 x5 - 0.0138 x7 +
+    0.6084. Concretizing x5, x7: 0.1155 x3 + 0.6360 <= x8 <= 0.1155 x3 + 0.6360.
+
+           Symbolic bounds of x9 in terms of predecessor (for both branches, since range(x4) <
+    0.0001): 0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114. Concretizing
+    x6: 0.0177 x4 + 0.9291 <= x9 <= 0.0177 x4 + 0.9291.
+
+           Symbolic bounds of x10 in terms of predecessor (for both branches, since range(x5) <
+    0.0001): -0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019
+    x7 + 0.3170. Concretizing x3, x7: 0.1035 x5 + 0.1174 <= x8 <= 0.1036 x5 + 0.1174.
+
+           Symbolic bounds of x11 in terms of predecessor (for both branches, since range(x6) <
+    0.0001): -0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886. Concretizing
+    x4: 0.0177 x4 + 0.0356 <= x11 <= 0.0177 x4 + 0.0356.
+
+           Symbolic bounds of x12 in terms of predecessor (for both branches, since range(x7) <
+    0.0001): -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156
+    x7 + 0.0747. Concretizing x3, x5: 0.0156 x7 + 0.0471 <= x12 <= 0.0156 x7 + 0.0471.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { 0.1155, 0.1155 } ),
+                                     Vector<double>( { 0.1155, 0.1155 } ),
+                                     Vector<double>( { 0.6360, 0.6360 } ),
+                                     Vector<double>( { 0.6360, 0.6360 } ) );
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 1 ),
+                                     Vector<double>( { 0.0177, 0.0177 } ),
+                                     Vector<double>( { 0.0177, 0.0177 } ),
+                                     Vector<double>( { 0.9291, 0.9291 } ),
+                                     Vector<double>( { 0.9291, 0.9291 } ) );
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 2 ),
+                                     Vector<double>( { 0.1035, 0.1035 } ),
+                                     Vector<double>( { 0.1036, 0.1036 } ),
+                                     Vector<double>( { 0.1174, 0.1174 } ),
+                                     Vector<double>( { 0.1174, 0.1174 } ) );
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 3 ),
+                                     Vector<double>( { 0.0177, 0.0177 } ),
+                                     Vector<double>( { 0.0177, 0.0177 } ),
+                                     Vector<double>( { 0.0356, 0.0356 } ),
+                                     Vector<double>( { 0.0356, 0.0356 } ) );
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 4 ),
+                                     Vector<double>( { 0.0156, 0.0156 } ),
+                                     Vector<double>( { 0.0156, 0.0156 } ),
+                                     Vector<double>( { 0.0471, 0.0471 } ),
+                                     Vector<double>( { 0.0471, 0.0471 } ) );
+
+        /*
+          Calculating BBPS-based PMNR score of x8, x9, x10, x11, x12:
+          Symbolic bounds of output layer in terms of Layer 2:
+          x8 + x10 + x12 <= x13 <= x8 + x10 + x12
+          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12
+          x9 + x11 <= x15 <= x9 + x11
+          -x9 - x11 <= x16 <= -x9 - x11
+
+          Because the lower/upper symbolic bounds for output layer are equal (up to ~10^-6),
+          and lower/upper predecessor symbolic bounds for both branches are equal, the concrete
+          bounds for every output neuron, every nonfixed neuron and branch are equal to DeepPoly.
+          Consequently, the BBSP-based PMNR scores for all neurons is 0.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 2 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 3 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 4 ), 0 );
     }
 
     void test_symbolic_bound_maps_bilinear()
     {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
         nlr.setTableau( &tableau );
@@ -4672,9 +6371,9 @@ public:
         tableau.setLowerBound( 1, -2 );
         tableau.setUpperBound( 1, 1 );
 
-        // Invoke initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
         /*
           Input ranges:
@@ -4734,16 +6433,16 @@ public:
           Symbolic bounds of every activation layer in terms of predecessor:
 
           Layer 2 (BILINEAR):
-          -x2 - x3 - 1 <= x5 <= 3x2 - x3 + 3
+          -x2 - x3 - 1 <= x4 <= 3x2 - x3 + 3
 
           Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
           Layer 3:
-          x4 <= x5 <= x4
+          x5 <= x5 <= x5
 
           Layer 2:
           Using x5 = -x4:
-          -x3 <= x4 <= -x4
+          -x4 <= x4 <= -x4
 
           Layer 1:
           Using -x2 - x3 - 1 <= x4 <= 3x2 - x3 + 3:
@@ -4784,6 +6483,117 @@ public:
                                      Vector<double>( { 2, -1 } ),
                                      Vector<double>( { -3 } ),
                                      Vector<double>( { 1 } ) );
+
+        // Non-fixed activation neurons: x4 (BILINEAR).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
+    }
+
+    void test_gradient_selection_bilinear()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-gradient" );
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTBilinear( nlr, tableau );
+
+        tableau.setLowerBound( 0, 1 );
+        tableau.setUpperBound( 0, 2 );
+        tableau.setLowerBound( 1, -2 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+        /*
+           Calculating Gradient-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2: -x4 <= x5 <= -x4.
+           x4 gradient: lower = ( -1 ), upper = ( -1 )
+           Gradient-based PMNR score of x4: ( ( -1 )^2 + ( -1 )^2 ) / 2 = 1.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
+    }
+
+    void test_bbps_selection_bilinear()
+    {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
+                                   "backward-pmnr-bbps" );
+
+        NLR::NetworkLevelReasoner nlr;
+        MockTableau tableau;
+        nlr.setTableau( &tableau );
+        populateNetworkSBTBilinear( nlr, tableau );
+
+        tableau.setLowerBound( 0, 1 );
+        tableau.setUpperBound( 0, 2 );
+        tableau.setLowerBound( 1, -2 );
+        tableau.setUpperBound( 1, 1 );
+
+        // Invoke Parameterised DeepPoly
+        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
+
+        // Using branching point (x3, 1/3) for x4 (BILINEAR).
+        compareBBPSBranchingPoints(
+            nlr,
+            NLR::NeuronIndex( 2, 0 ),
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 0.3333 } ) );
+
+        /*
+           Coefficients for bilinear layer (lower branch, x2: [-1, 6], x3: [-1, 1/3]):
+           Lower bound:
+               alpha_l = x3.lb = -1
+               beta = x2.lb = -1
+               gamma_l = -x2.lb x3.lb = --1 * -1 = -1
+
+           Upper bound:
+               alpha_u = x3.ub = 1/3
+               beta = x2.lb = -1
+               gamma_u = -x2.lb x3.ub = --1 * 1/3 = 1/3
+
+           -x2 - x3 - 1 <= x4 <= 1/3 x2 - x3 + 1/3.
+           Concretizing x2: -x3 - 7 <= x4 <= -x3 + 7/3.
+
+           Coefficients for bilinear layer (upper branch, x2: [-1, 6], x3: [1/3, 3]):
+           Lower bound:
+               alpha_l = x3.lb = 1/3
+               beta = x2.lb = -1
+               gamma_l = -x2.lb x3.lb = --1 * 1/3 = 1/3
+
+           Upper bound:
+               alpha_u = x3.ub = 3
+               beta = x2.lb = -1
+               gamma_u = -x2.lb x3.ub = --1 * 3 = 3
+
+           1/3 x2 - x3 + 1/3 <= x4 <= 3x2 - x3 + 3.
+           Concretizing x2: -x3 <= x4 <= -x3 + 21.
+
+           Lower branch symbolic bounds: -x3 - 7 <= x4 <= -x3 + 7/3.
+           Upper branch symbolic bounds: -x3 <= x4 <= -x3 + 21.
+        */
+        compareBranchSymbolicBounds( nlr,
+                                     NLR::NeuronIndex( 2, 0 ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -1, -1 } ),
+                                     Vector<double>( { -7, 0 } ),
+                                     Vector<double>( { 2.3333, 21 } ) );
+
+        /* Calculating BBPS-based PMNR score of x4:
+           Symbolic bounds of output layer in terms of Layer 2: -x4 <= x5 <= -x4.
+
+           Lower branch, using x3: [-1, 1/3], -x3 - 7 <= x4 <= -x3 + 7/3:
+           Output symbolic bounds x3 - 7/3 <= x6 <= x3 + 7.
+           Concrete bounds: [-10/3, 22/3]. DeepPoly bounds: [-18, 6]. Improvement: 44/3.
+
+           Upper branch, using x3: [1/3, 3], -x3 <= x4 <= -x3 + 21:
+           Output symbolic bounds x3 - 21 <= x6 <= x3.
+           Concrete bounds: [-62/3, 3]. DeepPoly bounds: [-18, 6]. Improvement: 3.
+
+           Final score = ( 44/3 + 3 ) / 2 = 53/6 = 8.8333.
+        */
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 8.8333 );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_all_active()
@@ -4803,9 +6613,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -4886,8 +6696,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -4915,6 +6725,9 @@ public:
                                      Vector<double>( { 1, 2 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_active_and_inactive()
@@ -4937,9 +6750,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -5021,8 +6834,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -5050,6 +6863,9 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_active_and_not_fixed()
@@ -5072,9 +6888,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -5160,8 +6976,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0.5, 0, 0, 1 } ),
-                                          Vector<double>( { 0.75, 0, 0, 1 } ),
+                                          Vector<double>( { 0.5, 1 } ),
+                                          Vector<double>( { 0.75, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 3, 0 } ) );
 
@@ -5189,6 +7005,9 @@ public:
                                      Vector<double>( { 0.5, 1.25 } ),
                                      Vector<double>( { -7.5 } ),
                                      Vector<double>( { -8.25 } ) );
+
+        // Non-fixed activation neurons: x4 (RELU).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_active_and_externally_fixed()
@@ -5214,9 +7033,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -5297,8 +7116,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -5326,6 +7145,9 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relu_residual1()
@@ -5343,9 +7165,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -5494,6 +7316,10 @@ public:
                                      Vector<double>( { -0.2143 } ),
                                      Vector<double>( { 1.75 } ),
                                      Vector<double>( { 5.2857 } ) );
+
+        // Non-fixed activation neurons: x2 (RELU), x4 (RELU).
+        compareNonfixedNeurons(
+            nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ), NLR::NeuronIndex( 4, 0 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relu_residual2()
@@ -5511,9 +7337,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -5679,6 +7505,10 @@ public:
                                      Vector<double>( { -2.2143 } ),
                                      Vector<double>( { 1.75 } ),
                                      Vector<double>( { 5.2857 } ) );
+
+        // Non-fixed activation neurons: x2 (RELU), x4 (RELU).
+        compareNonfixedNeurons(
+            nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ), NLR::NeuronIndex( 4, 0 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_relu_reindex()
@@ -5698,9 +7528,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -5841,15 +7671,15 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
-                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
+                                          Vector<double>( { 0.5, 0.5 } ),
+                                          Vector<double>( { 0.5, 0.5 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 1, 1 } ) );
 
         comparePredecessorSymbolicBounds( nlr,
                                           4,
-                                          Vector<double>( { 0, 0.5, 0.5, 0 } ),
-                                          Vector<double>( { 0, 0.75, 0.5, 0 } ),
+                                          Vector<double>( { 0.5, 0.5 } ),
+                                          Vector<double>( { 0.5, 0.75 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 1, 0.75 } ) );
 
@@ -5889,64 +7719,23 @@ public:
                                      Vector<double>( { 0.75, 0, 0.5, 0.5 } ),
                                      Vector<double>( { 1, -0.5 } ),
                                      Vector<double>( { 4.25, 1.5 } ) );
+
+        // Non-fixed activation neurons: x4 (RELU), x5 (RELU), x8 (RELU), x9 (RELU).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 4, 0 ),
+                                                         NLR::NeuronIndex( 4, 1 ) } ) );
     }
 
-    void test_parameterised_symbolic_bound_maps_abs_all_positive()
+    void test_parameterised_symbolic_bound_maps_absolute_values_all_positive()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -5956,9 +7745,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -6038,8 +7827,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -6067,64 +7856,19 @@ public:
                                      Vector<double>( { 1, 2 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
-    void test_parameterised_symbolic_bound_maps_abs_positive_and_negative()
+    void test_parameterised_symbolic_bound_maps_absolute_values_positive_and_negative()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -6137,9 +7881,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -6219,8 +7963,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -1, 0, 0, 1 } ),
-                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -6248,6 +7992,9 @@ public:
                                      Vector<double>( { -3, -4 } ),
                                      Vector<double>( { 30 } ),
                                      Vector<double>( { 30 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_parameterised_symbolic_bound_maps_absolute_values_positive_and_not_fixed()
@@ -6256,56 +8003,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -6318,9 +8017,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -6404,8 +8103,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 12, 0 } ) );
 
@@ -6433,6 +8132,9 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 12 } ) );
+
+        // Non-fixed activation neurons: x4 (ABSOLUTE_VALUE).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_absolute_values_active_and_externally_fixed()
@@ -6441,56 +8143,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::ABSOLUTE_VALUE, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Abs sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTAbsoluteValue( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -6506,9 +8160,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -6591,8 +8245,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { -1, 0, 0, 1 } ),
-                                          Vector<double>( { -1, 0, 0, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
+                                          Vector<double>( { -1, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
 
@@ -6620,6 +8274,9 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { 3 } ),
                                      Vector<double>( { 3 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_parameterised_symbolic_bound_maps_signs_positive_and_not_fixed()
@@ -6628,56 +8285,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::SIGN, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Sign sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTSign( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -6690,9 +8299,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -6782,8 +8391,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0.0833, 0, 0, 0 } ),
-                                          Vector<double>( { 0.25, 0, 0, 0 } ),
+                                          Vector<double>( { 0.0833, 0 } ),
+                                          Vector<double>( { 0.25, 0 } ),
                                           Vector<double>( { -1, 1 } ),
                                           Vector<double>( { 1, 1 } ) );
 
@@ -6811,6 +8420,9 @@ public:
                                      Vector<double>( { 0.5, 0.75 } ),
                                      Vector<double>( { -3.25 } ),
                                      Vector<double>( { -3.75 } ) );
+
+        // Non-fixed activation neurons: x4 (SIGN).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_signs_active_and_externally_fixed()
@@ -6819,56 +8431,8 @@ public:
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
-        tableau.getBoundManager().initialize( 7 );
         nlr.setTableau( &tableau );
-
-        // Create the layers
-        nlr.addLayer( 0, NLR::Layer::INPUT, 2 );
-        nlr.addLayer( 1, NLR::Layer::WEIGHTED_SUM, 2 );
-        nlr.addLayer( 2, NLR::Layer::SIGN, 2 );
-        nlr.addLayer( 3, NLR::Layer::WEIGHTED_SUM, 1 );
-
-        // Mark layer dependencies
-        for ( unsigned i = 1; i <= 3; ++i )
-            nlr.addLayerDependency( i - 1, i );
-
-        // Weights
-        nlr.setWeight( 0, 0, 1, 0, 2 );
-        nlr.setWeight( 0, 0, 1, 1, 1 );
-        nlr.setWeight( 0, 1, 1, 0, 3 );
-        nlr.setWeight( 0, 1, 1, 1, 1 );
-        nlr.setWeight( 2, 0, 3, 0, 1 );
-        nlr.setWeight( 2, 1, 3, 0, -1 );
-
-        // Mark the Sign sources
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-
-        // Variable indexing
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 0, 1 ), 1 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 0 ), 2 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 1, 1 ), 3 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 0 ), 4 );
-        nlr.setNeuronVariable( NLR::NeuronIndex( 2, 1 ), 5 );
-
-        nlr.setNeuronVariable( NLR::NeuronIndex( 3, 0 ), 6 );
-
-        // Very loose bounds for neurons except inputs
-        double large = 1000000;
-
-        tableau.setLowerBound( 2, -large );
-        tableau.setUpperBound( 2, large );
-        tableau.setLowerBound( 3, -large );
-        tableau.setUpperBound( 3, large );
-        tableau.setLowerBound( 4, -large );
-        tableau.setUpperBound( 4, large );
-        tableau.setLowerBound( 5, -large );
-        tableau.setUpperBound( 5, large );
-        tableau.setLowerBound( 6, -large );
-        tableau.setUpperBound( 6, large );
+        populateNetworkSBTSign( nlr, tableau );
 
         tableau.setLowerBound( 0, 4 );
         tableau.setUpperBound( 0, 6 );
@@ -6884,9 +8448,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -6963,8 +8527,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 0 } ),
-                                          Vector<double>( { 0, 0, 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
+                                          Vector<double>( { 0, 0 } ),
                                           Vector<double>( { -1, 1 } ),
                                           Vector<double>( { -1, 1 } ) );
 
@@ -6992,10 +8556,15 @@ public:
                                      Vector<double>( { 0, 0 } ),
                                      Vector<double>( { -2 } ),
                                      Vector<double>( { -2 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_parameterised_symbolic_bound_maps_leaky_relu()
     {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
         nlr.setTableau( &tableau );
@@ -7009,9 +8578,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -7173,15 +8742,15 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
-                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0.6, 0.6 } ),
+                                          Vector<double>( { 0.6, 0.6 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0.8, 0.8 } ) );
 
         comparePredecessorSymbolicBounds( nlr,
                                           4,
-                                          Vector<double>( { 0.6, 0, 0, 0.6 } ),
-                                          Vector<double>( { 0.76, 0, 0, 0.6 } ),
+                                          Vector<double>( { 0.6, 0.6 } ),
+                                          Vector<double>( { 0.76, 0.6 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0.672, 0.8 } ) );
 
@@ -7221,6 +8790,14 @@ public:
                                      Vector<double>( { 0.912, 0, 0.72, 0.72 } ),
                                      Vector<double>( { 1, -0.48 } ),
                                      Vector<double>( { 3.688, 1.28 } ) );
+
+        // Non-fixed activation neurons: x4 (LEAKY_RELU), x5 (LEAKY_RELU), x8 (LEAKY_RELU), x9
+        // (LEAKY_RELU).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 4, 0 ),
+                                                         NLR::NeuronIndex( 4, 1 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_sigmoids_and_round()
@@ -7240,9 +8817,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         List<Tightening> bounds;
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
@@ -7298,7 +8875,7 @@ public:
             x4 >= lambda7_prime * x2 + ( g(l3) - lambda7_prime * l3 )
             x4 <= lambda7_prime * x2 + ( g(u3) - lambda7_prime * u3 )
             x5 >= lambda8_prime * x3 + ( g(l4) - lambda8_prime * l4 )
-            x5 <= lambda8_prime * x3 + ( g(u4) - lambda7_prime * u4 )
+            x5 <= lambda8_prime * x3 + ( g(u4) - lambda8_prime * u4 )
             '''
             print('------------------')
             print(lambda7_prime)
@@ -7307,7 +8884,6 @@ public:
             print(g(u3) - lambda7_prime * u3)
             print(g(l4) - lambda8_prime * l4)
             print(g(u4) - lambda8_prime * u4)
-
 
             ---
             [output]:
@@ -7375,14 +8951,14 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
-                                          Vector<double>( { 0.1050, 0, 0, 0.1050 } ),
+                                          Vector<double>( { 0.1050, 0.1050 } ),
+                                          Vector<double>( { 0.1050, 0.1050 } ),
                                           Vector<double>( { 0.3292, 0.3292 } ),
                                           Vector<double>( { 0.6708, 0.6708 } ) );
         comparePredecessorSymbolicBounds( nlr,
                                           4,
-                                          Vector<double>( { 1, 0, 0, 1 } ),
-                                          Vector<double>( { 1, 0, 0, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
+                                          Vector<double>( { 1, 1 } ),
                                           Vector<double>( { -0.5, -0.5 } ),
                                           Vector<double>( { 0.5, 0.5 } ) );
 
@@ -7416,6 +8992,13 @@ public:
                                      Vector<double>( { 0.2100, 0, 0, 0.2100 } ),
                                      Vector<double>( { 0.1584, -0.8416 } ),
                                      Vector<double>( { 1.8416, 0.8416 } ) );
+
+        // Non-fixed activation neurons: x4 (SIGMOID), x5 (SIGMOID), x8 (ROUND), x9 (ROUND).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 4, 0 ),
+                                                         NLR::NeuronIndex( 4, 1 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_max_not_fixed()
@@ -7435,9 +9018,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -7540,8 +9123,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0.5, 0, 0, 0.5 } ),
-                                          Vector<double>( { 0.6, 0, 0, 0.4 } ),
+                                          Vector<double>( { 0.5, 0.5 } ),
+                                          Vector<double>( { 0.6, 0.4 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 1.2, 1.2 } ) );
         comparePredecessorSymbolicBounds( nlr,
@@ -7581,6 +9164,12 @@ public:
                                      Vector<double>( { 0, 0 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 6 } ) );
+
+        // Non-fixed activation neurons: x4 (RELU), x5 (RELU), x6 (MAX).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 3, 0 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_max_fixed()
@@ -7600,9 +9189,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -7698,8 +9287,8 @@ public:
         */
         comparePredecessorSymbolicBounds( nlr,
                                           2,
-                                          Vector<double>( { 0, 0, 0, 1 } ),
-                                          Vector<double>( { 0, 0, 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
+                                          Vector<double>( { 0, 1 } ),
                                           Vector<double>( { 0, 0 } ),
                                           Vector<double>( { 0, 0 } ) );
         comparePredecessorSymbolicBounds( nlr,
@@ -7739,6 +9328,9 @@ public:
                                      Vector<double>( { 2, -2 } ),
                                      Vector<double>( { 0 } ),
                                      Vector<double>( { 0 } ) );
+
+        // Non-fixed activation neurons: None.
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( {} ) );
     }
 
     void test_parameterised_symbolic_bound_maps_softmax1()
@@ -7760,9 +9352,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
     }
 
     void test_parameterised_symbolic_bound_maps_softmax2()
@@ -7786,9 +9378,9 @@ public:
             unsigned paramCount = nlr.getNumberOfParameters();
             Vector<double> coeffs( paramCount, 0.5 );
 
-            // Invoke parameterised initializeSymbolicBoundsMaps
+            // Invoke Parameterised DeepPoly
             TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-            TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+            TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
             /*
               Input ranges:
@@ -7876,17 +9468,17 @@ public:
             /*
                 Layer 2:
 
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
                x6.lb = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6.ub = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6 range: [ 0.2595, 0.2595 ]
 
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
                x7.lb = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6062
                x7.ub = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6063
                x7 range: [ 0.7054, 0.7054 ]
 
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
                x8.lb = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8.ub = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8 range: [ 0.0351, 0.0351 ]
@@ -7941,9 +9533,9 @@ public:
               Symbolic bounds of every activation layer in terms of predecessor:
 
               Layer 2 (SOFTMAX):
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
 
               Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
@@ -7958,11 +9550,10 @@ public:
 
               Layer 1:
               Using
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481.
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277:
-              1 <= x9 <= 1
-              -1 <= x10 <= -1
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 +
+    0.4481. -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5
+    + 0.1277: 1 <= x9 <= 1 -1 <= x10 <= -1
 
               Layer 0:
               1 <= x9 <= 1
@@ -8015,6 +9606,12 @@ public:
                                          Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
                                          Vector<double>( { 1, -1 } ),
                                          Vector<double>( { 1, -1 } ) );
+
+            // Non-fixed activation neurons: x6 (SOFTMAX), x7 (SOFTMAX), x8 (SOFTMAX).
+            compareNonfixedNeurons( nlr,
+                                    Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                             NLR::NeuronIndex( 2, 1 ),
+                                                             NLR::NeuronIndex( 2, 2 ) } ) );
         }
         {
             Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "er" );
@@ -8033,9 +9630,9 @@ public:
             unsigned paramCount = nlr.getNumberOfParameters();
             Vector<double> coeffs( paramCount, 0.5 );
 
-            // Invoke parameterised initializeSymbolicBoundsMaps
+            // Invoke Parameterised DeepPoly
             TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-            TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+            TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
             /*
               Input ranges:
@@ -8123,17 +9720,17 @@ public:
             /*
                 Layer 2:
 
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
                x6.lb = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6.ub = 0.3843 x0 - 0.3661 x1 + 0.0183 x2 + 0.2232
                x6 range: [ 0.2595, 0.2595 ]
 
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4480 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
                x7.lb = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6062
                x7.ub = -0.3660 x0 - 0.4156 x1 + 0.0496 x2 + 0.6063
                x7 range: [ 0.7054, 0.7054 ]
 
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
                x8.lb = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8.ub = -0.0182 x0 - 0.0496 x1 - 0.0678 x2 + 0.1707
                x8 range: [ 0.0351, 0.0351 ]
@@ -8187,9 +9784,9 @@ public:
               Symbolic bounds of every activation layer in terms of predecessor:
 
               Layer 2 (SOFTMAX):
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481
+    -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277
 
               Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
@@ -8204,11 +9801,10 @@ public:
 
               Layer 1:
               Using
-0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
--0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481.
--0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= 0.1922 x3 -0.0248 x4 + 0.0339 x5 + 0.1277:
-              1 <= x9 <= 1
-              -1 <= x10 <= -1
+    0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243 <= x6 <= 0.1922 x3 - 0.1830 x4 - 0.0091 x5 + 0.4243.
+    -0.1830 x3 + 0.2078 x4 - 0.0248 x5 + 0.4481 <= x7 <= -0.1830 x3 + 0.2078 x4 - 0.0248 x5 +
+    0.4481. -0.0091 x3 - 0.0248 x4 + 0.0339 x5 + 0.1277 <= x8 <= -0.0091 x3 - 0.0248 x4 + 0.0339 x5
+    + 0.1277: 1 <= x9 <= 1 -1 <= x10 <= -1
 
               Layer 0:
               1 <= x9 <= 1
@@ -8261,6 +9857,12 @@ public:
                                          Vector<double>( { 0, 0, 0, 0, 0, 0 } ),
                                          Vector<double>( { 1, -1 } ),
                                          Vector<double>( { 1, -1 } ) );
+
+            // Non-fixed activation neurons: x6 (SOFTMAX), x7 (SOFTMAX), x8 (SOFTMAX).
+            compareNonfixedNeurons( nlr,
+                                    Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                             NLR::NeuronIndex( 2, 1 ),
+                                                             NLR::NeuronIndex( 2, 2 ) } ) );
         }
     }
 
@@ -8284,9 +9886,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
               Input ranges:
@@ -8367,7 +9969,7 @@ public:
                                                      -0.0019,
                                                      0.0156 } ) ) );
         TS_ASSERT( compareVectors( symbolicUb,
-                                   Vector<double>( { 0.1154,
+                                   Vector<double>( { 0.1155,
                                                      -0.1017,
                                                      -0.0138,
                                                      -0.1017,
@@ -8425,28 +10027,26 @@ public:
             Layer 2:
 
             First Sigmoid: x8 x10 x12 = softmax( x3, x5, x7 ).
-0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1154 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
+    0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
            x8.lb = 0.2310 x0 + 0.0001 x1 + 0.2310 x2 + 0.4051
            x8.ub = 0.2310 x0 + 0.0000 x1 + 0.2310 x2 + 0.4050
            x8 range: [ 0.8668, 0.8668 ]
 
--0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 + 0.3170
-           x10.lb = -0.2033 x0 + 0.0001 x1 - 0.2033 x2 + 0.5239
-           x10.ub = -0.2033 x0 + 0.0000 x1 - 0.2033 x2 + 0.5241
-           x10 range: [ 0.1173, 0.1173 ]
+    -0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 +
+    0.3170 x10.lb = -0.2033 x0 + 0.0001 x1 - 0.2033 x2 + 0.5239 x10.ub = -0.2033 x0 + 0.0000 x1 -
+    0.2033 x2 + 0.5241 x10 range: [ 0.1173, 0.1173 ]
 
--0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
-           x12.lb = -0.0275 x0 + 0.0001 x1 - 0.0275 x2 + 0.0708
-           x12.ub = -0.0275 x0 + 0.0001 x1 - 0.0275 x2 + 0.0708
-           x12 range: [ 0.0159, 0.0159 ]
+    -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 +
+    0.0747 x12.lb = -0.0275 x0 + 0.0001 x1 - 0.0275 x2 + 0.0708 x12.ub = -0.0275 x0 + 0.0001 x1 -
+    0.0275 x2 + 0.0708 x12 range: [ 0.0159, 0.0159 ]
 
            Second Sigmoid: x9 x11 = softmax( x4, x6 ).
-0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
+    0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
            x9.lb = 0 x0 + 0.0354 x1 + 0.0354 x2 + 0.9114
            x9.ub = 0 x0 + 0.0354 x1 + 0.0354 x2 + 0.9114
            x9 range: [ 0.9820, 0.0180 ]
 
--0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
+    -0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
            x11.lb = 0 x0 - 0.0354 x1 - 0.0354 x2 + 0.0886
            x11.ub = 0 x0 - 0.0354 x1 - 0.0354 x2 + 0.0886
            x11 range: [ 0.9820, 0.0180 ]
@@ -8517,11 +10117,11 @@ public:
           Symbolic bounds of every activation layer in terms of predecessor:
 
           Layer 2 (SOFTMAX):
-0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1154 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
-0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
--0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 + 0.3170
--0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
--0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
+    0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
+    0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
+    -0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 +
+    0.3170 -0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886 -0.0138 x3 -
+    0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
 
           Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
@@ -8540,15 +10140,12 @@ public:
 
           Layer 1:
           Using
-0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1154 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
-0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
--0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 + 0.3170
--0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886
--0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747
-          1 <= x13 <= 1
-          -1 <= x14 <= -1
-          1 <= x15 <= 1
-          -1 <= x16 <= -1
+    0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084 <= x8 <= 0.1155 x3 - 0.1017 x5 - 0.0138 x7 + 0.6084
+    0.0177 x4 - 0.0177 x6 + 0.9114 <= x9 <= 0.0177 x4 - 0.0177 x6 + 0.9114
+    -0.1017 x3 + 0.1035 x5 - 0.0019 x7 + 0.3170 <= x10 <= -0.1017 x3 + 0.1036 x5 - 0.0019 x7 +
+    0.3170 -0.0177 x4 + 0.0177 x6 + 0.0886 <= x11 <= -0.0177 x4 + 0.0177 x6 + 0.0886 -0.0138 x3 -
+    0.0019 x5 + 0.0156 x7 + 0.0747 <= x12 <= -0.0138 x3 - 0.0019 x5 + 0.0156 x7 + 0.0747 1 <= x13 <=
+    1 -1 <= x14 <= -1 1 <= x15 <= 1 -1 <= x16 <= -1
 
           Layer 0:
           1 <= x13 <= 1
@@ -8559,14 +10156,36 @@ public:
         comparePredecessorSymbolicBounds(
             nlr,
             2,
-            Vector<double>( { 0.1155,  0.0000,  -0.1017, 0.0000,  -0.0138, 0.0000, 0.0177,
-                              0.0000,  -0.0177, 0.0000,  -0.1017, 0.0000,  0.1035, 0.0000,
-                              -0.0019, 0.0000,  -0.0177, 0.0000,  0.0177,  0.0000, -0.0138,
-                              0.0000,  -0.0019, 0.0000,  0.0156 } ),
-            Vector<double>( { 0.1155,  0.0000,  -0.1017, 0.0000,  -0.0138, 0.0000, 0.0177,
-                              0.0000,  -0.0177, 0.0000,  -0.1017, 0.0000,  0.1035, 0.0000,
-                              -0.0019, 0.0000,  -0.0177, 0.0000,  0.0177,  0.0000, -0.0138,
-                              0.0000,  -0.0019, 0.0000,  0.0156 } ),
+            Vector<double>( { 0.1155,
+                              0.0177,
+                              -0.1017,
+                              -0.0177,
+                              -0.0138,
+                              -0.1017,
+                              -0.0177,
+                              0.1035,
+                              0.0177,
+                              -0.0019,
+                              -0.0138,
+                              0.0000,
+                              -0.0019,
+                              0.0000,
+                              0.0156 } ),
+            Vector<double>( { 0.1155,
+                              0.0177,
+                              -0.1017,
+                              -0.0177,
+                              -0.0138,
+                              -0.1017,
+                              -0.0177,
+                              0.1036,
+                              0.0177,
+                              -0.0019,
+                              -0.0138,
+                              0.0000,
+                              -0.0019,
+                              0.0000,
+                              0.0156 } ),
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ),
             Vector<double>( { 0.6084, 0.9114, 0.3170, 0.0886, 0.0747 } ) );
 
@@ -8596,10 +10215,21 @@ public:
                                      Vector<double>( 12, 0 ),
                                      Vector<double>( { 1, -1, 1, -1 } ),
                                      Vector<double>( { 1, -1, 1, -1 } ) );
+
+        // Non-fixed activation neurons: x8 (SOFTMAX), x9 (SOFTMAX), x10 (SOFTMAX), x11 (SOFTMAX),
+        // x12 (SOFTMAX).
+        compareNonfixedNeurons( nlr,
+                                Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ),
+                                                         NLR::NeuronIndex( 2, 1 ),
+                                                         NLR::NeuronIndex( 2, 2 ),
+                                                         NLR::NeuronIndex( 2, 3 ),
+                                                         NLR::NeuronIndex( 2, 4 ) } ) );
     }
 
     void test_parameterised_symbolic_bound_maps_bilinear()
     {
+        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
+
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
         nlr.setTableau( &tableau );
@@ -8613,9 +10243,9 @@ public:
         unsigned paramCount = nlr.getNumberOfParameters();
         Vector<double> coeffs( paramCount, 0.5 );
 
-        // Invoke parameterised initializeSymbolicBoundsMaps
+        // Invoke Parameterised DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.initializeSymbolicBoundsMaps( coeffs ) );
+        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true, coeffs ) );
 
         /*
           Input ranges:
@@ -8685,7 +10315,7 @@ public:
           Symbolic bounds of output layer in terms of every layer (backsubstitution):
 
           Layer 3:
-          x4 <= x5 <= x4
+          x5 <= x5 <= x5
 
           Layer 2:
           Using x5 = -x4:
@@ -8731,6 +10361,9 @@ public:
                                      Vector<double>( { -3.5, -0.5 } ),
                                      Vector<double>( { -4.5 } ),
                                      Vector<double>( { 9.5 } ) );
+
+        // Non-fixed activation neurons: x4 (BILINEAR).
+        compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
     bool boundsEqual( const List<Tightening> &bounds, const List<Tightening> &expectedBounds )
@@ -8772,10 +10405,10 @@ public:
 
     void compareOutputSymbolicBounds( NLR::NetworkLevelReasoner &nlr,
                                       unsigned layerIndex,
-                                      const Vector<double> &symbolicLb,
-                                      const Vector<double> &symbolicUb,
-                                      const Vector<double> &symbolicLowerBias,
-                                      const Vector<double> &symbolicUpperBias )
+                                      const Vector<double> &expectedSymbolicLb,
+                                      const Vector<double> &expectedSymbolicUb,
+                                      const Vector<double> &expectedSymbolicLowerBias,
+                                      const Vector<double> &expectedSymbolicUpperBias )
     {
         Vector<double> outputSymbolicLb;
         Vector<double> outputSymbolicUb;
@@ -8787,18 +10420,18 @@ public:
                                       nlr.getOutputSymbolicLowerBias( layerIndex ) );
         TS_ASSERT_THROWS_NOTHING( outputSymbolicUpperBias =
                                       nlr.getOutputSymbolicUpperBias( layerIndex ) );
-        TS_ASSERT( compareVectors( outputSymbolicLb, symbolicLb ) );
-        TS_ASSERT( compareVectors( outputSymbolicUb, symbolicUb ) );
-        TS_ASSERT( compareVectors( outputSymbolicLowerBias, symbolicLowerBias ) );
-        TS_ASSERT( compareVectors( outputSymbolicUpperBias, symbolicUpperBias ) );
+        TS_ASSERT( compareVectors( outputSymbolicLb, expectedSymbolicLb ) );
+        TS_ASSERT( compareVectors( outputSymbolicUb, expectedSymbolicUb ) );
+        TS_ASSERT( compareVectors( outputSymbolicLowerBias, expectedSymbolicLowerBias ) );
+        TS_ASSERT( compareVectors( outputSymbolicUpperBias, expectedSymbolicUpperBias ) );
     }
 
     void comparePredecessorSymbolicBounds( NLR::NetworkLevelReasoner &nlr,
                                            unsigned layerIndex,
-                                           const Vector<double> &symbolicLb,
-                                           const Vector<double> &symbolicUb,
-                                           const Vector<double> &symbolicLowerBias,
-                                           const Vector<double> &symbolicUpperBias )
+                                           const Vector<double> &expectedSymbolicLb,
+                                           const Vector<double> &expectedSymbolicUb,
+                                           const Vector<double> &expectedSymbolicLowerBias,
+                                           const Vector<double> &expectedSymbolicUpperBias )
     {
         Vector<double> predecessorSymbolicLb;
         Vector<double> predecessorSymbolicUb;
@@ -8812,21 +10445,77 @@ public:
                                       nlr.getPredecessorSymbolicLowerBias( layerIndex ) );
         TS_ASSERT_THROWS_NOTHING( predecessorSymbolicUpperBias =
                                       nlr.getPredecessorSymbolicUpperBias( layerIndex ) );
-        TS_ASSERT( compareVectors( predecessorSymbolicLb, symbolicLb ) );
-        TS_ASSERT( compareVectors( predecessorSymbolicUb, symbolicUb ) );
-        TS_ASSERT( compareVectors( predecessorSymbolicLowerBias, symbolicLowerBias ) );
-        TS_ASSERT( compareVectors( predecessorSymbolicUpperBias, symbolicUpperBias ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicLb, expectedSymbolicLb ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicUb, expectedSymbolicUb ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicLowerBias, expectedSymbolicLowerBias ) );
+        TS_ASSERT( compareVectors( predecessorSymbolicUpperBias, expectedSymbolicUpperBias ) );
+    }
+
+    void compareBranchSymbolicBounds( NLR::NetworkLevelReasoner &nlr,
+                                      NLR::NeuronIndex index,
+                                      const Vector<double> &expectedSymbolicLb,
+                                      const Vector<double> &expectedSymbolicUb,
+                                      const Vector<double> &expectedSymbolicLowerBias,
+                                      const Vector<double> &expectedSymbolicUpperBias )
+    {
+        Vector<double> branchSymbolicLb;
+        Vector<double> branchSymbolicUb;
+        Vector<double> branchSymbolicLowerBias;
+        Vector<double> branchSymbolicUpperBias;
+        TS_ASSERT_THROWS_NOTHING( branchSymbolicLb = nlr.getSymbolicLbPerBranch( index ) );
+        TS_ASSERT_THROWS_NOTHING( branchSymbolicUb = nlr.getSymbolicUbPerBranch( index ) );
+        TS_ASSERT_THROWS_NOTHING( branchSymbolicLowerBias =
+                                      nlr.getSymbolicLowerBiasPerBranch( index ) );
+        TS_ASSERT_THROWS_NOTHING( branchSymbolicUpperBias =
+                                      nlr.getSymbolicUpperBiasPerBranch( index ) );
+        TS_ASSERT( compareVectors( branchSymbolicLb, expectedSymbolicLb ) );
+        TS_ASSERT( compareVectors( branchSymbolicUb, expectedSymbolicUb ) );
+        TS_ASSERT( compareVectors( branchSymbolicLowerBias, expectedSymbolicLowerBias ) );
+        TS_ASSERT( compareVectors( branchSymbolicUpperBias, expectedSymbolicUpperBias ) );
+    }
+
+    void compareNonfixedNeurons( NLR::NetworkLevelReasoner &nlr,
+                                 const Set<NLR::NeuronIndex> &expectedIndices )
+    {
+        Set<NLR::NeuronIndex> indices;
+        for ( const auto &pair : nlr.getLayerIndexToLayer() )
+        {
+            Vector<NLR::NeuronIndex> nonfixedNeurons;
+            TS_ASSERT_THROWS_NOTHING( nonfixedNeurons = pair.second->getNonfixedNeurons() );
+            for ( const auto index : nonfixedNeurons )
+            {
+                indices.insert( index );
+            }
+        }
+
+        TS_ASSERT_EQUALS( indices.size(), expectedIndices.size() );
+        for ( const auto index : indices )
+        {
+            TS_ASSERT( expectedIndices.exists( index ) );
+        }
+    }
+
+    void
+    compareBBPSBranchingPoints( NLR::NetworkLevelReasoner &nlr,
+                                NLR::NeuronIndex index,
+                                const std::pair<NLR::NeuronIndex, double> &expectedBranchingPoint )
+    {
+        std::pair<NLR::NeuronIndex, double> point;
+        TS_ASSERT_THROWS_NOTHING( point = nlr.getBBPSBranchingPoint( index ) );
+        TS_ASSERT( FloatUtils::areEqual(
+            point.first._layer, expectedBranchingPoint.first._layer, 0.0001 ) );
+        TS_ASSERT( FloatUtils::areEqual(
+            point.first._neuron, expectedBranchingPoint.first._neuron, 0.0001 ) );
+        TS_ASSERT( FloatUtils::areEqual( point.second, expectedBranchingPoint.second, 0.0001 ) );
     }
 
     void comparePMNRScores( NLR::NetworkLevelReasoner &nlr,
-                            const Map<NLR::NeuronIndex, double> &neuronScores )
+                            NLR::NeuronIndex index,
+                            double expectedScore )
     {
-        double PMNRScore;
-        for ( const auto &pair : neuronScores )
-        {
-            TS_ASSERT_THROWS_NOTHING( PMNRScore = nlr.getPMNRScore( pair.first ) );
-            TS_ASSERT( FloatUtils::areEqual( PMNRScore, pair.second, 0.0001 ) );
-        }
+        double score = 0;
+        TS_ASSERT_THROWS_NOTHING( score = nlr.getPMNRScore( index ) );
+        TS_ASSERT( FloatUtils::areEqual( score, expectedScore, 0.0001 ) );
     }
 
     bool compareVectors( const Vector<double> &vectorA, const Vector<double> &vectorB )

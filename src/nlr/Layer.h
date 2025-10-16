@@ -2,7 +2,7 @@
 /*! \file Layer.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Guy Katz, Ido Shmuel
+ **   Guy Katz
  ** This file is part of the Marabou project.
  ** Copyright (c) 2017-2024 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
@@ -139,6 +139,12 @@ public:
     void computeIntervalArithmeticBounds();
     void computeSymbolicBounds();
     void computeParameterisedSymbolicBounds( const Vector<double> &coeffs, bool receive = false );
+
+    // Get all non-fixed neurons in a single layer.
+    const Vector<NeuronIndex> getNonfixedNeurons() const;
+
+    // Determine whether given non-linear activaton neuron has a non-fixed phase.
+    bool neuronNonfixed( unsigned neuron ) const;
 
     const double *getSymbolicLb() const;
     const double *getSymbolicUb() const;
@@ -308,6 +314,16 @@ private:
     void computeIntervalArithmeticBoundsForRound();
     void computeIntervalArithmeticBoundsForSoftmax();
     void computeIntervalArithmeticBoundsForBilinear();
+
+    /*
+      Helper functions for determining whether given non-linear activaton has a non-fixed phase.
+    */
+    bool neuronNonfixedAtZero( unsigned neuron ) const;
+    bool neuronNonfixedSigmoid( unsigned neuron ) const;
+    bool neuronNonfixedRound( unsigned neuron ) const;
+    bool neuronNonfixedMax( unsigned neuron ) const;
+    bool neuronNonfixedSoftmax( unsigned neuron ) const;
+    bool neuronNonfixedBilinear( unsigned neuron ) const;
 
     double getSymbolicLbOfLb( unsigned neuron ) const;
     double getSymbolicUbOfLb( unsigned neuron ) const;
