@@ -193,10 +193,7 @@ public:
     // Random seed for PMNR (with randomized hyperplanes).
     static const unsigned PMNR_RANDOM_SEED;
 
-    // Random seed for PMNR (with randomized hyperplanes).
-    static const unsigned PMNR_MAX_ITERATIONS;
-
-    // Random seed for PMNR (with heuristically selected hyperplanes).
+    // Number of selected neurons for PMNR (with heuristically selected hyperplanes).
     static const unsigned PMNR_SELECTED_NEURONS;
 
     // Number of candidates for PMNR-BBPS branching points.
