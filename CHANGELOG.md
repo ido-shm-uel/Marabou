@@ -7,6 +7,8 @@
   - Implemented forward-backward abstract interpretation, symbolic bound tightening, interval arithmetic and simulations for all activation functions.
   - Implemented backward analysis using preimage-approximation algorithm for `Relu`, `LeakyRelu`, `Sign` and `Bilinear` Layers.
   - Added the BaBSR heuristic as a new branching strategy for ReLU Splitting
+  - Support Sub of two variables, "Mul" of two constants, Slice, and ConstantOfShape in the python onnx parser
+  - Renamed SmtCore module to SearchTreeHandler
 
 ## Version 2.0.0
 
@@ -32,7 +34,7 @@
 * Added command-line support for properties in the VNNLIB format.
 
 * Changes to Python ONNX support:
-  - Added support for `Softmax`, `Bilinear`, `Dropout`, and `LeakyRelu` operators.
+  - Added support for `Softmax`, `Bilinear`, `Dropout`, `Sign`, and `LeakyRelu` operators.
   - `MarabouONNXNetwork` no longer exposes the fields `madeGraphEquations`, `varMap`, `constantMap`, `shapeMap`
     as these were supposed to be internal implementation details.
   - `MarabouONNXNetwork` no longer has a `shallowCopy` method. Instead of calling this method,

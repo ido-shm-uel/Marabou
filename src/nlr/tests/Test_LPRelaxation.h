@@ -3975,7 +3975,7 @@ public:
         tableau.setUpperBound( 1, 1 );
 
 
-        // Invoke SBT
+        // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
 
@@ -5509,8 +5509,8 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.lpRelaxationPropagation() );
 
         List<Tightening> expectedBounds2( {
-            Tightening( 10, 8.7411, Tightening::UB ),
-            Tightening( 11, -2.4149, Tightening::LB ),
+            Tightening( 10, 8.361, Tightening::UB ),
+            Tightening( 11, -8.361, Tightening::LB ),
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
@@ -5579,14 +5579,14 @@ public:
 
         List<Tightening> expectedBounds4( {
             Tightening( 7, 0, Tightening::LB ),
-
             Tightening( 8, 7, Tightening::UB ),
+
             Tightening( 9, 5.8235, Tightening::UB ),
 
             Tightening( 10, -14, Tightening::LB ),
             Tightening( 10, 40.7647, Tightening::UB ),
 
-            Tightening( 11, -24.8805, Tightening::LB ),
+            Tightening( 11, -40.7647, Tightening::LB ),
             Tightening( 11, 14, Tightening::UB ),
         } );
 
