@@ -184,9 +184,6 @@ public:
     // Weight decay for INVPROP optimization.
     static const double INVPROP_WEIGHT_DECAY;
 
-    // Initial alpha values for INVPROP optimization.
-    static const double INVPROP_INITIAL_ALPHA;
-
     // Initial gamma values for INVPROP optimization.
     static const double INVPROP_INITIAL_GAMMA;
 

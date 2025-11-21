@@ -1449,44 +1449,10 @@ public:
         compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
-    void test_gradient_selection_relus_active_and_not_fixed()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTRelu( nlr, tableau );
-
-        tableau.setLowerBound( 0, 4 );
-        tableau.setUpperBound( 0, 6 );
-        tableau.setLowerBound( 1, 1 );
-        tableau.setUpperBound( 1, 5 );
-
-        // Strong negative bias for x2, which is node (1,0)
-        nlr.setBias( 1, 0, -15 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x4 - x5 <= x6 <= x4 - x5.
-          x4 gradient: lower = ( 1 ), upper = ( 1 ), average = ( 1 ).
-          Gradient-based PMNR score of x4: ( 1 )^2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
-    }
-
     void test_bbps_selection_relus_active_and_not_fixed()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -1528,15 +1494,16 @@ public:
 
            Lower branch, using x2: [-4, 0], 0 <= x4 <= 0:
            Output symbolic bounds -11 <= x6 <= -5.
-           Concrete bounds: [-11, -5]. DeepPoly bounds: [-9, 1]. Improvement: 6.
-
            Upper branch, using x2: [0, 12], x2 <= x4 <= x2:
            Output symbolic bounds x2 - 11 <= x6 <= x2 - 5.
-           Concrete bounds: [-11, 7]. DeepPoly bounds: [-9, 1]. Improvement: 0.
 
-           Final score = ( 6 + 0 ) / 2 = 3.
+           Summing over all branches:
+           Lower symbolic expression: x2 - 22 >= -26.
+           Upper symbolic expression: x2 - 10 <= 2.
+
+           Final score = ( 2 - (-26) ) / 2 = 14.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 3 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 14 );
     }
 
     void test_symbolic_bound_maps_relus_active_and_externally_fixed()
@@ -1844,48 +1811,10 @@ public:
             nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ), NLR::NeuronIndex( 4, 0 ) } ) );
     }
 
-    void test_gradient_selection_relu_residual1()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTReluResidual1( nlr, tableau );
-
-        tableau.setLowerBound( 0, -1 );
-        tableau.setUpperBound( 0, 1 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x2:
-          Symbolic bounds of output layer in terms of Layer 2:
-          -3x2 - 2 <= x5 <= -2x2 + 10.
-          x2 gradient: lower = ( -3 ), upper = ( -2 ), average = ( -2.5 ).
-          Gradient-based PMNR score of x2: ( -2.5 )^2 = 6.25.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 6.25 );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 4:
-          3x4 - 2 <= x5 <= 3x4 + 4.
-          x4 gradient: lower = ( 3 ), upper = ( 3 ), average = ( 3 ).
-          Gradient-based PMNR score of x4: ( 3 )^2 = 9.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 9 );
-    }
-
     void test_bbps_selection_relu_residual1()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -1938,30 +1867,32 @@ public:
 
            Lower branch, using x1: [-1, 0], 0 <= x4 <= 0:
            Output symbolic bounds -2 <= x5 <= 10.
-           Concrete bounds: [-2, 10]. DeepPoly bounds: [1, 6]. Improvement: 0.
-
            Upper branch, using x1: [0, 1], x2 <= x4 <= x2:
            Output symbolic bounds -3x1 - 2 <= x5 <= -2x1 + 10.
-           Concrete bounds: [-5, 10]. DeepPoly bounds: [1, 6]. Improvement: 0.
 
-           Final score = ( 0 + 0 ) / 2 = 0.
+           Summing over all branches:
+           Lower symbolic expression: -3x1 - 4 >= -7.
+           Upper symbolic expression: -2x1 + 20 <= 22.
+
+           Final score = ( 22 - (-7) ) / 2 = 14.5.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 14.5 );
 
         /* Calculating BBPS-based PMNR score of x4:
            Symbolic bounds of output layer in terms of Layer 4: 3x4 - 2 <= x5 <= 3x4 + 4.
 
            Lower branch, using x3: [-1, 0], 0 <= x4 <= 0:
            Output symbolic bounds -2 <= x5 <= 4.
-           Concrete bounds: [-2, 4]. DeepPoly bounds: [1, 6]. Improvement: 2.
-
            Upper branch, using x3: [0, 2], x2 <= x4 <= x2:
            Output symbolic bounds 3x3 - 2 <= x5 <= 3x3 + 4.
-           Concrete bounds: [-2, 10]. DeepPoly bounds: [1, 6]. Improvement: 0.
 
-           Final score = ( 0 + 2 ) / 2 = 1.
+           Summing over all branches:
+           Lower symbolic expression: -3x3 - 4 >= -7.
+           Upper symbolic expression: 3x3 + 8 <= 14.
+
+           Final score = ( 14 - (-7) ) / 2 = 10.5.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 10.5 );
     }
 
     void test_symbolic_bound_maps_relu_residual2()
@@ -2150,48 +2081,10 @@ public:
             nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ), NLR::NeuronIndex( 4, 0 ) } ) );
     }
 
-    void test_gradient_selection_relu_residual2()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTReluResidual2( nlr, tableau );
-
-        tableau.setLowerBound( 0, -1 );
-        tableau.setUpperBound( 0, 1 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x2:
-          Symbolic bounds of output layer in terms of Layer 2:
-          -3x2 + 2 <= x5 <= -2x2 + 6.
-          x4 gradient: lower = ( -3 ), upper = ( -2 ), average = ( -2.5 ).
-          Gradient-based PMNR score of x2: ( -2.5 )^2 = 6.25.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 6.25 );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 4:
-          3x4 <= x5 <= 3x4 + 2.
-          x4 gradient: lower = ( 3 ), upper = ( 3 ), average = ( 3 ).
-          Gradient-based PMNR score of x4: ( 3 )^2 = 9.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 9 );
-    }
-
     void test_bbps_selection_relu_residual2()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -2244,30 +2137,32 @@ public:
 
            Lower branch, using x1: [-1, 0], 0 <= x4 <= 0:
            Output symbolic bounds 2 <= x6 <= 6.
-           Concrete bounds: [2, 6]. DeepPoly bounds: [-1, 6]. Improvement: 3.
-
            Upper branch, using x1: [0, 1], x2 <= x4 <= x2:
            Output symbolic bounds -3x1 + 2 <= x6 <= -2x1 + 6.
-           Concrete bounds: [-1, 6]. DeepPoly bounds: [-1, 6]. Improvement: 0.
 
-           Final score = ( 3 + 0 ) / 2 = 1.5.
+           Summing over all branches:
+           Lower symbolic expression: -3x1 + 4 >= 1.
+           Upper symbolic expression: -2x1 + 12 <= 14.
+
+           Final score = ( 14 - 1 ) / 2 = 6.5.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1.5 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 6.5 );
 
         /* Calculating BBPS-based PMNR score of x4:
            Symbolic bounds of output layer in terms of Layer 4: 3x4 <= x6 <= 3x4 + 2.
 
-           Lower branch, using x3: [0, 1], 0 <= x4 <= 0:
+           Lower branch, using x3: [-1, 0], 0 <= x4 <= 0:
            Output symbolic bounds 0 <= x6 <= 2.
-           Concrete bounds: [0, 2]. DeepPoly bounds: [-1, 6]. Improvement: 5.
-
            Upper branch, using x3: [0, 2], x2 <= x4 <= x2:
            Output symbolic bounds 3x3 <= x6 <= 3x3 + 2.
-           Concrete bounds: [0, 8]. DeepPoly bounds: [-1, 6]. Improvement: 1.
 
-           Final score = ( 5 + 1 ) / 2 = 3.
+           Summing over all branches:
+           Lower symbolic expression: 3x3 >= -3.
+           Upper symbolic expression: 3x3 + 4 <= 10.
+
+           Final score = ( 10 - (-3) ) / 2 = 6.5.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 3 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 6.5 );
     }
 
     void test_symbolic_bound_maps_relu_reindex()
@@ -2479,59 +2374,10 @@ public:
                                                          NLR::NeuronIndex( 4, 0 ) } ) );
     }
 
-    void test_gradient_selection_relu_reindex()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTReluReindex( nlr, tableau );
-
-        tableau.setLowerBound( 0, -1 );
-        tableau.setUpperBound( 0, 1 );
-        tableau.setLowerBound( 1, -1 );
-        tableau.setUpperBound( 1, 1 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
-          x4 gradient: lower = ( 1, 0 ), upper = ( 1.5, 0.5 ), average = ( 1.25, 0.25 ).
-          Gradient-based PMNR score of x4: ( 1.25 )^2 + ( 0.25 )^2 = 1.625.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0.625 );
-
-        /*
-          Calculating Gradient-based PMNR score of x5:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
-          x5 gradient: lower = ( 1, 0 ), upper = ( 0.5, -0.5 ), average = ( 0.75, -0.25 ).
-          Gradient-based PMNR score of x5: ( 0.75 )^2 + ( -0.25 )^2 = 0.625.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 1.625 );
-
-        /*
-          Calculating Gradient-based PMNR score of x9:
-          Symbolic bounds of output layer in terms of Layer 4:
-          x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
-          x9 gradient: lower = ( 1, 1 ), upper = ( 1, 1 ), average = ( 1, 1 ).
-          Gradient-based PMNR score of x9: ( ( 1 )^2 + ( 1 )^2 ) / 2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 2 );
-    }
-
     void test_bbps_selection_relu_reindex()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -2603,42 +2449,37 @@ public:
            x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
            Concretizing x5: x4 + 1 <= x10 <= 1.5x4 + 3, 0 <= x11 <= 0.5x4 + 1.
 
-           Lower branch, using x2: [-2, 0], 0 <= x4 <= 0: Output symbolic bounds:
-           1 <= x10 <= 3, 0 <= x11 <= 1.
-           Concrete bounds: x10: [1, 3], x11: [0, 1].
-           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
-           Improvement: 2.5 + 1 = 3.5.
+           Lower branch, using x2: [-2, 0], 0 <= x4 <= 0.
+           Output symbolic bounds: 1 <= x10 <= 3, 0 <= x11 <= 1.
+           Upper branch, using x2: [0, 2], x2 <= x4 <= x2:
+           Output symbolic bounds: x2 + 1 <= x10 <= 1.5x2 + 3, 0 <= x11 <= 0.5x2 + 1.
 
-           Upper branch, using x2: [0, 2], x2 <= x4 <= x2: Output symbolic bounds:
-           x2 + 1 <= x10 <= 1.5x2 + 3, 0 <= x11 <= 0.5x2 + 1.
-           Concrete bounds: x10: [1, 6], x11: [0, 2].
-           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
-           Improvement: 0 + 0 = 0.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: x2 + 2 >= 0.
+           Upper symbolic expression: 2x2 + 8 <= 12.
 
-           Final score = ( 3.5 + 0 ) / 2 = 1.75.
+           Final score = ( 12 - 0 ) / 2 = 6.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 1.75 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 6 );
 
         /* Calculating BBPS-based PMNR score of x5:
            Symbolic bounds of output layer in terms of Layer 2:
            x4 + x5 + 1 <= x10 <= 1.5x4 + 0.5x5 + 2, 0 <= x11 <= 0.5x4 - 0.5x5 + 1.
            Concretizing x4: x5 + 1 <= x10 <= 0.5x5 + 5, 0 <= x11 <= -0.5x5 + 2.
 
-           Lower branch, using x3: [-2, 0], 0 <= x5 <= 0: Output symbolic bounds:
-           1 <= x10 <= 5, 0 <= x11 <= 2.
-           Concrete bounds: x10: [1, 5], x11: [0, 2].
-           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
-           Improvement: 0.5 + 0 = 0.5.
-
-           Upper branch, using x3: [0, 2], x3 <= x5 <= x3: Output symbolic bounds:
+           Lower branch, using x3: [-2, 0], 0 <= x5 <= 0:
+           Output symbolic bounds: 1 <= x10 <= 5, 0 <= x11 <= 2.
+           Upper branch, using x3: [0, 2], x3 <= x5 <= x3:
+           Output symbolic bounds:
            x3 + 1 <= x10 <= 0.5x3 + 5, 0 <= x11 <= -0.5x3 + 2.
-           Concrete bounds: x10: [1, 6], x11: [0, 2].
-           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
-           Improvement: 0 + 0 = 0.
 
-           Final score = ( 0.5 + 0 ) / 2 = 0.25.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: x3 + 2 >= 0.
+           Upper symbolic expression: 14 <= 14.
+
+           Final score = ( 14 - 0 ) / 2 = 7.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0.25 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 7 );
 
         /* Calculating BBPS-based PMNR score of x9:
            Symbolic bounds of output layer in terms of Layer 4:
@@ -2647,19 +2488,16 @@ public:
 
            Lower branch, using x7: [-2, 0], 0 <= x9 <= 0:
            Output symbolic bounds: 1 <= x10 <= 4, 0 <= x11 <= 0.
-           Concrete bounds: x10: [1, 4], x11: [0, 0].
-           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
-           Improvement: 1.5 + 2 = 3.5.
-
            Lower branch, using x7: [0, 2], 0 <= x9 <= 0:
            Output symbolic bounds: x7 + 1 <= x10 <= x7 + 4, x7 <= x11 <= x7.
-           Concrete bounds: x10: [1, 6], x11: [0, 2].
-           DeepPoly bounds: x10: [1, 5.5], x11: [0, 2].
-           Improvement: 0 + 0 = 0.
 
-           Final score = ( 3.5 + 0 ) / 2 = 1.75.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: 2x7 + 2 >= -2.
+           Upper symbolic expression: 2x7 + 8 <= 12.
+
+           Final score = ( 12 - (-2) ) / 2 = 7.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1.75 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 7 );
     }
 
     void test_symbolic_bound_maps_absolute_values_all_positive()
@@ -3062,44 +2900,10 @@ public:
         compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
-    void test_gradient_selection_absolute_values_positive_and_not_fixed()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTAbsoluteValue( nlr, tableau );
-
-        tableau.setLowerBound( 0, 4 );
-        tableau.setUpperBound( 0, 6 );
-        tableau.setLowerBound( 1, 1 );
-        tableau.setUpperBound( 1, 5 );
-
-        // Strong negative bias for x2, which is node (1,0)
-        nlr.setBias( 1, 0, -15 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x4 - x5 <= x6 <= x4 - x5.
-          x4 gradient: lower = ( 1 ), upper = ( 1 ), average = ( 1 ).
-          Gradient-based PMNR score of x4: ( 1 )^2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
-    }
-
     void test_bbps_selection_absolute_values_positive_and_not_fixed()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -3141,15 +2945,16 @@ public:
 
            Lower branch, using x2: [-4, 0], -x2 <= x4 <= -x2:
            Output symbolic bounds -x2 - 11 <= x6 <= -x2 - 5.
-           Concrete bounds: [-11, -1]. DeepPoly bounds: [-11, 7]. Improvement: 8.
-
            Upper branch, using x2: [0, 12], x2 <= x4 <= x2:
            Output symbolic bounds x2 - 11 <= x6 <= x2 - 5.
-           Concrete bounds: [-11, 7]. DeepPoly bounds: [-11, 7]. Improvement: 0.
 
-           Final score = ( 8 + 0 ) / 2 = 4.
+           Summing over all branches:
+           Lower symbolic expression: -22 >= -22.
+           Upper symbolic expression: -10 <= -10.
+
+           Final score = ( -10 + (-22) ) / 2 = 6.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 4 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 6 );
     }
 
     void test_symbolic_bound_maps_absolute_values_active_and_externally_fixed()
@@ -3432,44 +3237,10 @@ public:
         compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
-    void test_gradient_selection_signs_positive_and_not_fixed()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTSign( nlr, tableau );
-
-        tableau.setLowerBound( 0, 4 );
-        tableau.setUpperBound( 0, 6 );
-        tableau.setLowerBound( 1, 1 );
-        tableau.setUpperBound( 1, 5 );
-
-        // Strong negative bias for x2, which is node (1,0)
-        nlr.setBias( 1, 0, -15 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x4 - x5 <= x6 <= x4 - x5.
-          x4 gradient: lower = ( 1 ), upper = ( 1 ), average = ( 1 ).
-          Gradient-based PMNR score of x4: ( 1 )^2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
-    }
-
     void test_bbps_selection_signs_positive_and_not_fixed()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -3511,15 +3282,16 @@ public:
 
            Lower branch, using x2: [-4, 0], -1 <= x4 <= -1:
            Output symbolic bounds -2 <= x6 <= -2.
-           Concrete bounds: [-2, -2]. DeepPoly bounds: [-2, 0]. Improvement: 2.
-
            Upper branch, using x2: [0, 12], 1 <= x4 <= 1:
            Output symbolic bounds 0 <= x6 <= 0.
-           Concrete bounds: [0, 0]. DeepPoly bounds: [-2, 0]. Improvement: 2.
 
-           Final score = ( 2 + 2 ) / 2 = 2.
+           Summing over all branches:
+           Lower symbolic expression: -2 >= -2.
+           Upper symbolic expression: 0 <= 0.
+
+           Final score = ( (-2) - (-2) ) / 2 = 0.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
     }
 
     void test_symbolic_bound_maps_signs_active_and_externally_fixed()
@@ -3877,67 +3649,10 @@ public:
                                                          NLR::NeuronIndex( 4, 1 ) } ) );
     }
 
-    void test_gradient_selection_leaky_relu()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTLeakyReLU( nlr, tableau ); // alpha = 0.2
-
-        tableau.setLowerBound( 0, -1 );
-        tableau.setUpperBound( 0, 1 );
-        tableau.setLowerBound( 1, -1 );
-        tableau.setUpperBound( 1, 1 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 2:
-          2x4 + 1 <= x10 <= 19/15 x4 + 1/15 x5 + 229/75, x4 - x5 <= x11 <= 0.6x4 - 0.6x5 + 1.12.
-          x4 gradient: lower = ( 2, 1 ), upper = ( 19/15, 0.6 ), average = ( 49/30, 0.8 ).
-          Gradient-based PMNR score of x4: ( 49/30 )^2 + ( 0.8 )^2 = 3.3078.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 3.3078 );
-
-        /*
-          Calculating Gradient-based PMNR score of x5:
-          Symbolic bounds of output layer in terms of Layer 2:
-          2x4 + 1 <= x10 <= 19/15 x4 + 1/15 x5 + 229/75, x4 - x5 <= x11 <= 0.6x4 - 0.6x5 + 1.12.
-          x5 gradient: lower = ( 0, -1 ), upper = ( 1/15, -0.6 ), average = ( 1/30, -0.8 ).
-          Gradient-based PMNR score of x5: ( 1/30 )^2 + ( 0.8 )^2 = 0.6411.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0.6411 );
-
-        /*
-          Calculating Gradient-based PMNR score of x8:
-          Symbolic bounds of output layer in terms of Layer 4:
-          x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
-          x8 gradient: lower = ( 1, 0 ), upper = ( 1, 0 ), average = ( 1, 0 ).
-          Gradient-based PMNR score of x8: ( 1 )^2 + ( 0 )^2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
-
-        /*
-          Calculating Gradient-based PMNR score of x9:
-          Symbolic bounds of output layer in terms of Layer 4:
-          x8 + x9 + 1 <= x10 <= x8 + x9 + 1, x9 <= x11 <= x9.
-          x9 gradient: lower = ( 1, 1 ), upper = ( 1, 1 ), average = ( 1, 1 ).
-          Gradient-based PMNR score of x9: ( 1 )^2 + ( 1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 2 );
-    }
-
     void test_bbps_selection_leaky_relu()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -4028,19 +3743,16 @@ public:
 
            Lower branch, using x2: [-2, 0], 0.2 x2 <= x4 <= 0.2 x2: Output symbolic bounds:
            0.4 x2 + 1 <= x10 <= 19/75 x2 + 239/75, 0.2 x2 - 2 <= x11 <= 0.12 x2 + 2.32.
-           Concrete bounds: x10: [0.2, 239/75], x11: [-2.4, 2.32].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 424/75 + 0.88 = 490/75.
-
            Upper branch, using x6: [0, 2], x2 <= x4 <= x2: Output symbolic bounds:
            2x2 + 1 <= x10 <= 19/15 x2 + 239/75, x2 - 2 <= x11 <= 0.6x2 + 2.32.
-           Concrete bounds: x10: [1, 5.72], x11: [-2, 3.52].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 4 + 0.8 = 4.8.
 
-           Final score = ( 490/75 + 4.8 ) / 2 = 17/3 = 5.6667.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: 3.6 x2 - 2 >= -9.2.
+           Upper symbolic expression: 2.24 x2 + 826/75 <= 1162/75.
+
+           Final score = ( 1162/75 - (-9.2) ) / 2 = 926/75 = 12.3467.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 5.6667 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 12.3467 );
 
         /* Calculating BBPS-based PMNR score of x5:
            Symbolic bounds of output layer in terms of Layer 2:
@@ -4049,19 +3761,16 @@ public:
 
            Lower branch, using x3: [-2, 0], 0.2 x3 <= x5 <= 0.2 x3: Output symbolic bounds:
            -3 <= x10 <= 1/75 x3 + 419/75, -0.2 x3 - 2 <= x11 <= -0.12 x3 + 2.32.
-           Concrete bounds: x10: [-3, 419/75], x11: [-2, 2.56].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 4/75 + 1.04 = 82/75.
-
            Upper branch, using x3: [0, 2], x3 <= x5 <= x3: Output symbolic bounds:
            -3 <= x10 <= 1/15 x3 + 419/75, -x3 - 2 <= x11 <= -0.6x3 + 2.32.
-           Concrete bounds: x10: [-3, 5.72], x11: [-4, 2.32].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 0 + 0.48 = 0.48.
 
-           Final score = ( 82/75 + 0.48 ) / 2 = 59/75 = 0.7867.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: -1.2 x3 - 10 >= -12.4.
+           Upper symbolic expression: -0.64 x3 + 1186/75 <= 1282/75.
+
+           Final score = ( 1282/75 - (-12.4) ) / 2 = 1106/75 = 14.7467.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0.7867 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 14.7467 );
 
         /* Calculating BBPS-based PMNR score of x8:
            Symbolic bounds of output layer in terms of Layer 4:
@@ -4070,19 +3779,16 @@ public:
 
            Lower branch, using x6: [-2, 0], 0.2 x6 <= x8 <= 0.2 x6: Output symbolic bounds:
            0.2 x6 - 1.8 <= x10 <= 0.2 x6 + 3.8, -2.8 <= x11 <= 2.8.
-           Concrete bounds: x10: [-2.2, 3.8], x11: [-2.8, 2.8].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 2.64 + 2.8 = 2.64.
-
            Lower branch, using x6: [0, 2.8], x6 <= x8 <= x6: Output symbolic bounds:
            x6 - 1.8 <= x10 <= x6 + 3.8, -2.8 <= x11 <= 2.8.
-           Concrete bounds: x10: [-1.8, 6.6], x11: [-2.8, 2.8].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 1.2 + 0 = 1.2.
 
-           Final score = ( 2.64 + 1.2 ) / 2 = 1.92.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: 1.2 x6 - 9.2 >= -11.6.
+           Upper symbolic expression: 1.2 x6 + 13.2 <= 16.56.
+
+           Final score = ( 16.56 - (-11.6) ) / 2 = 14.08.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1.92 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 14.08 );
 
         /* Calculating BBPS-based PMNR score of x9:
            Symbolic bounds of output layer in terms of Layer 4:
@@ -4091,19 +3797,16 @@ public:
 
            Lower branch, using x7: [-2.8, 0], 0.2 x7 <= x9 <= 0.2 x7: Output symbolic bounds:
            0.2 x7 - 1 <= x10 <= 0.2 x7 + 3.8, 0.2 x7 <= x11 <= 0.2 x7.
-           Concrete bounds: x10: [-1.56, 3.8], x11: [-0.56, 0].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 3.28 + 5.04 = 8.32.
-
            Lower branch, using x7: [0, 2.8], x7 <= x9 <= x7: Output symbolic bounds:
            x7 - 1 <= x10 <= x7 + 3.8, x7 <= x11 <= x7.
-           Concrete bounds: x10: [-1, 6.6], x11: [0, 2.8].
-           DeepPoly bounds: x10: [-3, 5.64], x11: [-2.8, 2.8].
-           Improvement: 2 + 2.8 = 4.8.
 
-           Final score = ( 8.32 + 4.8 ) / 2 = 6.56.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: 2.4 x7 - 2 >= -8.72.
+           Upper symbolic expression: 2.4 x7 + 7.6 <= 14.32.
+
+           Final score = ( 14.32 + (-8.72) ) / 2 = 11.52.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 6.56 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 11.52 );
     }
 
     void test_symbolic_bound_maps_sigmoids_and_round()
@@ -4304,68 +4007,10 @@ public:
                                                          NLR::NeuronIndex( 4, 1 ) } ) );
     }
 
-    void test_gradient_selection_sigmoids_and_round()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTSigmoidsAndRound( nlr, tableau );
-
-        tableau.setLowerBound( 0, -1 );
-        tableau.setUpperBound( 0, 1 );
-        tableau.setLowerBound( 1, -1 );
-        tableau.setUpperBound( 1, 1 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x4 + x5 - 0.5 <= x8 <= x4 + x5 + 0.5, x4 - x5 - 0.5 <= x9 <= x4 - x5 + 0.5.
-          x4 gradient: lower = ( 1, 1 ), upper = ( 1, 1 ), average = ( 1, 1 ).
-          Gradient-based PMNR score of x4: ( 1 )^2 + ( 1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x5:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x4 + x5 - 0.5 <= x8 <= x4 + x5 + 0.5, x4 - x5 - 0.5 <= x9 <= x4 - x5 + 0.5.
-          x5 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
-          Gradient-based PMNR score of x5: ( 1 )^2 + ( -1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x8:
-          Symbolic bounds of output layer in terms of Layer 4:
-          x8 <= x8 <= x8, x9 <= x9 <= x9.
-          x8 gradient: lower = ( 1, 0 ), upper = ( 1, 0 ), average = ( 1, 0 ).
-          Gradient-based PMNR score of x8: ( 1 )^2 + ( 0 )^2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
-
-        /*
-          Calculating Gradient-based PMNR score of x9:
-          Symbolic bounds of output layer in terms of Layer 4:
-          x8 <= x8 <= x8, x9 <= x9 <= x9.
-          x9 gradient: lower = ( 1, 0 ), upper = ( 1, 0 ), average = ( 1, 0 ).
-          Gradient-based PMNR score of x9: ( 1 )^2 + ( 0 )^2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 1 );
-    }
-
     void test_bbps_selection_sigmoids_and_round()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -4381,17 +4026,17 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
-        // Using branching point (x2, -2/11) for x4 (SIGMOID).
+        // Using branching point (x2, -2/101) for x4 (SIGMOID).
         compareBBPSBranchingPoints(
             nlr,
             NLR::NeuronIndex( 2, 0 ),
-            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), -0.1818 } ) );
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 0 ), -0.0198 } ) );
 
-        // Using branching point (x3, -2/11) for x5 (SIGMOID).
+        // Using branching point (x3, -2/101) for x5 (SIGMOID).
         compareBBPSBranchingPoints(
             nlr,
             NLR::NeuronIndex( 2, 1 ),
-            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), -0.1818 } ) );
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), -0.0198 } ) );
 
         // Using branching point (x6, 0.5) for x8 (ROUND).
         compareBBPSBranchingPoints(
@@ -4422,19 +4067,20 @@ public:
                 return min(g_prime(l), g_prime(u))
 
             l3 = l4 = -2
-            u3 = u4 = -2/11
+            u3 = u4 = -2/101
             l5 = l6 = g(-2)
-            u5 = u6 = g(-2/11)
+            u5 = u6 = g(-2/101)
             lambda7 = lam(l3, u3)
             lambda7_prime = lam_prime(l3, u3)
             lambda8 = lam(l4, u4)
             lambda8_prime = lam_prime(l4, u4)
 
             '''
-            Sigmoid linear relaxation ( Layer 2 ), lower branches ( x2: [-2, 2/11], x3: [-2, 2/11]
-           ): x4 >= lambda7_prime * x2 + ( g(l3) - lambda7_prime * l3 ) x4 <= lambda7 * x2 + ( g(u3)
-           - lambda7 * u3 ) x5 >= lambda8_prime * x3 + ( g(l4) - lambda8_prime * l4 ) x5 <= lambda8
-           * x3 + ( g(u4) - lambda8 * u4 )
+            Layer 2 Sigmoid linear relaxation, lower branches x2: [-2, 2/101], x3: [-2, 2/101]:
+            x4 >= lambda7_prime * x2 + ( g(l3) - lambda7_prime * l3 )
+            x4 <= lambda7 * x2 + ( g(u3) - lambda7 * u3 )
+            x5 >= lambda8_prime * x3 + ( g(l4) - lambda8_prime * l4 )
+            x5 <= lambda8 * x3 + ( g(u4) - lambda8 * u4 )
             '''
             print('------------------')
             print(lambda7_prime)
@@ -4446,9 +4092,9 @@ public:
             print(g(l4) - lambda8_prime * l4)
             print(g(u4) - lambda8 * u4)
 
-            l3 = l4 = -2/11
+            l3 = l4 = -2/101
             u3 = u4 = 2
-            l5 = l6 = g(-2/11)
+            l5 = l6 = g(-2/101)
             u5 = u6 = g(2)
             lambda7 = lam(l3, u3)
             lambda7_prime = lam_prime(l3, u3)
@@ -4456,7 +4102,7 @@ public:
             lambda8_prime = lam_prime(l4, u4)
 
             '''
-            Sigmoid linear relaxation ( Layer 2 ), upper branches ( x2: [2/11, 2], x3: [2/11, 2] ):
+            Layer 2 Sigmoid linear relaxation, upper branches x2: [-2/101, 2], x3: [-2/101, 2]:
             x4 >= lambda7_prime * x2 + ( g(l3) - lambda7_prime * l3 )
             x4 <= lambda7_prime * x2 + ( g(u3) - lambda7_prime * u3 )
             x5 >= lambda8_prime * x3 + ( g(l4) - lambda8_prime * l4 )
@@ -4474,39 +4120,39 @@ public:
             [output]:
             ------------------
             0.1049935854035065
-            0.18450703649914935
+            0.18980260606696492
             0.1049935854035065
-            0.18450703649914935
+            0.18980260606696492
             0.3291900928291306
-            0.4882169950204162
+            0.4988081341560474
             0.3291900928291306
-            0.4882169950204162
+            0.4988081341560474
             ------------------
             0.10499358540350662
             0.10499358540350662
-            0.47376000391211753
+            0.49712874760825615
             0.6708099071708691
-            0.47376000391211753
+            0.49712874760825615
             0.6708099071708691
 
-           Lower branch symbolic bounds: 0.1050 x2 + 0.3292 <= x4 <= 0.1845 x2 + 0.4882.
-           Upper branch symbolic bounds: 0.1050 x2 + 0.4737 <= x4 <= 0.1050 x2 + 0.6708.
+           Lower branch symbolic bounds: 0.1050 x2 + 0.3292 <= x4 <= 0.1898 x2 + 0.4988.
+           Upper branch symbolic bounds: 0.1050 x2 + 0.4971 <= x4 <= 0.1050 x2 + 0.6708.
 
-           Lower branch symbolic bounds: 0.1050 x3 + 0.3292 <= x5 <= 0.1845 x3 + 0.4882.
-           Upper branch symbolic bounds: 0.1050 x3 + 0.4737 <= x5 <= 0.1050 x3 + 0.6708.
+           Lower branch symbolic bounds: 0.1050 x3 + 0.3292 <= x5 <= 0.1845 x3 + 0.4988.
+           Upper branch symbolic bounds: 0.1050 x3 + 0.4971 <= x5 <= 0.1050 x3 + 0.6708.
         */
         compareBranchSymbolicBounds( nlr,
                                      NLR::NeuronIndex( 2, 0 ),
                                      Vector<double>( { 0.1050, 0.1050 } ),
-                                     Vector<double>( { 0.1845, 0.1050 } ),
-                                     Vector<double>( { 0.3292, 0.4737 } ),
-                                     Vector<double>( { 0.4882, 0.6708 } ) );
+                                     Vector<double>( { 0.1898, 0.1050 } ),
+                                     Vector<double>( { 0.3292, 0.4971 } ),
+                                     Vector<double>( { 0.4988, 0.6708 } ) );
         compareBranchSymbolicBounds( nlr,
                                      NLR::NeuronIndex( 2, 1 ),
                                      Vector<double>( { 0.1050, 0.1050 } ),
-                                     Vector<double>( { 0.1845, 0.1050 } ),
-                                     Vector<double>( { 0.3292, 0.4737 } ),
-                                     Vector<double>( { 0.4882, 0.6708 } ) );
+                                     Vector<double>( { 0.1898, 0.1050 } ),
+                                     Vector<double>( { 0.3292, 0.4971 } ),
+                                     Vector<double>( { 0.4988, 0.6708 } ) );
 
         /*
            Lower branch symbolic bounds: 0 <= x8 <= 0.
@@ -4537,68 +4183,61 @@ public:
 
            Lower branch, using x2: [-2, -2/11], 0.1050 x2 + 0.3292 <= x4 <= 0.1845 x2 + 0.4882:
            Output symbolic bounds:
-           0.1050 x2 - 0.0516 <= x8 <= 0.1845 x2 + 1.8690,
-           0.1050 x2 - 1.0516 <= x9 <= 0.1845 x2 + 0.8690.
-           Concrete bounds: x8: [-0.2616, 1.8355], x9: [-1.2616, 0.8355].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 0.1645 + 0.1645 = 0.3290.
-
+           0.1050 x2 - 0.0516 <= x8 <= 0.1898 x2 + 1.8796,
+           0.1050 x2 - 1.0516 <= x9 <= 0.1898 x2 + 0.8796.
            Upper branch, using x2: [-2/11, 2], 0.1050 x2 + 0.4737 <= x4 <= 0.1050 x2 + 0.6708:
            Output symbolic bounds:
-           0.1050 x2 + 0.0929 <= x8 <= 0.1050 x2 + 2.0516,
-           0.1050 x2 - 0.9071 <= x9 <= 0.1050 x2 + 1.0516.
-           Concrete bounds: x8: [0.0738, 2.2616], x9: [-0.9262, 1.2616].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 0.0738 + 0.0738 = 0.1476.
+           0.1050 x2 + 0.1163 <= x8 <= 0.1050 x2 + 2.0516,
+           0.1050 x2 - 0.8837 <= x9 <= 0.1050 x2 + 1.0516.
 
-           Final score = ( 0.3290 + 0.1476 ) / 2 = 0.2384.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: 0.4200 x2 - 1.8705 >= -2.7105.
+           Upper symbolic expression: 0.5896 x2 + 5.8624 <= 7.0416.
+
+           Final score = ( 7.0416 - (-2.7105) ) / 2 = 4.8761.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0.2384 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 4.8761 );
 
         /* Calculating BBPS-based PMNR score of x5:
            Symbolic bounds of output layer in terms of Layer 2:
            x4 + x5 - 0.5 <= x8 <= x4 + x5 + 0.5, x4 - x5 - 0.5 <= x9 <= x4 - x5 + 0.5.
            Concretizing x4: x5 - 0.3808 <= x8 <= x5 + 1.3808, -x5 - 0.3808 <= x9 <= -x5 + 1.3808.
 
+           // 0.1050 x2 + 0.3292 <= x4 <= 0.1898 x2 + 0.4988
+           // 0.1050 x2 + 0.4971 <= x4 <= 0.1050 x2 + 0.6708
            Lower branch, using x2: [-2, -2/11], 0.1050 x3 + 0.3292 <= x5 <= 0.1845 x3 + 0.4882:
            Output symbolic bounds:
-           0.1050 x3 - 0.0516 <= x8 <= 0.1845 x3 + 1.8690,
-           -0.1845 x3 - 0.8690 <= x9 <= -0.1050 x3 + 1.0516.
-           Concrete bounds: x8: [-0.2616, 1.8355], x9: [-0.8355, 1.2616].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 0.1645 + 0.1645 = 0.3290.
-
+           0.1050 x3 - 0.0516 <= x8 <= 0.1898 x3 + 1.8796,
+           -0.1898 x3 - 0.8796 <= x9 <= -0.1050 x3 + 1.0516.
            Upper branch, using x2: [-2/11, 2], 0.1050 x3 + 0.4737 <= x5 <= 0.1050 x3 + 0.6708:
            Output symbolic bounds:
-           0.1050 x3 + 0.0929 <= x8 <= 0.1050 x3 + 2.0516,
-           -0.1050 x3 - 1.0516 <= x9 <= -0.1050 x3 + 0.9071.
-           Concrete bounds: x8: [0.0738, 2.2616], x9: [-1.1171, 0.9262].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 0.0738 + 0.0738 = 0.1476.
+           0.1050 x3 + 0.1163 <= x8 <= 0.1050 x2 + 2.0516,
+           -0.1050 x3 - 1.0516 <= x9 <= -0.1050 x3 + 0.8837.
 
-           Final score = ( 0.3290 + 0.1476 ) / 2 = 0.2384.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: -0.0848 x3 - 1.8665 >= -2.0361.
+           Upper symbolic expression: 0.0848 x3 + 5.8665 <= 6.0361.
+
+           Final score = ( 6.0361 - (-2.0361) ) / 2 = 4.0361.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0.2384 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 4.0361 );
 
         /* Calculating BBPS-based PMNR score of x8:
            Symbolic bounds of output layer in terms of Layer 4: x8 <= x8 <= x8, x9 <= x9 <= x9.
            Concretizing x9: x8 <= x8 <= x8, -1 <= x9 <= 1.
 
-           Lower branch, using x6: [0.4483, 0.5], 0 <= x8 <= 0: Output symbolic bounds:
-           0 <= x8 <= 0, -1 <= x9 <= 1.
-           Concrete bounds: x8: [0, 0], x9: [-1, 1].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 2.
-
+           Lower branch, using x6: [0.4483, 0.5], 0 <= x8 <= 0:
+           Output symbolic bounds: 0 <= x8 <= 0, -1 <= x9 <= 1.
            Upper branch, using x6: [0.5, 1.5516], x6 - 0.5 <= x8 <= x6 + 0.5:
            Output symbolic bounds: x6 - 0.5 <= x8 <= x6 + 0.5, -1 <= x9 <= 1.
-           Concrete bounds: x8: [0, 2.0516], x9: [-1, 1].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 0.
 
-           Final score = ( 2 + 0 ) / 2 = 1.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: x6 - 2.5 >= -2.0517.
+           Upper symbolic expression: x6 + 2.5 <= 4.0517.
+
+           Final score = ( 4.0517 - (-2.0517) ) / 2 = 3.0517.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 1 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 0 ), 3.0517 );
 
         /* Calculating BBPS-based PMNR score of x9:
            Symbolic bounds of output layer in terms of Layer 4: x8 <= x8 <= x8, x9 <= x9 <= x9.
@@ -4606,19 +4245,16 @@ public:
 
            Lower branch, using x7: [-0.5516, -0.5], -1 <= x9 <= -1:
            Output symbolic bounds: 0 <= x8 <= 2, -1 <= x9 <= -1.
-           Concrete bounds: x8: [0, 0], x9: [-1, -1].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 2.
-
            Upper branch, using x7: [-0.5, 0.5516], x7 - 0.5 <= x9 <= x7 + 0.5:
            Output symbolic bounds: 0 <= x8 <= 2, x7 - 0.5 <= x9 <= x7 + 0.5.
-           Concrete bounds: x8: [0, 2], x9: [-1, 1.0516].
-           DeepPoly bounds: x8: [0, 2], x9: [-1, 1].
-           Improvement: 0.
 
-           Final score = ( 2 + 0 ) / 2 = 1.
+           Summing over all branches and output neurons:
+           Lower symbolic expression: x7 - 1.5 >= -2.0517.
+           Upper symbolic expression: x7 + 3.5 <= 4.0517.
+
+           Final score = ( 4.0517 - (-2.0517) ) / 2 = 3.0517.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 1 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 4, 1 ), 3.0517 );
     }
 
     void test_symbolic_bound_maps_max_not_fixed()
@@ -4789,59 +4425,10 @@ public:
                                                          NLR::NeuronIndex( 3, 0 ) } ) );
     }
 
-    void test_gradient_selection_max_not_fixed()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTMax( nlr, tableau );
-
-        tableau.setLowerBound( 0, -1 );
-        tableau.setUpperBound( 0, 1 );
-        tableau.setLowerBound( 1, -1 );
-        tableau.setUpperBound( 1, 2 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x4:
-          Symbolic bounds of output layer in terms of Layer 2:
-          2x5 <= x7 <= 6.
-          x4 gradient: lower = ( 0 ), upper = ( 0 ), average = ( 0 ).
-          Gradient-based PMNR score of x4: ( 0 )^2 = 0.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
-
-        /*
-          Calculating Gradient-based PMNR score of x5:
-          Symbolic bounds of output layer in terms of Layer 2:
-          2x5 <= x7 <= 6.
-          x5 gradient: lower = ( 2 ), upper = ( 0 ), average = ( 1 ).
-          Gradient-based PMNR score of x5: ( 1 )^2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 1 );
-
-        /*
-          Calculating Gradient-based PMNR score of x6:
-          Symbolic bounds of output layer in terms of Layer 3:
-          2x6 <= x7 <= 2x6.
-          x6 gradient: lower = ( 2 ), upper = ( 2 ), average = ( 2 ).
-          Gradient-based PMNR score of x6: ( 2 )^2 = 4.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 3, 0 ), 4 );
-    }
-
     void test_bbps_selection_max_not_fixed()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -4869,11 +4456,11 @@ public:
             NLR::NeuronIndex( 2, 1 ),
             std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 0 } ) );
 
-        // Using branching point (x5, 6/11) for x6 (MAX).
+        // Using branching point (x5, 16/101) for x6 (MAX).
         compareBBPSBranchingPoints(
             nlr,
             NLR::NeuronIndex( 3, 0 ),
-            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 2, 1 ), 0.5455 } ) );
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 2, 1 ), 0.1584 } ) );
 
         /*
            Lower branch symbolic bounds: 0 <= x4 <= 0.
@@ -4922,45 +4509,48 @@ public:
 
            Lower branch, using x2: [-2, 0], 0 <= x4 <= 0:
            Output symbolic bounds 0 <= x6 <= 6.
-           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
-
            Upper branch, using x2: [0, 3], x2 <= x4 <= x2:
            Output symbolic bounds 0 <= x6 <= 6.
-           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
 
-           Final score = ( 0 + 0 ) / 2 = 0.
+           Summing over all branches:
+           Lower symbolic expression: 0 >= 0.
+           Upper symbolic expression: 12 <= 12.
+
+           Final score = ( 12 - 0 ) / 2 = 6.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 6 );
 
         /* Calculating BBPS-based PMNR score of x5:
            Symbolic bounds of output layer in terms of Layer 2: 2x5 <= x7 <= 6.
 
            Lower branch, using x3: [-3, 0], 0 <= x5 <= 0:
            Output symbolic bounds 0 <= x6 <= 6.
-           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
-
            Upper branch, using x3: [0, 2], x3 <= x5 <= x3:
-           Output symbolic bounds 2x3 <= x6 <= x6.
-           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
+           Output symbolic bounds 2x3 <= x6 <= 6.
 
-           Final score = ( 0 + 0 ) / 2 = 0.
+           Summing over all branches:
+           Lower symbolic expression: 2x3 >= -6.
+           Upper symbolic expression: 12 <= 12.
+
+           Final score = ( 12 - (-6) ) / 2 = 9.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 9 );
 
         /* Calculating BBPS-based PMNR score of x6:
            Symbolic bounds of output layer in terms of Layer 3: 2x6 <= x7 <= 2x6.
 
            Lower branch, x5: [0, 6/11], using x5 <= x6 <= 3:
            Output symbolic bounds 2x5 <= x6 <= 6.
-           Concrete bounds: [0, 6]. DeepPoly bounds: [0, 6]. Improvement: 0.
-
            Upper branch, x5: [6/11, 2], using x5 <= x6 <= 3:
            Output symbolic bounds 2x5 <= x6 <= 6.
-           Concrete bounds: [12/11, 6]. DeepPoly bounds: [0, 6]. Improvement: 12/11.
 
-           Final score = ( 0 + 12/11 ) / 2 = 6/11.
+           Summing over all branches:
+           Lower symbolic expression: 4x4 >= 0.
+           Upper symbolic expression: 12 <= 12.
+
+           Final score = ( 12 - 0 ) / 2 = 6.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 3, 0 ), 0.5455 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 3, 0 ), 6 );
     }
 
     void test_symbolic_bound_maps_max_fixed()
@@ -5645,66 +5235,11 @@ public:
         }
     }
 
-    void test_gradient_selection_softmax2()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTSoftmax( nlr, tableau );
-
-        tableau.setLowerBound( 0, 1 );
-        tableau.setUpperBound( 0, 1.000001 );
-        tableau.setLowerBound( 1, 1 );
-        tableau.setUpperBound( 1, 1.000001 );
-        tableau.setLowerBound( 2, 1 );
-        tableau.setUpperBound( 2, 1.000001 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x6:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x6 + x7 + x8 <= x9 <= x6 + x7 + x8,
-          -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8.
-          x6 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
-          Gradient-based PMNR score of x6: ( 1 )^2 + ( -1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x7:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x6 + x7 + x8 <= x9 <= x6 + x7 + x8,
-          -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8.
-          x7 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
-          Gradient-based PMNR score of x7: ( 1 )^2 + ( -1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x8:
-          Symbolic bounds of output layer in terms of Layer 3:
-          x6 + x7 + x8 <= x9 <= x6 + x7 + x8,
-          -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8.
-          x8 gradient: lower = ( 1, -1 ), upper = ( 1, -1 ), average = ( 1, -1 ).
-          Gradient-based PMNR score of x8: ( 1 )^2 + ( -1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 2 ), 2 );
-    }
-
     void test_bbps_selection_softmax2()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
         Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -5779,9 +5314,9 @@ public:
           -x6 - x7 - x8 <= x10 <= -x6 - x7 - x8
 
           Because the lower/upper symbolic bounds for output layer are equal (up to ~10^-6),
-          and lower/upper predecessor symbolic bounds for both branches are equal, the concrete
+          and lower/upper predecessor symbolic bounds for both branches are equal, the symbolic
           bounds for every output neuron, every nonfixed neuron and branch are equal to DeepPoly.
-          Consequently, the BBSP-based PMNR scores for all neurons is 0.
+          Consequently, the BBPS-based PMNR scores for all neurons equal 0.
         */
         comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
         comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0 );
@@ -6148,96 +5683,11 @@ public:
                                                          NLR::NeuronIndex( 2, 4 ) } ) );
     }
 
-    void test_gradient_selection_softmax3()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTSoftmax2( nlr, tableau );
-
-        tableau.setLowerBound( 0, 1 );
-        tableau.setUpperBound( 0, 1.00001 );
-        tableau.setLowerBound( 1, 1 );
-        tableau.setUpperBound( 1, 1.00001 );
-        tableau.setLowerBound( 2, 1 );
-        tableau.setUpperBound( 2, 1.00001 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-
-        /*
-          Calculating Gradient-based PMNR score of x8:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
-          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
-          x9 + x11 <= x15 <= x9 + x11,
-          -x9 - x11 <= x16 <= -x9 - x11.
-          x8 gradient: lower = ( 1, -1, 0, 0 ), upper = ( 1, -1, 0, 0 ), avg. = ( 1, -1, 0, 0 ).
-          Gradient-based PMNR score of x8: ( 1 )^2 + ( -1 )^2 + ( 0 )^2 + ( 0 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x9:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
-          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
-          x9 + x11 <= x15 <= x9 + x11,
-          -x9 - x11 <= x16 <= -x9 - x11.
-          x9 gradient: lower = ( 0, 0, 1, -1 ), upper = ( 0, 0, 1, -1 ), avg. = ( 0, 0, 1, -1 ).
-          Gradient-based PMNR score of x9: ( 0 )^2 + ( 0 )^2 + ( 1 )^2 + ( -1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x10:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
-          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
-          x9 + x11 <= x15 <= x9 + x11,
-          -x9 - x11 <= x16 <= -x9 - x11.
-          x10 gradient: lower = ( 1, -1, 0, 0 ), upper = ( 1, -1, 0, 0 ), avg. = ( 1, -1, 0, 0 ).
-          Gradient-based PMNR score of x10: ( 1 )^2 + ( -1 )^2 + ( 0 )^2 + ( 0 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 2 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x11:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
-          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
-          x9 + x11 <= x15 <= x9 + x11,
-          -x9 - x11 <= x16 <= -x9 - x11.
-          x11 gradient: lower = ( 0, 0, 1, -1 ), upper = ( 0, 0, 1, -1 ), avg. = ( 0, 0, 1, -1 ).
-          Gradient-based PMNR score of x11: ( 0 )^2 + ( 0 )^2 + ( 1 )^2 + ( -1 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 3 ), 2 );
-
-        /*
-          Calculating Gradient-based PMNR score of x12:
-          Symbolic bounds of output layer in terms of Layer 2:
-          x8 + x10 + x12 <= x13 <= x8 + x10 + x12,
-          -x8 - x10 - x12 <= x14 <= -x8 - x10 - x12,
-          x9 + x11 <= x15 <= x9 + x11,
-          -x9 - x11 <= x16 <= -x9 - x11.
-          x12 gradient: lower = ( 1, -1, 0, 0 ), upper = ( 1, -1, 0, 0 ), avg. = ( 1, -1, 0, 0 ).
-          Gradient-based PMNR score of x12: ( 1 )^2 + ( -1 )^2 + ( 0 )^2 + ( 0 )^2 = 2.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 4 ), 2 );
-    }
-
     void test_bbps_selection_softmax3()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
         Options::get()->setString( Options::SOFTMAX_BOUND_TYPE, "lse" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -6348,7 +5798,7 @@ public:
           Because the lower/upper symbolic bounds for output layer are equal (up to ~10^-6),
           and lower/upper predecessor symbolic bounds for both branches are equal, the concrete
           bounds for every output neuron, every nonfixed neuron and branch are equal to DeepPoly.
-          Consequently, the BBSP-based PMNR scores for all neurons is 0.
+          Consequently, the BBPS-based PMNR scores for all neurons equal 0.
         */
         comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 0 );
         comparePMNRScores( nlr, NLR::NeuronIndex( 2, 1 ), 0 );
@@ -6488,38 +5938,10 @@ public:
         compareNonfixedNeurons( nlr, Set<NLR::NeuronIndex>( { NLR::NeuronIndex( 2, 0 ) } ) );
     }
 
-    void test_gradient_selection_bilinear()
-    {
-        Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-gradient" );
-        NLR::NetworkLevelReasoner nlr;
-        MockTableau tableau;
-        nlr.setTableau( &tableau );
-        populateNetworkSBTBilinear( nlr, tableau );
-
-        tableau.setLowerBound( 0, 1 );
-        tableau.setUpperBound( 0, 2 );
-        tableau.setLowerBound( 1, -2 );
-        tableau.setUpperBound( 1, 1 );
-
-        // Invoke Parameterised DeepPoly
-        TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
-        TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
-        /*
-           Calculating Gradient-based PMNR score of x4:
-           Symbolic bounds of output layer in terms of Layer 2: -x4 <= x5 <= -x4.
-           x4 gradient: lower = ( -1 ), upper = ( -1 )
-           Gradient-based PMNR score of x4: ( ( -1 )^2 + ( -1 )^2 ) / 2 = 1.
-        */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 1 );
-    }
-
     void test_bbps_selection_bilinear()
     {
         Options::get()->setString( Options::SYMBOLIC_BOUND_TIGHTENING_TYPE, "sbt" );
-        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE,
-                                   "backward-pmnr-bbps" );
+        Options::get()->setString( Options::MILP_SOLVER_BOUND_TIGHTENING_TYPE, "backward-pmnr" );
 
         NLR::NetworkLevelReasoner nlr;
         MockTableau tableau;
@@ -6535,42 +5957,42 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.parameterisedDeepPoly( true ) );
 
-        // Using branching point (x3, 1/3) for x4 (BILINEAR).
+        // Using branching point (x3, 0.4902) for x4 (BILINEAR).
         compareBBPSBranchingPoints(
             nlr,
             NLR::NeuronIndex( 2, 0 ),
-            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 0.3333 } ) );
+            std::pair<NLR::NeuronIndex, double>( { NLR::NeuronIndex( 1, 1 ), 0.49016 } ) );
 
         /*
-           Coefficients for bilinear layer (lower branch, x2: [-1, 6], x3: [-1, 1/3]):
+           Coefficients for bilinear layer (lower branch, x2: [-1, 6], x3: [-1, 0.49016]):
            Lower bound:
                alpha_l = x3.lb = -1
                beta = x2.lb = -1
                gamma_l = -x2.lb x3.lb = --1 * -1 = -1
 
            Upper bound:
-               alpha_u = x3.ub = 1/3
+               alpha_u = x3.ub = 0.49016
                beta = x2.lb = -1
-               gamma_u = -x2.lb x3.ub = --1 * 1/3 = 1/3
+               gamma_u = -x2.lb x3.ub = --1 * 0.49016 = 0.49016
 
-           -x2 - x3 - 1 <= x4 <= 1/3 x2 - x3 + 1/3.
-           Concretizing x2: -x3 - 7 <= x4 <= -x3 + 7/3.
+           -x2 - x3 - 1 <= x4 <= 0.49016 x2 - x3 + 0.49016.
+           Concretizing x2: -x3 - 7 <= x4 <= -x3 + 3.4314.
 
-           Coefficients for bilinear layer (upper branch, x2: [-1, 6], x3: [1/3, 3]):
+           Coefficients for bilinear layer (upper branch, x2: [-1, 6], x3: [0.49016, 3]):
            Lower bound:
-               alpha_l = x3.lb = 1/3
+               alpha_l = x3.lb = 0.49016
                beta = x2.lb = -1
-               gamma_l = -x2.lb x3.lb = --1 * 1/3 = 1/3
+               gamma_l = -x2.lb x3.lb = --1 * 0.49016 = 0.49016
 
            Upper bound:
                alpha_u = x3.ub = 3
                beta = x2.lb = -1
                gamma_u = -x2.lb x3.ub = --1 * 3 = 3
 
-           1/3 x2 - x3 + 1/3 <= x4 <= 3x2 - x3 + 3.
+           0.49016 x2 - x3 + 0.49016 <= x4 <= 3x2 - x3 + 3.
            Concretizing x2: -x3 <= x4 <= -x3 + 21.
 
-           Lower branch symbolic bounds: -x3 - 7 <= x4 <= -x3 + 7/3.
+           Lower branch symbolic bounds: -x3 - 7 <= x4 <= -x3 + 3.4314.
            Upper branch symbolic bounds: -x3 <= x4 <= -x3 + 21.
         */
         compareBranchSymbolicBounds( nlr,
@@ -6578,22 +6000,23 @@ public:
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { -1, -1 } ),
                                      Vector<double>( { -7, 0 } ),
-                                     Vector<double>( { 2.3333, 21 } ) );
+                                     Vector<double>( { 3.4314, 21 } ) );
 
         /* Calculating BBPS-based PMNR score of x4:
            Symbolic bounds of output layer in terms of Layer 2: -x4 <= x5 <= -x4.
 
-           Lower branch, using x3: [-1, 1/3], -x3 - 7 <= x4 <= -x3 + 7/3:
-           Output symbolic bounds x3 - 7/3 <= x6 <= x3 + 7.
-           Concrete bounds: [-10/3, 22/3]. DeepPoly bounds: [-18, 6]. Improvement: 44/3.
-
+           Lower branch, using x3: [-1, 1/3], -x3 - 7 <= x4 <= -x3 + 3.4314:
+           Output symbolic bounds x3 - 3.4314 <= x6 <= x3 + 7.
            Upper branch, using x3: [1/3, 3], -x3 <= x4 <= -x3 + 21:
            Output symbolic bounds x3 - 21 <= x6 <= x3.
-           Concrete bounds: [-62/3, 3]. DeepPoly bounds: [-18, 6]. Improvement: 3.
 
-           Final score = ( 44/3 + 3 ) / 2 = 53/6 = 8.8333.
+           Summing over all branches:
+           Lower symbolic expression: 2x3 - 24.4314 >= -26.4314.
+           Upper symbolic expression: 2x3 + 7 <= 13.
+
+           Final score = ( 13 - (-26.4314) ) / 2 = 19.7157.
         */
-        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 8.8333 );
+        comparePMNRScores( nlr, NLR::NeuronIndex( 2, 0 ), 19.7157 );
     }
 
     void test_parameterised_symbolic_bound_maps_relus_all_active()

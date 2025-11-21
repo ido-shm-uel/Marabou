@@ -4462,7 +4462,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -4530,7 +4530,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -4614,7 +4614,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -4730,7 +4730,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -4795,7 +4795,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -4876,7 +4876,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -4961,7 +4961,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -5074,7 +5074,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -5127,7 +5127,7 @@ public:
         List<Tightening> expectedBounds2( {} );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -5190,7 +5190,7 @@ public:
         List<Tightening> expectedBounds4( {} );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -5256,7 +5256,7 @@ public:
         List<Tightening> expectedBounds2( {} );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -5350,7 +5350,7 @@ public:
         List<Tightening> expectedBounds4( {} );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -5406,7 +5406,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -5480,7 +5480,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -5546,7 +5546,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
 
         // Change the current bounds
@@ -5631,7 +5631,7 @@ public:
         } );
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( newBounds ) );
-        bounds = removeRedundancies( bounds, newBounds );
+        TS_ASSERT_THROWS_NOTHING( bounds = removeRedundancies( newBounds, bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds4 ) );
     }
 
@@ -5656,38 +5656,45 @@ public:
         return allFound;
     }
 
-    // Create list of all tightenings in newBounds for which there is no bound in newBounds or in
-    // bounds which is at least as tight.
-    List<Tightening> removeRedundancies( const List<Tightening> &bounds,
-                                         const List<Tightening> &newBounds )
+    // Create list of all tightenings in bounds for which there is no bound in newBounds
+    // or in previousBounds which is at least as tight.
+    List<Tightening> removeRedundancies( const List<Tightening> &newBounds,
+                                         const List<Tightening> &bounds )
     {
         List<Tightening> minimalBounds;
-
-        for ( const auto &newBound : newBounds )
+        unsigned i = 0;
+        for ( const auto &bound : newBounds )
         {
             bool foundTighter = false;
-            for ( const auto &bound : bounds )
+            unsigned j = 0;
+            for ( const auto &otherBound : newBounds )
+            {
+                if ( i < j )
+                {
+                    foundTighter |=
+                        ( bound._type == otherBound._type &&
+                          bound._variable == otherBound._variable &&
+                          ( ( bound._type == Tightening::LB &&
+                              FloatUtils::lte( bound._value, otherBound._value, 0.0001 ) ) ||
+                            ( bound._type == Tightening::UB &&
+                              FloatUtils::gte( bound._value, otherBound._value, 0.0001 ) ) ) );
+                }
+                ++j;
+            }
+            for ( const auto &otherBound : bounds )
             {
                 foundTighter |=
-                    ( newBound._type == bound._type && newBound._variable == bound._variable &&
-                      ( ( newBound._type == Tightening::LB &&
-                          FloatUtils::lte( newBound._value, bound._value, 0.0001 ) ) ||
-                        ( newBound._type == Tightening::UB &&
-                          FloatUtils::gte( newBound._value, bound._value, 0.0001 ) ) ) );
+                    ( bound._type == otherBound._type && bound._variable == otherBound._variable &&
+                      ( ( bound._type == Tightening::LB &&
+                          FloatUtils::lte( bound._value, otherBound._value, 0.0001 ) ) ||
+                        ( bound._type == Tightening::UB &&
+                          FloatUtils::gte( bound._value, otherBound._value, 0.0001 ) ) ) );
             }
-
-            for ( const auto &bound : newBounds )
-            {
-                foundTighter |=
-                    ( newBound._type == bound._type && newBound._variable == bound._variable &&
-                      ( ( newBound._type == Tightening::LB &&
-                          FloatUtils::lt( newBound._value, bound._value, 0.0001 ) ) ||
-                        ( newBound._type == Tightening::UB &&
-                          FloatUtils::gt( newBound._value, bound._value, 0.0001 ) ) ) );
-            }
-
             if ( !foundTighter )
-                minimalBounds.append( newBound );
+            {
+                minimalBounds.append( bound );
+            }
+            ++i;
         }
         return minimalBounds;
     }
