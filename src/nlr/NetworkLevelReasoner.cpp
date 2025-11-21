@@ -403,19 +403,13 @@ void NetworkLevelReasoner::lpRelaxationPropagation()
             _layerIndexToLayer, true, layerIndicesToParameters );
     }
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
-                  MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP ||
-              Options::get()->getMILPSolverBoundTighteningType() ==
-                  MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
-              Options::get()->getMILPSolverBoundTighteningType() ==
-                  MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT ||
-              Options::get()->getMILPSolverBoundTighteningType() ==
-                  MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
+              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
     {
+        const Vector<double> optimalCoeffs = OptimalParameterisedSymbolicBoundTightening();
+        Map<unsigned, Vector<double>> layerIndicesToParameters =
+            getParametersForLayers( optimalCoeffs );
         const Vector<PolygonalTightening> &polygonalTightenings =
             OptimizeParameterisedPolygonalTightening();
-        unsigned parameterCount = getNumberOfParameters();
-        const Vector<double> &coeffs = Vector<double>( parameterCount, 0 );
-        Map<unsigned, Vector<double>> layerIndicesToParameters = getParametersForLayers( coeffs );
         lpFormulator.optimizeBoundsWithLpRelaxation(
             _layerIndexToLayer, false, layerIndicesToParameters, polygonalTightenings );
         lpFormulator.optimizeBoundsWithLpRelaxation(
@@ -1354,57 +1348,6 @@ double NetworkLevelReasoner::calculateDifferenceFromSymbolic( const Layer *layer
     return std::max( layer->getUb( i ) - upperSum, lowerSum - layer->getLb( i ) );
 }
 
-const Vector<PolygonalTightening> NetworkLevelReasoner::generatePolygonalTightenings()
-{
-    if ( Options::get()->getMILPSolverBoundTighteningType() ==
-         MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP )
-    {
-        return generatePolygonalTighteningsForInvprop();
-    }
-    else if ( Options::get()->getMILPSolverBoundTighteningType() ==
-                  MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
-              Options::get()->getMILPSolverBoundTighteningType() ==
-                  MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT ||
-              Options::get()->getMILPSolverBoundTighteningType() ==
-                  MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
-    {
-        return generatePolygonalTighteningsForPMNR();
-    }
-
-    const Vector<PolygonalTightening> tighteningsVector = Vector<PolygonalTightening>( {} );
-    return tighteningsVector;
-}
-
-const Vector<PolygonalTightening> NetworkLevelReasoner::generatePolygonalTighteningsForInvprop()
-{
-    // Polygonal tightenings for INVPROP are box constraints for every non-input neuron.
-    Vector<PolygonalTightening> tightenings = Vector<PolygonalTightening>( {} );
-    for ( const auto &pair : _layerIndexToLayer )
-    {
-        Layer *layer = pair.second;
-        for ( unsigned i = 0; i < layer->getSize(); ++i )
-        {
-            NeuronIndex index( pair.first, i );
-            if ( layer->getLayerType() == Layer::WEIGHTED_SUM || layer->neuronNonfixed( i ) )
-            {
-                Map<NeuronIndex, double> lowerCoeffs;
-                Map<NeuronIndex, double> upperCoeffs;
-                lowerCoeffs[index] = 1;
-                upperCoeffs[index] = 1;
-                PolygonalTightening lowerTightening(
-                    lowerCoeffs, layer->getLb( i ), PolygonalTightening::LB );
-                PolygonalTightening upperTightening(
-                    upperCoeffs, layer->getUb( i ), PolygonalTightening::UB );
-                tightenings.append( lowerTightening );
-                tightenings.append( upperTightening );
-            }
-        }
-    }
-    const Vector<PolygonalTightening> tighteningsVector =
-        Vector<PolygonalTightening>( tightenings );
-    return tighteningsVector;
-}
-
 const Vector<PolygonalTightening> NetworkLevelReasoner::generatePolygonalTighteningsForPMNR()
 {
     Vector<PolygonalTightening> tightenings = Vector<PolygonalTightening>( {} );
@@ -1560,60 +1503,6 @@ const Vector<PolygonalTightening> NetworkLevelReasoner::generatePolygonalTighten
 
 const Vector<NeuronIndex> NetworkLevelReasoner::selectPMNRNeurons()
 {
-    switch ( Options::get()->getMILPSolverBoundTighteningType() )
-    {
-    case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM:
-    {
-        return selectPMNRNeuronsRandomly();
-        break;
-    }
-    case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT:
-    case MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS:
-    {
-        return selectPMNRNeuronsHeuristically();
-        break;
-    }
-    default:
-    {
-        Vector<NeuronIndex> emptyVector = Vector<NeuronIndex>( {} );
-        return emptyVector;
-    }
-    }
-}
-
-const Vector<NeuronIndex> NetworkLevelReasoner::selectPMNRNeuronsRandomly()
-{
-    // Randomly select layer with nonfixed neurons.
-    const Vector<unsigned> &candidateLayers = getLayersWithNonfixedNeurons();
-    if ( candidateLayers.empty() )
-    {
-        const Vector<NeuronIndex> emptyVector( {} );
-        return emptyVector;
-    }
-    std::mt19937_64 rng( GlobalConfiguration::PMNR_RANDOM_SEED );
-    std::uniform_int_distribution<unsigned> dis( 0, candidateLayers.size() - 1 );
-    unsigned entry = dis( rng );
-    unsigned index = candidateLayers[entry];
-
-    // Randomly select nonfixed neurons from this layer.
-    Layer *layer = _layerIndexToLayer[index];
-    const Vector<NeuronIndex> &candidateNeurons = layer->getNonfixedNeurons();
-    std::vector<NeuronIndex> candidateNeuronsVector = candidateNeurons.getContainer();
-    std::shuffle( candidateNeuronsVector.begin(), candidateNeuronsVector.end(), rng );
-
-    unsigned neuronCount =
-        std::min( GlobalConfiguration::PMNR_SELECTED_NEURONS, candidateNeurons.size() );
-    Vector<NeuronIndex> selectedNeurons = Vector<NeuronIndex>( neuronCount );
-    for ( unsigned i = 0; i < neuronCount; ++i )
-    {
-        selectedNeurons[i] = candidateNeuronsVector[i];
-    }
-    const Vector<NeuronIndex> neurons( selectedNeurons );
-    return neurons;
-}
-
-const Vector<NeuronIndex> NetworkLevelReasoner::selectPMNRNeuronsHeuristically()
-{
     // Select layer with maximal PMNR neuron score sum.
     const Vector<unsigned> &candidateLayers = getLayersWithNonfixedNeurons();
     if ( candidateLayers.empty() )
@@ -1673,7 +1562,7 @@ const Vector<PolygonalTightening> NetworkLevelReasoner::OptimizeParameterisedPol
     initializePMNRScoreMap();
 
     // Repeatedly optimize polygonal tightenings given previously optimized ones.
-    const Vector<PolygonalTightening> &selectedTightenings = generatePolygonalTightenings();
+    const Vector<PolygonalTightening> &selectedTightenings = generatePolygonalTighteningsForPMNR();
     Vector<PolygonalTightening> optimizedTightenings = Vector<PolygonalTightening>( {} );
     for ( unsigned i = 0; i < selectedTightenings.size(); ++i )
     {
@@ -1683,21 +1572,9 @@ const Vector<PolygonalTightening> NetworkLevelReasoner::OptimizeParameterisedPol
         double bound = OptimizeSingleParameterisedPolygonalTightening(
             tightening, optimizedTightenings, maximize, feasibiltyBound );
 
-        // For PMNR, attempt to obtain stronger bound by branching selected neurons if supported.
-        if ( Options::get()->getMILPSolverBoundTighteningType() ==
-                 MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
-             Options::get()->getMILPSolverBoundTighteningType() ==
-                 MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT ||
-             Options::get()->getMILPSolverBoundTighteningType() ==
-                 MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
-        {
-            tightening._value = OptimizeSingleParameterisedPolygonalTighteningWithBranching(
-                tightening, optimizedTightenings, maximize, bound );
-        }
-        else
-        {
-            tightening._value = bound;
-        }
+        // Attempt to obtain stronger bound by branching selected neurons.
+        tightening._value = OptimizeSingleParameterisedPolygonalTighteningWithBranching(
+            tightening, optimizedTightenings, maximize, bound );
         optimizedTightenings.append( tightening );
 
         // Store optimized tightenings in NLR.
@@ -1799,41 +1676,26 @@ double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTightening(
     double feasibilityBound,
     const Map<NeuronIndex, unsigned> &neuronToBranchIndex )
 {
-    // Search over coeffs in [0, 1]^numberOfParameters, gamma in
-    // [0, inf)^sizeOfPrevTightenings with PGD.
+    // Search over gamma in [0, inf)^sizeOfPrevTightenings with PGD.
     unsigned maxIterations = GlobalConfiguration::INVPROP_MAX_ITERATIONS;
-    double coeffsStepSize = GlobalConfiguration::INVPROP_STEP_SIZE;
     double gammaStepSize = GlobalConfiguration::INVPROP_STEP_SIZE;
     double epsilon = GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS;
     double weightDecay = GlobalConfiguration::INVPROP_WEIGHT_DECAY;
     double lr = GlobalConfiguration::INVPROP_LEARNING_RATE;
-    unsigned coeffsDimension = getNumberOfParameters();
     unsigned gammaDimension = prevTightenings.size();
     double sign = ( maximize ? 1 : -1 );
     double bestBound = tightening._value;
 
-    Vector<double> coeffsLowerBounds( coeffsDimension, 0 );
-    Vector<double> coeffsUpperBounds( coeffsDimension, 1 );
     Vector<double> gammaLowerBounds( gammaDimension, 0 );
 
-    Vector<double> coeffs( coeffsDimension, GlobalConfiguration::INVPROP_INITIAL_ALPHA );
     Vector<double> gamma( gammaDimension, GlobalConfiguration::INVPROP_INITIAL_GAMMA );
-    Vector<double> previousCoeffs( coeffs );
     Vector<double> previousGamma( gamma );
 
-    Vector<Vector<double>> coeffsCandidates( coeffsDimension );
     Vector<Vector<double>> gammaCandidates( gammaDimension );
-    Vector<double> coeffsGradient( coeffsDimension );
     Vector<double> gammaGradient( gammaDimension );
 
     for ( unsigned i = 0; i < maxIterations; ++i )
     {
-        for ( unsigned j = 0; j < coeffsDimension; ++j )
-        {
-            coeffs[j] += weightDecay * ( coeffs[j] - previousCoeffs[j] );
-            coeffs[j] = std::min( coeffs[j], coeffsUpperBounds[j] );
-            coeffs[j] = std::max( coeffs[j], coeffsLowerBounds[j] );
-        }
         for ( unsigned j = 0; j < gammaDimension; ++j )
         {
             gamma[j] += weightDecay * ( gamma[j] - previousGamma[j] );
@@ -1841,36 +1703,13 @@ double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTightening(
         }
 
         double currentCost = getParameterisdPolygonalTighteningBound(
-            coeffs, gamma, tightening, prevTightenings, neuronToBranchIndex );
+            gamma, tightening, prevTightenings, neuronToBranchIndex );
 
         // If calculated bound is stronger than known feasibility bound, stop optimization.
         if ( !FloatUtils::isFinite( currentCost ) || maximize ? currentCost > feasibilityBound
                                                               : currentCost < feasibilityBound )
         {
             return currentCost;
-        }
-
-        for ( unsigned j = 0; j < coeffsDimension; ++j )
-        {
-            coeffsCandidates[j] = Vector<double>( coeffs );
-            coeffsCandidates[j][j] += coeffsStepSize;
-            if ( coeffsCandidates[j][j] > coeffsUpperBounds[j] ||
-                 coeffsCandidates[j][j] < coeffsLowerBounds[j] )
-            {
-                coeffsGradient[j] = 0;
-                continue;
-            }
-
-            double cost = getParameterisdPolygonalTighteningBound(
-                coeffsCandidates[j], gamma, tightening, prevTightenings, neuronToBranchIndex );
-            if ( !FloatUtils::isFinite( cost ) || maximize ? cost > feasibilityBound
-                                                           : cost < feasibilityBound )
-            {
-                return cost;
-            }
-
-            coeffsGradient[j] = ( cost - currentCost ) / coeffsStepSize;
-            bestBound = ( maximize ? std::max( bestBound, cost ) : std::min( bestBound, cost ) );
         }
 
         for ( unsigned j = 0; j < gammaDimension; ++j )
@@ -1884,7 +1723,7 @@ double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTightening(
             }
 
             double cost = getParameterisdPolygonalTighteningBound(
-                coeffs, gammaCandidates[j], tightening, prevTightenings, neuronToBranchIndex );
+                gammaCandidates[j], tightening, prevTightenings, neuronToBranchIndex );
             if ( !FloatUtils::isFinite( cost ) || maximize ? cost > feasibilityBound
                                                            : cost < feasibilityBound )
             {
@@ -1896,13 +1735,6 @@ double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTightening(
         }
 
         bool gradientIsZero = true;
-        for ( unsigned j = 0; j < coeffsDimension; ++j )
-        {
-            if ( FloatUtils::abs( coeffsGradient[j] ) > epsilon )
-            {
-                gradientIsZero = false;
-            }
-        }
         for ( unsigned j = 0; j < gammaDimension; ++j )
         {
             if ( FloatUtils::abs( gammaGradient[j] ) > epsilon )
@@ -1913,13 +1745,6 @@ double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTightening(
         if ( gradientIsZero )
         {
             break;
-        }
-        for ( unsigned j = 0; j < coeffsDimension; ++j )
-        {
-            previousCoeffs[j] = coeffs[j];
-            coeffs[j] += sign * lr * coeffsGradient[j];
-            coeffs[j] = std::min( coeffs[j], coeffsUpperBounds[j] );
-            coeffs[j] = std::max( coeffs[j], coeffsLowerBounds[j] );
         }
         for ( unsigned j = 0; j < gammaDimension; ++j )
         {
@@ -1933,15 +1758,11 @@ double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTightening(
 }
 
 double NetworkLevelReasoner::getParameterisdPolygonalTighteningBound(
-    const Vector<double> &coeffs,
     const Vector<double> &gamma,
     PolygonalTightening &tightening,
     Vector<PolygonalTightening> &prevTightenings,
     const Map<NeuronIndex, unsigned> &neuronToBranchIndex )
 {
-    // First, run parameterised DeepPoly.
-    parameterisedDeepPoly( true, coeffs );
-
     // Recursively compute vectors mu, muHat for every layer with the backpropagation procedure.
     unsigned numLayers = _layerIndexToLayer.size();
     unsigned maxLayer = _layerIndexToLayer.size() - 1;
@@ -2143,45 +1964,9 @@ void NetworkLevelReasoner::initializePMNRScoreMap()
     {
         for ( const auto &index : pair.second->getNonfixedNeurons() )
         {
-            _neuronToPMNRScores.insert( index, calculateNeuronPMNRScore( index ) );
+            _neuronToPMNRScores.insert( index, calculatePMNRBBPSScore( index ) );
         }
     }
-}
-
-double NetworkLevelReasoner::calculateNeuronPMNRScore( NeuronIndex index )
-{
-    ASSERT( _layerIndexToLayer[index._layer]->neuronNonfixed( index._neuron ) );
-
-    if ( Options::get()->getMILPSolverBoundTighteningType() ==
-         MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT )
-    {
-        return calculatePMNRGradientScore( index );
-    }
-    else if ( Options::get()->getMILPSolverBoundTighteningType() ==
-              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
-    {
-        return calculatePMNRBBPSScore( index );
-    }
-    return 0;
-}
-
-double NetworkLevelReasoner::calculatePMNRGradientScore( NeuronIndex index )
-{
-    double score = 0;
-    unsigned neuron = index._neuron;
-    unsigned layerIndex = index._layer;
-    unsigned outputLayerSize = _layerIndexToLayer[getNumberOfLayers() - 1]->getSize();
-
-    // Given upper and lower symbolic bounds for a neuron, ita gradient vector is estimated as
-    // the average of its symbolic weights, and its Gradient heuristic is the gradient squared.
-    for ( unsigned i = 0; i < outputLayerSize; ++i )
-    {
-        score += std::pow( ( getOutputSymbolicLb( layerIndex )[neuron * outputLayerSize + i] +
-                             getOutputSymbolicUb( layerIndex )[neuron * outputLayerSize + i] ) /
-                               2.0,
-                           2 );
-    }
-    return score;
 }
 
 double NetworkLevelReasoner::calculatePMNRBBPSScore( NeuronIndex index )
@@ -2230,88 +2015,71 @@ double NetworkLevelReasoner::calculatePMNRBBPSScore( NeuronIndex index )
     // neuron, and branch symbolic bounds of this neuron in terms of one source neuron.
     std::pair<NeuronIndex, double> point = getBBPSBranchingPoint( index );
     NeuronIndex sourceIndex = point.first;
-    double value = point.second;
-    const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+    const Layer *sourceLayer = getLayer( sourceIndex._layer );
     double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
     double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
-    const Vector<double> values = Vector<double>( { sourceLb, value, sourceUb } );
 
     Vector<double> symbolicLbPerBranch = getSymbolicLbPerBranch( index );
     Vector<double> symbolicUbPerBranch = getSymbolicUbPerBranch( index );
     Vector<double> symbolicLowerBiasPerBranch = getSymbolicLowerBiasPerBranch( index );
     Vector<double> symbolicUpperBiasPerBranch = getSymbolicUpperBiasPerBranch( index );
 
-    unsigned branchCount = values.size() - 1;
-    ASSERT( symbolicLbPerBranch.size() == branchCount );
+    unsigned branchCount = symbolicLbPerBranch.size();
     ASSERT( symbolicUbPerBranch.size() == branchCount );
     ASSERT( symbolicLowerBiasPerBranch.size() == branchCount );
     ASSERT( symbolicUpperBiasPerBranch.size() == branchCount );
 
-    Vector<double> scores( branchCount, 0 );
-    for ( unsigned i = 0; i < branchCount; ++i )
+    // For every output neuron, substitute branch symbolic bounds in the output symbolic bounds,
+    // sum over all branches and output bounds.
+    double sourceSymbolicLb = 0;
+    double sourceSymbolicUb = 0;
+    double sourceSymbolicLowerBias = 0;
+    double sourceSymbolicUpperBias = 0;
+    for ( unsigned i = 0; i < outputLayerSize; ++i )
     {
-        // Substitute the branch symbolic bounds in the output symbolic bounds.
-        Vector<double> sourceSymbolicLb( outputLayerSize, 0 );
-        Vector<double> sourceSymbolicUb( outputLayerSize, 0 );
-        Vector<double> sourceSymbolicLowerBias( outputLayerSize, 0 );
-        Vector<double> sourceSymbolicUpperBias( outputLayerSize, 0 );
-
-        for ( unsigned j = 0; j < outputLayerSize; ++j )
+        for ( unsigned j = 0; j < branchCount; ++j )
         {
-            sourceSymbolicLowerBias[j] += concretizedOutputSymbolicLowerBias[j];
-            sourceSymbolicUpperBias[j] += concretizedOutputSymbolicUpperBias[j];
+            sourceSymbolicLowerBias += concretizedOutputSymbolicLowerBias[i];
+            sourceSymbolicUpperBias += concretizedOutputSymbolicUpperBias[i];
 
-            if ( concretizedOutputSymbolicLb[j] > 0 )
+            if ( concretizedOutputSymbolicLb[i] > 0 )
             {
-                sourceSymbolicLb[j] += concretizedOutputSymbolicLb[j] * symbolicLbPerBranch[i];
-                sourceSymbolicLowerBias[j] +=
-                    concretizedOutputSymbolicLb[j] * symbolicLowerBiasPerBranch[i];
+                sourceSymbolicLb += concretizedOutputSymbolicLb[i] * symbolicLbPerBranch[j];
+                sourceSymbolicLowerBias +=
+                    concretizedOutputSymbolicLb[i] * symbolicLowerBiasPerBranch[j];
             }
             else
             {
-                sourceSymbolicLb[j] += concretizedOutputSymbolicLb[j] * symbolicUbPerBranch[i];
-                sourceSymbolicLowerBias[j] +=
-                    concretizedOutputSymbolicLb[j] * symbolicUpperBiasPerBranch[i];
+                sourceSymbolicLb += concretizedOutputSymbolicLb[i] * symbolicUbPerBranch[j];
+                sourceSymbolicLowerBias +=
+                    concretizedOutputSymbolicLb[i] * symbolicUpperBiasPerBranch[j];
             }
 
-            if ( concretizedOutputSymbolicUb[j] > 0 )
+            if ( concretizedOutputSymbolicUb[i] > 0 )
             {
-                sourceSymbolicUb[j] += concretizedOutputSymbolicUb[j] * symbolicUbPerBranch[i];
-                sourceSymbolicUpperBias[j] +=
-                    concretizedOutputSymbolicUb[j] * symbolicUpperBiasPerBranch[i];
+                sourceSymbolicUb += concretizedOutputSymbolicUb[i] * symbolicUbPerBranch[j];
+                sourceSymbolicUpperBias +=
+                    concretizedOutputSymbolicUb[i] * symbolicUpperBiasPerBranch[j];
             }
             else
             {
-                sourceSymbolicUb[j] += concretizedOutputSymbolicUb[j] * symbolicLbPerBranch[i];
-                sourceSymbolicUpperBias[j] +=
-                    concretizedOutputSymbolicUb[j] * symbolicLowerBiasPerBranch[i];
+                sourceSymbolicUb += concretizedOutputSymbolicUb[i] * symbolicLbPerBranch[j];
+                sourceSymbolicUpperBias +=
+                    concretizedOutputSymbolicUb[i] * symbolicLowerBiasPerBranch[j];
             }
-
-            // concretize the source neuron to get concrete bounds for every output neuron.
-            double concreteLb =
-                sourceSymbolicLb[j] > 0
-                    ? sourceSymbolicLb[j] * values[i] + sourceSymbolicLowerBias[j]
-                    : sourceSymbolicLb[j] * values[i + 1] + sourceSymbolicLowerBias[j];
-            double concreteUb = sourceSymbolicUb[j] > 0
-                                  ? sourceSymbolicUb[j] * values[i + 1] + sourceSymbolicUpperBias[j]
-                                  : sourceSymbolicUb[j] * values[i] + sourceSymbolicUpperBias[j];
-
-            double outputLb = outputLayer->getLb( j );
-            double outputUb = outputLayer->getUb( j );
-
-            // The branch's score is the improvement of concrete bounds over known DeepPoly bounds.
-            scores[i] +=
-                std::max( outputUb - concreteUb, 0.0 ) + std::max( concreteLb - outputLb, 0.0 );
         }
     }
 
-    // The neuron's final PMNR-BBPS score is the average of its branch scores.
-    double score = 0;
-    for ( unsigned i = 0; i < branchCount; ++i )
-    {
-        score += scores[i];
-    }
-    return score / branchCount;
+    // Concretize the source neuron to get upper and lower bounds for the symbolic expression.
+    // The neuron's final score is the range of the concrete bounds divided by the branch count.
+    double scoreLower = sourceSymbolicLb > 0
+                          ? sourceSymbolicLb * sourceLb + sourceSymbolicLowerBias
+                          : sourceSymbolicLb * sourceUb + sourceSymbolicLowerBias;
+    double scoreUpper = sourceSymbolicUb > 0
+                          ? sourceSymbolicUb * sourceUb + sourceSymbolicUpperBias
+                          : sourceSymbolicUb * sourceLb + sourceSymbolicUpperBias;
+
+    return ( scoreUpper - scoreLower ) / branchCount;
 }
 
 void NetworkLevelReasoner::initializeBBPSBranchingMaps()
@@ -3584,19 +3352,9 @@ unsigned NetworkLevelReasoner::getNumberOfParametersPerType( Layer::Type t ) con
 
 bool NetworkLevelReasoner::supportsInvpropBranching( Layer::Type type ) const
 {
-    // Without BBPS heuristic, only branch Relu/Sign/Abs/Leaky Relu activation before INVPROP.
-    if ( Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
-         Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT )
-    {
-        return type == Layer::RELU || type == Layer::LEAKY_RELU || type == Layer::SIGN ||
-               type == Layer::ABSOLUTE_VALUE;
-    }
-
     // When using BBPS heuristic, all implemented activations could be branched before INVPROP.
-    else if ( Options::get()->getMILPSolverBoundTighteningType() ==
-              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
+    if ( Options::get()->getMILPSolverBoundTighteningType() ==
+         MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
     {
         return type == Layer::RELU || type == Layer::LEAKY_RELU || type == Layer::SIGN ||
                type == Layer::ABSOLUTE_VALUE || type == Layer::MAX || type == Layer::ROUND ||

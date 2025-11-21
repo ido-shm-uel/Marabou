@@ -37,18 +37,11 @@ enum class MILPSolverBoundTighteningType {
     // Perform backward analysis using the PreimageApproximation Algorithm (arXiv:2305.03686v4
     // [cs.SE])
     BACKWARD_ANALYSIS_PREIMAGE_APPROX = 7,
-    // Perform backward analysis using INVPROP (arXiv:2302.01404v4 [cs.LG])
-    BACKWARD_ANALYSIS_INVPROP = 8,
-    // Perform backward analysis using PMNR with random neuron selection.
-    BACKWARD_ANALYSIS_PMNR_RANDOM = 9,
-    // Perform backward analysis using PMNR with maximum gradient neuron selection (arXiv:1804.10829
-    // [cs.AI]).
-    BACKWARD_ANALYSIS_PMNR_GRADIENT = 10,
-    // Perform backward analysis using PMNR with BBPS-based neuron selection (arXiv:2405.21063v3
-    // [cs.LG]).
-    BACKWARD_ANALYSIS_PMNR_BBPS = 11,
+    // Perform backward analysis using PMNR with INVPROP and BBPS-based neuron selection
+    // (arXiv:2302.01404v4 [cs.LG], arXiv:2405.21063v3 [cs.LG]).
+    BACKWARD_ANALYSIS_PMNR = 8,
     // Option to have no MILP bound tightening performed
-    NONE = 20,
+    NONE = 9,
 };
 
 #endif // __MILPSolverBoundTighteningType_h__

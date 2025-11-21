@@ -355,15 +355,11 @@ private:
                                             Map<unsigned, double> &point,
                                             unsigned i ) const;
 
-    // Heuristically generating optimizable polygonal tightening for INVPROP or PMNR.
-    const Vector<PolygonalTightening> generatePolygonalTightenings();
+    // Heuristically generating optimizable polygonal tightening for PMNR.
     const Vector<PolygonalTightening> generatePolygonalTighteningsForPMNR();
-    const Vector<PolygonalTightening> generatePolygonalTighteningsForInvprop();
 
     // Heuristically select neurons for PMNR.
     const Vector<NeuronIndex> selectPMNRNeurons();
-    const Vector<NeuronIndex> selectPMNRNeuronsRandomly();
-    const Vector<NeuronIndex> selectPMNRNeuronsHeuristically();
 
     // Optimize biases of generated parameterised polygonal tightenings.
     double OptimizeSingleParameterisedPolygonalTightening(
@@ -381,7 +377,6 @@ private:
 
     // Get current lower bound for selected parameterised polygonal tightenings' biases.
     double getParameterisdPolygonalTighteningBound(
-        const Vector<double> &coeffs,
         const Vector<double> &gamma,
         PolygonalTightening &tightening,
         Vector<PolygonalTightening> &prevTightenings,
@@ -396,8 +391,6 @@ private:
 
     // Calculate PMNRScore for every non-fixed neurons.
     void initializePMNRScoreMap();
-    double calculateNeuronPMNRScore( NeuronIndex index );
-    double calculatePMNRGradientScore( NeuronIndex index );
     double calculatePMNRBBPSScore( NeuronIndex index );
 
     // Initialize PMNR-BBPS branching point scores and per-branch predecessor symbolic bounds for

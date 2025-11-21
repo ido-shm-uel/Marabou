@@ -79,13 +79,7 @@ void Layer::allocateMemory()
          Options::get()->getMILPSolverBoundTighteningType() ==
              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX ||
          Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_INVPROP ||
-         Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_RANDOM ||
-         Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_GRADIENT ||
-         Options::get()->getMILPSolverBoundTighteningType() ==
-             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR_BBPS )
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
     {
         _symbolicLb = new double[_size * _inputLayerSize];
         _symbolicUb = new double[_size * _inputLayerSize];
