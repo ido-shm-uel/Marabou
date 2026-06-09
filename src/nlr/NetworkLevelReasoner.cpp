@@ -74,6 +74,11 @@ void NetworkLevelReasoner::addLayerDependency( unsigned sourceLayer, unsigned ta
                                                      _layerIndexToLayer[sourceLayer]->getSize() );
 }
 
+void NetworkLevelReasoner::removeLayerDependency( unsigned sourceLayer, unsigned targetLayer )
+{
+    _layerIndexToLayer[targetLayer]->removeSourceLayer( sourceLayer );
+}
+
 void NetworkLevelReasoner::computeSuccessorLayers()
 {
     for ( unsigned i = 0; i < _layerIndexToLayer.size(); ++i )
@@ -208,6 +213,127 @@ void NetworkLevelReasoner::deepPolyPropagation()
     if ( _deepPolyAnalysis == nullptr )
         _deepPolyAnalysis = std::unique_ptr<DeepPolyAnalysis>( new DeepPolyAnalysis( this ) );
     _deepPolyAnalysis->run();
+}
+
+void NetworkLevelReasoner::parameterisedDeepPoly( bool storeSymbolicBounds,
+                                                  const Vector<double> &coeffs )
+{
+    if ( !storeSymbolicBounds )
+    {
+        bool useParameterisedSBT = coeffs.size() > 0;
+        Map<unsigned, Vector<double>> layerIndicesToParameters =
+            Map<unsigned, Vector<double>>( {} );
+        if ( useParameterisedSBT )
+        {
+            layerIndicesToParameters = getParametersForLayers( coeffs );
+        }
+
+        _deepPolyAnalysis =
+            std::unique_ptr<DeepPolyAnalysis>( new DeepPolyAnalysis( this,
+                                                                     storeSymbolicBounds,
+                                                                     storeSymbolicBounds,
+                                                                     useParameterisedSBT,
+                                                                     &layerIndicesToParameters ) );
+
+        // Clear deepPolyAnalysis pointer after running.
+        _deepPolyAnalysis->run();
+        _deepPolyAnalysis = nullptr;
+    }
+    else
+    {
+        // Clear the previous symbolic bound maps.
+        _outputSymbolicLb.clear();
+        _outputSymbolicUb.clear();
+        _outputSymbolicLowerBias.clear();
+        _outputSymbolicUpperBias.clear();
+
+        _predecessorSymbolicLb.clear();
+        _predecessorSymbolicUb.clear();
+        _predecessorSymbolicLowerBias.clear();
+        _predecessorSymbolicUpperBias.clear();
+
+        // Temporarily add weighted sum layer to the NLR of the same size of the output layer.
+        Layer *outputLayer = _layerIndexToLayer[getNumberOfLayers() - 1];
+        unsigned outputLayerIndex = outputLayer->getLayerIndex();
+        unsigned outputLayerSize = outputLayer->getSize();
+        unsigned newLayerIndex = outputLayerIndex + 1;
+
+        addLayer( newLayerIndex, Layer::WEIGHTED_SUM, outputLayerSize );
+        addLayerDependency( outputLayerIndex, newLayerIndex );
+        Layer *newLayer = _layerIndexToLayer[newLayerIndex];
+
+        for ( unsigned i = 0; i < outputLayerSize; ++i )
+        {
+            setWeight( outputLayerIndex, i, newLayerIndex, i, 1 );
+            newLayer->setLb( i, FloatUtils::infinity() );
+            newLayer->setUb( i, FloatUtils::negativeInfinity() );
+        }
+
+        // Initialize maps with zero vectors.
+        for ( const auto &pair : _layerIndexToLayer )
+        {
+            unsigned layerIndex = pair.first;
+            Layer *layer = pair.second;
+            unsigned size = layer->getSize();
+            Layer::Type layerType = layer->getLayerType();
+
+            _outputSymbolicLb[layerIndex] = Vector<double>( outputLayerSize * size, 0 );
+            _outputSymbolicUb[layerIndex] = Vector<double>( outputLayerSize * size, 0 );
+            _outputSymbolicLowerBias[layerIndex] = Vector<double>( outputLayerSize, 0 );
+            _outputSymbolicUpperBias[layerIndex] = Vector<double>( outputLayerSize, 0 );
+
+            if ( layerType != Layer::WEIGHTED_SUM && layerType != Layer::INPUT )
+            {
+                unsigned maxSourceSize = 0;
+                for ( unsigned i = 0; i < size; ++i )
+                {
+                    unsigned sourceSize = layer->getActivationSources( i ).size();
+                    maxSourceSize = sourceSize > maxSourceSize ? sourceSize : maxSourceSize;
+                }
+                _predecessorSymbolicLb[layerIndex] = Vector<double>( size * maxSourceSize, 0 );
+                _predecessorSymbolicUb[layerIndex] = Vector<double>( size * maxSourceSize, 0 );
+                _predecessorSymbolicLowerBias[layerIndex] = Vector<double>( size, 0 );
+                _predecessorSymbolicUpperBias[layerIndex] = Vector<double>( size, 0 );
+            }
+        }
+
+        // Populate symbolic bounds maps via DeepPoly.
+        bool useParameterisedSBT = coeffs.size() > 0;
+        Map<unsigned, Vector<double>> layerIndicesToParameters =
+            Map<unsigned, Vector<double>>( {} );
+        if ( useParameterisedSBT )
+        {
+            layerIndicesToParameters = getParametersForLayers( coeffs );
+        }
+
+        _deepPolyAnalysis = std::unique_ptr<DeepPolyAnalysis>(
+            new DeepPolyAnalysis( this,
+                                  storeSymbolicBounds,
+                                  storeSymbolicBounds,
+                                  useParameterisedSBT,
+                                  &layerIndicesToParameters,
+                                  &_outputSymbolicLb,
+                                  &_outputSymbolicUb,
+                                  &_outputSymbolicLowerBias,
+                                  &_outputSymbolicUpperBias,
+                                  &_predecessorSymbolicLb,
+                                  &_predecessorSymbolicUb,
+                                  &_predecessorSymbolicLowerBias,
+                                  &_predecessorSymbolicUpperBias ) );
+
+        // Clear deepPolyAnalysis pointer after running.
+        _deepPolyAnalysis->run();
+        _deepPolyAnalysis = nullptr;
+
+        // Remove new weighted sum layer.
+        removeLayerDependency( outputLayerIndex, newLayerIndex );
+        _layerIndexToLayer.erase( newLayerIndex );
+        if ( newLayer )
+        {
+            delete newLayer;
+            newLayer = NULL;
+        }
+    }
 }
 
 void NetworkLevelReasoner::lpRelaxationPropagation()
@@ -667,6 +793,142 @@ double NetworkLevelReasoner::getPreviousBias( const ReluConstraint *reluConstrai
     }
 
     return _previousBiases[reluConstraint];
+}
+
+Vector<double> NetworkLevelReasoner::getOutputSymbolicLb( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _outputSymbolicLb.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_outputSymbolicLb.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in output layer symbolic bounds map." );
+    }
+
+    return _outputSymbolicLb[layerIndex];
+}
+
+Vector<double> NetworkLevelReasoner::getOutputSymbolicUb( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _outputSymbolicUb.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_outputSymbolicUb.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in output layer symbolic bounds map." );
+    }
+
+    return _outputSymbolicUb[layerIndex];
+}
+
+Vector<double> NetworkLevelReasoner::getOutputSymbolicLowerBias( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _outputSymbolicLowerBias.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_outputSymbolicLowerBias.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in output layer symbolic bounds map." );
+    }
+
+    return _outputSymbolicLowerBias[layerIndex];
+}
+
+Vector<double> NetworkLevelReasoner::getOutputSymbolicUpperBias( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _outputSymbolicUpperBias.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_outputSymbolicUpperBias.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in output layer symbolic bounds map." );
+    }
+
+    return _outputSymbolicUpperBias[layerIndex];
+}
+
+Vector<double> NetworkLevelReasoner::getPredecessorSymbolicLb( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _predecessorSymbolicLb.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_predecessorSymbolicLb.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in predecessor layer symbolic bounds map." );
+    }
+
+    return _predecessorSymbolicLb[layerIndex];
+}
+
+Vector<double> NetworkLevelReasoner::getPredecessorSymbolicUb( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _predecessorSymbolicUb.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_predecessorSymbolicUb.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in predecessor layer symbolic bounds map." );
+    }
+
+    return _predecessorSymbolicUb[layerIndex];
+}
+
+Vector<double> NetworkLevelReasoner::getPredecessorSymbolicLowerBias( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _predecessorSymbolicLowerBias.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_predecessorSymbolicLowerBias.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in predecessor layer symbolic bounds map." );
+    }
+
+    return _predecessorSymbolicLowerBias[layerIndex];
+}
+
+Vector<double> NetworkLevelReasoner::getPredecessorSymbolicUpperBias( unsigned layerIndex )
+{
+    // Initialize map if empty.
+    if ( _predecessorSymbolicUpperBias.empty() )
+    {
+        parameterisedDeepPoly( true );
+    }
+
+    if ( !_predecessorSymbolicUpperBias.exists( layerIndex ) )
+    {
+        throw NLRError( NLRError::LAYER_NOT_FOUND,
+                        "Layer not found in predecessor layer symbolic bounds map." );
+    }
+
+    return _predecessorSymbolicUpperBias[layerIndex];
 }
 
 unsigned
