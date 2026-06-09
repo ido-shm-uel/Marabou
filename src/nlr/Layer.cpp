@@ -75,7 +75,9 @@ void Layer::allocateMemory()
 
     _inputLayerSize = ( _type == INPUT ) ? _size : _layerOwner->getLayer( 0 )->getSize();
     if ( Options::get()->getSymbolicBoundTighteningType() ==
-         SymbolicBoundTighteningType::SYMBOLIC_BOUND_TIGHTENING )
+             SymbolicBoundTighteningType::SYMBOLIC_BOUND_TIGHTENING ||
+         Options::get()->getMILPSolverBoundTighteningType() ==
+             MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX )
     {
         _symbolicLb = new double[_size * _inputLayerSize];
         _symbolicUb = new double[_size * _inputLayerSize];

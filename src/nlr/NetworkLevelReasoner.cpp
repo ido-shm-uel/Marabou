@@ -248,6 +248,17 @@ void NetworkLevelReasoner::lpRelaxationPropagation()
              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_CONVERGE )
         lpFormulator.optimizeBoundsWithLpRelaxation( _layerIndexToLayer, true );
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
+              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PREIMAGE_APPROX )
+    {
+        const Vector<double> optimalCoeffs = OptimalParameterisedSymbolicBoundTightening();
+        Map<unsigned, Vector<double>> layerIndicesToParameters =
+            getParametersForLayers( optimalCoeffs );
+        lpFormulator.optimizeBoundsWithLpRelaxation(
+            _layerIndexToLayer, false, layerIndicesToParameters );
+        lpFormulator.optimizeBoundsWithLpRelaxation(
+            _layerIndexToLayer, true, layerIndicesToParameters );
+    }
+    else if ( Options::get()->getMILPSolverBoundTighteningType() ==
               MILPSolverBoundTighteningType::LP_RELAXATION )
         lpFormulator.optimizeBoundsWithLpRelaxation( _layerIndexToLayer );
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
@@ -778,6 +789,169 @@ bool NetworkLevelReasoner::suitableForMerging(
             return false;
     }
     return true;
+}
+
+const Vector<double> NetworkLevelReasoner::OptimalParameterisedSymbolicBoundTightening()
+{
+    // Search over coeffs in [0, 1]^number_of_parameters with projected grdient descent.
+    unsigned maxIterations =
+        GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_MAX_ITERATIONS;
+    double stepSize = GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_STEP_SIZE;
+    double epsilon = GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS;
+    double weightDecay = GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY;
+    double lr = GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_LEARNING_RATE;
+    unsigned dimension = getNumberOfParameters();
+    bool maximize = false;
+    double sign = ( maximize ? 1 : -1 );
+
+    Vector<double> lowerBounds( dimension, 0 );
+    Vector<double> upperBounds( dimension, 1 );
+
+    // Initialize initial guess uniformly.
+    Vector<double> guess( dimension );
+    std::mt19937_64 rng( GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_RANDOM_SEED );
+    std::uniform_real_distribution<double> dis( 0, 1 );
+    for ( unsigned j = 0; j < dimension; ++j )
+    {
+        double lb = lowerBounds[j];
+        double ub = upperBounds[j];
+        guess[j] = lb + dis( rng ) * ( ub - lb );
+    }
+
+    Vector<Vector<double>> candidates( dimension );
+    Vector<double> gradient( dimension );
+
+    for ( unsigned i = 0; i < maxIterations; ++i )
+    {
+        double currentCost = EstimateVolume( guess );
+        for ( unsigned j = 0; j < dimension; ++j )
+        {
+            candidates[j] = Vector<double>( guess );
+            candidates[j][j] += stepSize;
+
+            if ( candidates[j][j] > upperBounds[j] || candidates[j][j] < lowerBounds[j] )
+            {
+                gradient[j] = 0;
+                continue;
+            }
+
+            double cost = EstimateVolume( candidates[j] );
+            gradient[j] = ( cost - currentCost ) / stepSize + weightDecay * guess[j];
+        }
+
+        bool gradientIsZero = true;
+        for ( unsigned j = 0; j < dimension; ++j )
+        {
+            if ( FloatUtils::abs( gradient[j] ) > epsilon )
+            {
+                gradientIsZero = false;
+            }
+        }
+        if ( gradientIsZero )
+        {
+            break;
+        }
+
+        for ( unsigned j = 0; j < dimension; ++j )
+        {
+            guess[j] += sign * lr * gradient[j];
+
+            guess[j] = std::min( guess[j], upperBounds[j] );
+            guess[j] = std::max( guess[j], lowerBounds[j] );
+        }
+    }
+
+    const Vector<double> optimalCoeffs( guess );
+    return optimalCoeffs;
+}
+
+double NetworkLevelReasoner::EstimateVolume( const Vector<double> &coeffs )
+{
+    // First, run parameterised symbolic bound propagation.
+    Map<unsigned, Vector<double>> layerIndicesToParameters = getParametersForLayers( coeffs );
+    for ( unsigned i = 0; i < _layerIndexToLayer.size(); ++i )
+    {
+        ASSERT( _layerIndexToLayer.exists( i ) );
+        const Vector<double> &currentLayerCoeffs = layerIndicesToParameters[i];
+        _layerIndexToLayer[i]->computeParameterisedSymbolicBounds( currentLayerCoeffs );
+    }
+
+    std::mt19937_64 rng( GlobalConfiguration::VOLUME_ESTIMATION_RANDOM_SEED );
+    double logBoxVolume = 0;
+    double sigmoidSum = 0;
+
+    unsigned inputLayerIndex = 0;
+    unsigned outputLayerIndex = _layerIndexToLayer.size() - 1;
+    Layer *inputLayer = _layerIndexToLayer[inputLayerIndex];
+    Layer *outputLayer = _layerIndexToLayer[outputLayerIndex];
+
+    // Calculate volume of input variables' bounding box.
+    for ( unsigned index = 0; index < inputLayer->getSize(); ++index )
+    {
+        if ( inputLayer->neuronEliminated( index ) )
+            continue;
+
+        double lb = inputLayer->getLb( index );
+        double ub = inputLayer->getUb( index );
+
+        if ( lb == ub )
+            continue;
+
+        logBoxVolume += std::log( ub - lb );
+    }
+
+    for ( unsigned i = 0; i < GlobalConfiguration::VOLUME_ESTIMATION_ITERATIONS; ++i )
+    {
+        // Sample input point from known bounds.
+        Map<unsigned, double> point;
+        for ( unsigned j = 0; j < inputLayer->getSize(); ++j )
+        {
+            if ( inputLayer->neuronEliminated( j ) )
+            {
+                point.insert( j, 0 );
+            }
+            else
+            {
+                double lb = inputLayer->getLb( j );
+                double ub = inputLayer->getUb( j );
+                std::uniform_real_distribution<> dis( lb, ub );
+                point.insert( j, dis( rng ) );
+            }
+        }
+
+        // Calculate sigmoid of maximum margin from output symbolic bounds.
+        double maxMargin = 0;
+        for ( unsigned j = 0; j < outputLayer->getSize(); ++j )
+        {
+            if ( outputLayer->neuronEliminated( j ) )
+                continue;
+
+            double margin = calculateDifferenceFromSymbolic( outputLayer, point, j );
+            maxMargin = std::max( maxMargin, margin );
+        }
+        sigmoidSum += SigmoidConstraint::sigmoid( maxMargin );
+    }
+
+    return std::exp( logBoxVolume + std::log( sigmoidSum ) ) /
+           GlobalConfiguration::VOLUME_ESTIMATION_ITERATIONS;
+}
+
+double NetworkLevelReasoner::calculateDifferenceFromSymbolic( const Layer *layer,
+                                                              Map<unsigned, double> &point,
+                                                              unsigned i ) const
+{
+    unsigned size = layer->getSize();
+    unsigned inputLayerSize = _layerIndexToLayer[0]->getSize();
+    double lowerSum = layer->getSymbolicLowerBias()[i];
+    double upperSum = layer->getSymbolicUpperBias()[i];
+
+    for ( unsigned j = 0; j < inputLayerSize; ++j )
+    {
+        lowerSum += layer->getSymbolicLb()[j * size + i] * point[j];
+        upperSum += layer->getSymbolicUb()[j * size + i] * point[j];
+    }
+
+    return std::max( layer->getUb( i ) - upperSum, lowerSum - layer->getLb( i ) );
 }
 
 const Map<unsigned, Vector<double>>

@@ -264,6 +264,18 @@ private:
                              unsigned outputDimension );
     void reduceLayerIndex( unsigned layer, unsigned startIndex );
 
+    // Return optimizable parameters which minimize parameterised SBT bounds' volume.
+    const Vector<double> OptimalParameterisedSymbolicBoundTightening();
+
+    // Estimate Volume of parameterised symbolic bound tightening.
+    double EstimateVolume( const Vector<double> &coeffs );
+
+    // Return difference between given point and upper and lower bounds determined by parameterised
+    // SBT relaxation.
+    double calculateDifferenceFromSymbolic( const Layer *layer,
+                                            Map<unsigned, double> &point,
+                                            unsigned i ) const;
+
     /*
       Store previous biases for each ReLU neuron in a map for getPreviousBias()
       and BaBSR heuristic
