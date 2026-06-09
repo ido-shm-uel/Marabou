@@ -4634,6 +4634,256 @@ void Layer::eliminateVariable( unsigned variable, double value )
     _variableToNeuron.erase( variable );
 }
 
+const Vector<NeuronIndex> Layer::getNonfixedNeurons() const
+{
+    Vector<NeuronIndex> nonfixedNeurons = Vector<NeuronIndex>( {} );
+    for ( unsigned i = 0; i < _size; ++i )
+    {
+        if ( neuronNonfixed( i ) )
+        {
+            nonfixedNeurons.append( NeuronIndex( _layerIndex, i ) );
+        }
+    }
+    const Vector<NeuronIndex> neuronList = Vector<NeuronIndex>( nonfixedNeurons );
+    return neuronList;
+}
+
+bool Layer::neuronNonfixed( unsigned neuron ) const
+{
+    if ( _eliminatedNeurons.exists( neuron ) )
+    {
+        return false;
+    }
+
+    switch ( _type )
+    {
+    case INPUT:
+    case WEIGHTED_SUM:
+    {
+        return false;
+        break;
+    }
+    case RELU:
+    case LEAKY_RELU:
+    case SIGN:
+    case ABSOLUTE_VALUE:
+    {
+        return neuronNonfixedAtZero( neuron );
+        break;
+    }
+    case SIGMOID:
+    {
+        return neuronNonfixedSigmoid( neuron );
+        break;
+    }
+    case Layer::ROUND:
+    {
+        return neuronNonfixedRound( neuron );
+        break;
+    }
+    case MAX:
+    {
+        return neuronNonfixedMax( neuron );
+        break;
+    }
+    case SOFTMAX:
+    {
+        return neuronNonfixedSoftmax( neuron );
+        break;
+    }
+    case BILINEAR:
+    {
+        return neuronNonfixedBilinear( neuron );
+        break;
+    }
+    default:
+    {
+        printf( "Error! Neuron type %u unsupported\n", _type );
+        throw MarabouError( MarabouError::NETWORK_LEVEL_REASONER_ACTIVATION_NOT_SUPPORTED );
+        break;
+    }
+    }
+}
+
+bool Layer::neuronNonfixedAtZero( unsigned neuron ) const
+{
+    // A Relu/Sign/Abs/Leaky Relu activation is non-fixed if it's not exernally fixed,
+    // its source neuron isn't externally fixed and sourceLb < 0 < sourceUb.
+    NeuronIndex sourceIndex = *_neuronToActivationSources[neuron].begin();
+    const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
+    if ( sourceLayer->neuronEliminated( sourceIndex._neuron ) )
+    {
+        return false;
+    }
+
+    double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+    double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+    return FloatUtils::isNegative( sourceLb ) && FloatUtils::isPositive( sourceUb );
+}
+
+bool Layer::neuronNonfixedSigmoid( unsigned neuron ) const
+{
+    // A Sigmoid activation is non-fixed if it's not exernally fixed,
+    // its source neuron isn't externally fixed and sourceUb != sourceLb.
+    NeuronIndex sourceIndex = *_neuronToActivationSources[neuron].begin();
+    const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
+    if ( sourceLayer->neuronEliminated( sourceIndex._neuron ) )
+    {
+        return false;
+    }
+
+    double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+    double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+    return !FloatUtils::areEqual( sourceLb, sourceUb );
+}
+
+bool Layer::neuronNonfixedRound( unsigned neuron ) const
+{
+    // A Round activation is non-fixed if it's not exernally fixed,
+    // its source neuron isn't externally fixed and round( sourceUb ) != round( sourceLb ).
+    NeuronIndex sourceIndex = *_neuronToActivationSources[neuron].begin();
+    const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
+    if ( sourceLayer->neuronEliminated( sourceIndex._neuron ) )
+    {
+        return false;
+    }
+
+    double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+    double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+    return !FloatUtils::areEqual( FloatUtils::round( sourceUb ), FloatUtils::round( sourceLb ) );
+}
+
+bool Layer::neuronNonfixedMax( unsigned neuron ) const
+{
+    // A Max activation is non-fixed if not all its sources have a fixed value and no source
+    // has a lower bound larger than the upper-bounds of the other source variables.
+    List<NeuronIndex> sources = getActivationSources( neuron );
+    NeuronIndex indexOfMaxLowerBound = *( sources.begin() );
+    double maxLowerBound = FloatUtils::negativeInfinity();
+    double maxUpperBound = FloatUtils::negativeInfinity();
+    Map<NeuronIndex, double> sourceUbs;
+    bool allConstant = true;
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
+        unsigned sourceNeuron = sourceIndex._neuron;
+        if ( !sourceLayer->neuronEliminated( sourceIndex._neuron ) )
+        {
+            allConstant = false;
+            double sourceLb = sourceLayer->getLb( sourceNeuron );
+            double sourceUb = sourceLayer->getUb( sourceNeuron );
+            sourceUbs[sourceIndex] = sourceUb;
+            if ( maxLowerBound < sourceLb )
+            {
+                indexOfMaxLowerBound = sourceIndex;
+                maxLowerBound = sourceLb;
+            }
+            if ( maxUpperBound < sourceUb )
+            {
+                maxUpperBound = sourceUb;
+            }
+        }
+    }
+
+    if ( allConstant )
+    {
+        return false;
+    }
+
+    bool phaseFixed = true;
+    for ( const auto &sourceIndex : sources )
+    {
+        if ( sourceIndex != indexOfMaxLowerBound &&
+             FloatUtils::gt( sourceUbs[sourceIndex], maxLowerBound ) )
+        {
+            phaseFixed = false;
+            break;
+        }
+    }
+    return !phaseFixed;
+}
+
+bool Layer::neuronNonfixedSoftmax( unsigned neuron ) const
+{
+    // A Softmax activation is non-fixed if not all its sources have a fixed value
+    // and its source neuron in the Softmax satisfies sourceLb != sourceUb.
+    List<NeuronIndex> sources = getActivationSources( neuron );
+    Vector<double> sourceLbs;
+    Vector<double> sourceUbs;
+    bool allConstant = true;
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
+        unsigned sourceNeuron = sourceIndex._neuron;
+        if ( !sourceLayer->neuronEliminated( sourceIndex._neuron ) )
+        {
+            allConstant = false;
+            double sourceLb = sourceLayer->getLb( sourceNeuron );
+            double sourceUb = sourceLayer->getUb( sourceNeuron );
+            sourceLbs.append( sourceLb - GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+            sourceUbs.append( sourceUb + GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+        }
+    }
+
+    if ( allConstant )
+    {
+        return false;
+    }
+
+    unsigned selfIndex = 0;
+    Set<unsigned> handledInputNeurons;
+    for ( unsigned i = 0; i < neuron; ++i )
+    {
+        for ( const auto &sourceIndex : getActivationSources( i ) )
+        {
+            if ( !handledInputNeurons.exists( sourceIndex._neuron ) )
+            {
+                handledInputNeurons.insert( sourceIndex._neuron );
+                break;
+            }
+        }
+    }
+    for ( const auto &sourceIndex : sources )
+    {
+        if ( handledInputNeurons.exists( sourceIndex._neuron ) )
+        {
+            ++selfIndex;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    double lb = std::max( Layer::linearLowerBound( sourceLbs, sourceUbs, selfIndex ), _lb[neuron] );
+    double ub = std::min( Layer::linearUpperBound( sourceLbs, sourceUbs, selfIndex ), _ub[neuron] );
+
+    return !FloatUtils::areEqual( lb, ub );
+}
+
+bool Layer::neuronNonfixedBilinear( unsigned neuron ) const
+{
+    // A Softmax activation is non-fixed if not all its sources have a fixed value.
+    List<NeuronIndex> sources = getActivationSources( neuron );
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
+        unsigned sourceNeuron = sourceIndex._neuron;
+        if ( sourceLayer->neuronEliminated( sourceIndex._neuron ) )
+        {
+            return false;
+        }
+
+        double sourceLb = sourceLayer->getLb( sourceNeuron );
+        double sourceUb = sourceLayer->getUb( sourceNeuron );
+        if ( FloatUtils::areEqual( sourceLb, sourceUb ) )
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void Layer::updateVariableIndices( const Map<unsigned, unsigned> &oldIndexToNewIndex,
                                    const Map<unsigned, unsigned> &mergedVariables )
 {

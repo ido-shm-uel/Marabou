@@ -328,6 +328,9 @@ private:
     // Get number of optimizable parameters for parameterised SBT relaxation per layer type.
     unsigned getNumberOfParametersPerType( Layer::Type t ) const;
 
+    // Get all indices of layers with non-fixed neurons.
+    const Vector<unsigned> getLayersWithNonfixedNeurons() const;
+
     /*
       If the NLR is manipulated manually in order to generate a new
       input query, this method can be used to assign variable indices
