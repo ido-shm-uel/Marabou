@@ -228,6 +228,23 @@ public:
     Vector<double> getPredecessorSymbolicUpperBias( unsigned layerIndex );
 
     /*
+       Get the symbolic bounds in term of predecessor layer given branch of given neuron.
+    */
+    Vector<double> getSymbolicLbPerBranch( NeuronIndex index );
+    Vector<double> getSymbolicUbPerBranch( NeuronIndex index );
+    Vector<double> getSymbolicLowerBiasPerBranch( NeuronIndex index );
+    Vector<double> getSymbolicUpperBiasPerBranch( NeuronIndex index );
+
+    /*
+       Get the BBPS branching point of given neuron: Map containing the
+       branching point for every predecessor neuron.
+    */
+    std::pair<NeuronIndex, double> getBBPSBranchingPoint( NeuronIndex index );
+
+    // Get PMNR neuron selection heuristic score for given neuron.
+    double getPMNRScore( NeuronIndex index );
+
+    /*
       Finds logically consecutive WS layers and merges them, in order
       to reduce the total number of layers and variables in the
       network
@@ -271,6 +288,14 @@ private:
     Map<unsigned, Vector<double>> _outputSymbolicLowerBias;
     Map<unsigned, Vector<double>> _outputSymbolicUpperBias;
 
+    Map<NeuronIndex, double> _neuronToPMNRScores;
+
+    Map<NeuronIndex, std::pair<NeuronIndex, double>> _neuronToBBPSBranchingPoints;
+    Map<NeuronIndex, Vector<double>> _neuronToSymbolicLbPerBranch;
+    Map<NeuronIndex, Vector<double>> _neuronToSymbolicUbPerBranch;
+    Map<NeuronIndex, Vector<double>> _neuronToSymbolicLowerBiasPerBranch;
+    Map<NeuronIndex, Vector<double>> _neuronToSymbolicUpperBiasPerBranch;
+
     void freeMemoryIfNeeded();
 
     // Map each neuron to a linear expression representing its weighted sum
@@ -307,6 +332,9 @@ private:
     // Estimate Volume of parameterised symbolic bound tightening.
     double EstimateVolume( const Vector<double> &coeffs );
 
+    // Heuristically select neurons for PMNR.
+    const Vector<NeuronIndex> selectPMNRNeurons();
+
     // Return difference between given point and upper and lower bounds determined by parameterised
     // SBT relaxation.
     double calculateDifferenceFromSymbolic( const Layer *layer,
@@ -320,6 +348,132 @@ private:
     Map<const ReluConstraint *, double> _previousBiases;
     void initializePreviousBiasMap();
 
+    // Calculate PMNRScore for every non-fixed neurons.
+    void initializePMNRScoreMap();
+    double calculatePMNRNSSEScore( NeuronIndex index );
+
+    // Initialize PMNR-BBPS branching point scores and per-branch predecessor symbolic bounds for
+    // every non-fixed neuron.
+    void initializeBBPSBranchingMaps();
+    const std::pair<NeuronIndex, double> calculateBranchingPoint( NeuronIndex index ) const;
+
+    // Heuristically generate candidates for branching points.
+    const Vector<std::pair<NeuronIndex, double>>
+    generateBranchingPointCandidates( const Layer *layer, unsigned i ) const;
+
+    // Helper functions for generating branching points.
+    const Vector<std::pair<NeuronIndex, double>>
+    generateBranchingPointCandidatesAtZero( const Layer *layer, unsigned i ) const;
+    const Vector<std::pair<NeuronIndex, double>>
+    generateBranchingPointCandidatesForRound( const Layer *layer, unsigned i ) const;
+    const Vector<std::pair<NeuronIndex, double>>
+    generateBranchingPointCandidatesForSigmoid( const Layer *layer, unsigned i ) const;
+    const Vector<std::pair<NeuronIndex, double>>
+    generateBranchingPointCandidatesForMax( const Layer *layer, unsigned i ) const;
+    const Vector<std::pair<NeuronIndex, double>>
+    generateBranchingPointCandidatesForSoftmax( const Layer *layer, unsigned i ) const;
+    const Vector<std::pair<NeuronIndex, double>>
+    generateBranchingPointCandidatesForBilinear( const Layer *layer, unsigned i ) const;
+
+    // Given neuron index, source index and branch ranges, compute symbolic bounds per branch.
+    // If activation has multiple sources, sources other than given neuron are concretized.
+    void calculateSymbolicBoundsPerBranch( NeuronIndex index,
+                                           NeuronIndex sourceIndex,
+                                           const Vector<double> &values,
+                                           Vector<double> &symbolicLbPerBranch,
+                                           Vector<double> &symbolicUbPerBranch,
+                                           Vector<double> &symbolicLowerBiasPerBranch,
+                                           Vector<double> &symbolicUpperBiasPerBranch,
+                                           unsigned branchCount ) const;
+
+    // Helper functions for calculating branch symbolic bounds.
+    void
+    calculateSymbolicBoundsPerBranchForRelu( unsigned i,
+                                             double sourceLb,
+                                             double sourceUb,
+                                             Vector<double> &symbolicLbPerBranch,
+                                             Vector<double> &symbolicUbPerBranch,
+                                             Vector<double> &symbolicLowerBiasPerBranch,
+                                             Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void calculateSymbolicBoundsPerBranchForAbsoluteValue(
+        unsigned i,
+        double sourceLb,
+        double sourceUb,
+        Vector<double> &symbolicLbPerBranch,
+        Vector<double> &symbolicUbPerBranch,
+        Vector<double> &symbolicLowerBiasPerBranch,
+        Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void
+    calculateSymbolicBoundsPerBranchForSign( unsigned i,
+                                             double sourceLb,
+                                             double sourceUb,
+                                             Vector<double> &symbolicLbPerBranch,
+                                             Vector<double> &symbolicUbPerBranch,
+                                             Vector<double> &symbolicLowerBiasPerBranch,
+                                             Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void
+    calculateSymbolicBoundsPerBranchForRound( unsigned i,
+                                              double sourceLb,
+                                              double sourceUb,
+                                              Vector<double> &symbolicLbPerBranch,
+                                              Vector<double> &symbolicUbPerBranch,
+                                              Vector<double> &symbolicLowerBiasPerBranch,
+                                              Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void
+    calculateSymbolicBoundsPerBranchForSigmoid( unsigned i,
+                                                double sourceLb,
+                                                double sourceUb,
+                                                Vector<double> &symbolicLbPerBranch,
+                                                Vector<double> &symbolicUbPerBranch,
+                                                Vector<double> &symbolicLowerBiasPerBranch,
+                                                Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void calculateSymbolicBoundsPerBranchForLeakyRelu(
+        NeuronIndex index,
+        unsigned i,
+        double sourceLb,
+        double sourceUb,
+        Vector<double> &symbolicLbPerBranch,
+        Vector<double> &symbolicUbPerBranch,
+        Vector<double> &symbolicLowerBiasPerBranch,
+        Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void calculateSymbolicBoundsPerBranchForMax( NeuronIndex index,
+                                                 NeuronIndex chosenSourceIndex,
+                                                 unsigned i,
+                                                 double sourceLb,
+                                                 double sourceUb,
+                                                 Vector<double> &symbolicLbPerBranch,
+                                                 Vector<double> &symbolicUbPerBranch,
+                                                 Vector<double> &symbolicLowerBiasPerBranch,
+                                                 Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void
+    calculateSymbolicBoundsPerBranchForSoftmax( NeuronIndex index,
+                                                NeuronIndex chosenSourceIndex,
+                                                unsigned i,
+                                                double sourceLb,
+                                                double sourceUb,
+                                                Vector<double> &symbolicLbPerBranch,
+                                                Vector<double> &symbolicUbPerBranch,
+                                                Vector<double> &symbolicLowerBiasPerBranch,
+                                                Vector<double> &symbolicUpperBiasPerBranch ) const;
+    void
+    calculateSymbolicBoundsPerBranchForBilinear( NeuronIndex index,
+                                                 NeuronIndex chosenSourceIndex,
+                                                 unsigned i,
+                                                 double sourceLb,
+                                                 double sourceUb,
+                                                 Vector<double> &symbolicLbPerBranch,
+                                                 Vector<double> &symbolicUbPerBranch,
+                                                 Vector<double> &symbolicLowerBiasPerBranch,
+                                                 Vector<double> &symbolicUpperBiasPerBranch ) const;
+
+    // Calculate tightening loss of branch symbolic bounds.
+    double calculateTighteningLoss( const Vector<double> &values,
+                                    const Vector<double> &symbolicLbPerBranch,
+                                    const Vector<double> &symbolicUbPerBranch,
+                                    const Vector<double> &symbolicLowerBiasPerBranch,
+                                    const Vector<double> &symbolicUpperBiasPerBranch,
+                                    unsigned branchCount ) const;
+
     // Get map containing vector of optimizable parameters for parameterised SBT relaxation for
     // every layer index.
     const Map<unsigned, Vector<double>>
@@ -327,6 +481,9 @@ private:
 
     // Get number of optimizable parameters for parameterised SBT relaxation per layer type.
     unsigned getNumberOfParametersPerType( Layer::Type t ) const;
+
+    // Determine whether activation type and PMNR strategy support branching before INVPROP.
+    bool supportsInvpropBranching( Layer::Type type ) const;
 
     // Get all indices of layers with non-fixed neurons.
     const Vector<unsigned> getLayersWithNonfixedNeurons() const;

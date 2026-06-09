@@ -969,6 +969,107 @@ Vector<double> NetworkLevelReasoner::getPredecessorSymbolicUpperBias( unsigned l
     return _predecessorSymbolicUpperBias[layerIndex];
 }
 
+double NetworkLevelReasoner::getPMNRScore( NeuronIndex index )
+{
+    // Initialize map if empty.
+    if ( _neuronToPMNRScores.empty() )
+    {
+        initializePMNRScoreMap();
+    }
+
+    if ( !_neuronToPMNRScores.exists( index ) )
+    {
+        throw NLRError( NLRError::NEURON_NOT_FOUND, "Neuron not found in PMNR scores map." );
+    }
+
+    return _neuronToPMNRScores[index];
+}
+
+std::pair<NeuronIndex, double> NetworkLevelReasoner::getBBPSBranchingPoint( NeuronIndex index )
+{
+    // Initialize map if empty.
+    if ( _neuronToBBPSBranchingPoints.empty() )
+    {
+        initializeBBPSBranchingMaps();
+    }
+
+    if ( !_neuronToBBPSBranchingPoints.exists( index ) )
+    {
+        throw NLRError( NLRError::NEURON_NOT_FOUND,
+                        "Neuron not found in BBPS branching points map." );
+    }
+
+    return _neuronToBBPSBranchingPoints[index];
+}
+
+Vector<double> NetworkLevelReasoner::getSymbolicLbPerBranch( NeuronIndex index )
+{
+    // Initialize map if empty.
+    if ( _neuronToSymbolicLbPerBranch.empty() )
+    {
+        initializeBBPSBranchingMaps();
+    }
+
+    if ( !_neuronToSymbolicLbPerBranch.exists( index ) )
+    {
+        throw NLRError( NLRError::NEURON_NOT_FOUND,
+                        "Neuron not found in BBPS branch symbolic bounds map." );
+    }
+
+    return _neuronToSymbolicLbPerBranch[index];
+}
+
+Vector<double> NetworkLevelReasoner::getSymbolicUbPerBranch( NeuronIndex index )
+{
+    // Initialize map if empty.
+    if ( _neuronToSymbolicUbPerBranch.empty() )
+    {
+        initializeBBPSBranchingMaps();
+    }
+
+    if ( !_neuronToSymbolicUbPerBranch.exists( index ) )
+    {
+        throw NLRError( NLRError::NEURON_NOT_FOUND,
+                        "Neuron not found in BBPS branch symbolic bounds map." );
+    }
+
+    return _neuronToSymbolicUbPerBranch[index];
+}
+
+Vector<double> NetworkLevelReasoner::getSymbolicLowerBiasPerBranch( NeuronIndex index )
+{
+    // Initialize map if empty.
+    if ( _neuronToSymbolicLowerBiasPerBranch.empty() )
+    {
+        initializeBBPSBranchingMaps();
+    }
+
+    if ( !_neuronToSymbolicLowerBiasPerBranch.exists( index ) )
+    {
+        throw NLRError( NLRError::NEURON_NOT_FOUND,
+                        "Neuron not found in BBPS branch symbolic bounds map." );
+    }
+
+    return _neuronToSymbolicLowerBiasPerBranch[index];
+}
+
+Vector<double> NetworkLevelReasoner::getSymbolicUpperBiasPerBranch( NeuronIndex index )
+{
+    // Initialize map if empty.
+    if ( _neuronToSymbolicUpperBiasPerBranch.empty() )
+    {
+        initializeBBPSBranchingMaps();
+    }
+
+    if ( !_neuronToSymbolicUpperBiasPerBranch.exists( index ) )
+    {
+        throw NLRError( NLRError::NEURON_NOT_FOUND,
+                        "Neuron not found in BBPS branch symbolic bounds map." );
+    }
+
+    return _neuronToSymbolicUpperBiasPerBranch[index];
+}
+
 unsigned
 NetworkLevelReasoner::mergeConsecutiveWSLayers( const Map<unsigned, double> &lowerBounds,
                                                 const Map<unsigned, double> &upperBounds,
@@ -1216,6 +1317,1408 @@ double NetworkLevelReasoner::calculateDifferenceFromSymbolic( const Layer *layer
     return std::max( layer->getUb( i ) - upperSum, lowerSum - layer->getLb( i ) );
 }
 
+const Vector<NeuronIndex> NetworkLevelReasoner::selectPMNRNeurons()
+{
+    // Select layer with maximal PMNR neuron score sum.
+    const Vector<unsigned> &candidateLayers = getLayersWithNonfixedNeurons();
+    if ( candidateLayers.empty() )
+    {
+        const Vector<NeuronIndex> emptyVector( {} );
+        return emptyVector;
+    }
+
+    double maxScore = 0;
+    unsigned maxScoreIndex = 0;
+    for ( const auto &layerIndex : candidateLayers )
+    {
+        double layerScore = 0;
+        Layer *layer = _layerIndexToLayer[layerIndex];
+        for ( const auto &index : layer->getNonfixedNeurons() )
+        {
+            double neuronScore = getPMNRScore( index );
+            layerScore += neuronScore;
+        }
+
+        if ( layerScore > maxScore )
+        {
+            maxScore = layerScore;
+            maxScoreIndex = layerIndex;
+        }
+    }
+
+    // Extract highest score neurons from this layer.
+    Layer *layer = _layerIndexToLayer[maxScoreIndex];
+    std::priority_queue<std::pair<double, unsigned>,
+                        std::vector<std::pair<double, unsigned>>,
+                        std::less<std::pair<double, unsigned>>>
+        maxQueue;
+    const Vector<NeuronIndex> nonfixedNeurons = layer->getNonfixedNeurons();
+    for ( const auto &index : nonfixedNeurons )
+    {
+        maxQueue.push( std::pair( getPMNRScore( index ), index._neuron ) );
+    }
+
+    unsigned neuronCount =
+        std::min( GlobalConfiguration::PMNR_SELECTED_NEURONS, nonfixedNeurons.size() );
+    Vector<NeuronIndex> selectedNeurons = Vector<NeuronIndex>( neuronCount );
+    for ( unsigned i = 0; i < neuronCount; ++i )
+    {
+        selectedNeurons[i] = NeuronIndex( maxScoreIndex, maxQueue.top().second );
+        maxQueue.pop();
+    }
+    const Vector<NeuronIndex> neurons( selectedNeurons );
+    return neurons;
+}
+
+void NetworkLevelReasoner::initializePMNRScoreMap()
+{
+    // Clear PMNR score map.
+    _neuronToPMNRScores.clear();
+    for ( const auto &pair : _layerIndexToLayer )
+    {
+        for ( const auto &index : pair.second->getNonfixedNeurons() )
+        {
+            _neuronToPMNRScores.insert( index, calculatePMNRNSSEScore( index ) );
+        }
+    }
+}
+
+double NetworkLevelReasoner::calculatePMNRNSSEScore( NeuronIndex index )
+{
+    // Initialize BBPS branching points and branch symbolic bound maps.
+    initializeBBPSBranchingMaps();
+
+    Layer *outputLayer = _layerIndexToLayer[getNumberOfLayers() - 1];
+    unsigned outputLayerSize = outputLayer->getSize();
+    unsigned layerIndex = index._layer;
+    unsigned neuron = index._neuron;
+    Layer *layer = _layerIndexToLayer[layerIndex];
+
+    // We have the symbolic bounds map of the output layer in terms of the given neuron's layer.
+    // Concretize all neurons except from the given neuron.
+    Vector<double> concretizedOutputSymbolicLb( outputLayerSize, 0 );
+    Vector<double> concretizedOutputSymbolicUb( outputLayerSize, 0 );
+    Vector<double> concretizedOutputSymbolicLowerBias( outputLayerSize, 0 );
+    Vector<double> concretizedOutputSymbolicUpperBias( outputLayerSize, 0 );
+    for ( unsigned i = 0; i < outputLayerSize; ++i )
+    {
+        concretizedOutputSymbolicLb[i] =
+            getOutputSymbolicLb( layerIndex )[outputLayerSize * neuron + i];
+        concretizedOutputSymbolicUb[i] =
+            getOutputSymbolicUb( layerIndex )[outputLayerSize * neuron + i];
+        concretizedOutputSymbolicLowerBias[i] = getOutputSymbolicLowerBias( layerIndex )[i];
+        concretizedOutputSymbolicUpperBias[i] = getOutputSymbolicUpperBias( layerIndex )[i];
+
+        for ( unsigned j = 0; j < layer->getSize(); ++j )
+        {
+            if ( j != neuron )
+            {
+                double lowerWeight = getOutputSymbolicLb( layerIndex )[outputLayerSize * j + i];
+                double upperWeight = getOutputSymbolicUb( layerIndex )[outputLayerSize * j + i];
+                concretizedOutputSymbolicLowerBias[i] += lowerWeight > 0
+                                                           ? lowerWeight * layer->getLb( j )
+                                                           : lowerWeight * layer->getUb( j );
+                concretizedOutputSymbolicUpperBias[i] += upperWeight > 0
+                                                           ? upperWeight * layer->getUb( j )
+                                                           : upperWeight * layer->getLb( j );
+            }
+        }
+    }
+
+    // For every branch, we calculated the output layer's symbolic bounds in terms of the given
+    // neuron, and branch symbolic bounds of this neuron in terms of one source neuron.
+    std::pair<NeuronIndex, double> point = getBBPSBranchingPoint( index );
+    NeuronIndex sourceIndex = point.first;
+    const Layer *sourceLayer = getLayer( sourceIndex._layer );
+    double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+    double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+
+    Vector<double> symbolicLbPerBranch = getSymbolicLbPerBranch( index );
+    Vector<double> symbolicUbPerBranch = getSymbolicUbPerBranch( index );
+    Vector<double> symbolicLowerBiasPerBranch = getSymbolicLowerBiasPerBranch( index );
+    Vector<double> symbolicUpperBiasPerBranch = getSymbolicUpperBiasPerBranch( index );
+
+    unsigned branchCount = symbolicLbPerBranch.size();
+    ASSERT( symbolicUbPerBranch.size() == branchCount );
+    ASSERT( symbolicLowerBiasPerBranch.size() == branchCount );
+    ASSERT( symbolicUpperBiasPerBranch.size() == branchCount );
+
+    // For every output neuron, substitute branch symbolic bounds in the output symbolic bounds,
+    // sum over all branches and output bounds.
+    double sourceSymbolicLb = 0;
+    double sourceSymbolicUb = 0;
+    double sourceSymbolicLowerBias = 0;
+    double sourceSymbolicUpperBias = 0;
+    for ( unsigned i = 0; i < outputLayerSize; ++i )
+    {
+        for ( unsigned j = 0; j < branchCount; ++j )
+        {
+            sourceSymbolicLowerBias += concretizedOutputSymbolicLowerBias[i];
+            sourceSymbolicUpperBias += concretizedOutputSymbolicUpperBias[i];
+
+            if ( concretizedOutputSymbolicLb[i] > 0 )
+            {
+                sourceSymbolicLb += concretizedOutputSymbolicLb[i] * symbolicLbPerBranch[j];
+                sourceSymbolicLowerBias +=
+                    concretizedOutputSymbolicLb[i] * symbolicLowerBiasPerBranch[j];
+            }
+            else
+            {
+                sourceSymbolicLb += concretizedOutputSymbolicLb[i] * symbolicUbPerBranch[j];
+                sourceSymbolicLowerBias +=
+                    concretizedOutputSymbolicLb[i] * symbolicUpperBiasPerBranch[j];
+            }
+
+            if ( concretizedOutputSymbolicUb[i] > 0 )
+            {
+                sourceSymbolicUb += concretizedOutputSymbolicUb[i] * symbolicUbPerBranch[j];
+                sourceSymbolicUpperBias +=
+                    concretizedOutputSymbolicUb[i] * symbolicUpperBiasPerBranch[j];
+            }
+            else
+            {
+                sourceSymbolicUb += concretizedOutputSymbolicUb[i] * symbolicLbPerBranch[j];
+                sourceSymbolicUpperBias +=
+                    concretizedOutputSymbolicUb[i] * symbolicLowerBiasPerBranch[j];
+            }
+        }
+    }
+
+    // Concretize the source neuron to get upper and lower bounds for the symbolic expression.
+    // The neuron's final score is the range of the concrete bounds divided by the branch count.
+    double scoreLower = sourceSymbolicLb > 0
+                          ? sourceSymbolicLb * sourceLb + sourceSymbolicLowerBias
+                          : sourceSymbolicLb * sourceUb + sourceSymbolicLowerBias;
+    double scoreUpper = sourceSymbolicUb > 0
+                          ? sourceSymbolicUb * sourceUb + sourceSymbolicUpperBias
+                          : sourceSymbolicUb * sourceLb + sourceSymbolicUpperBias;
+
+    return ( scoreUpper - scoreLower ) / branchCount;
+}
+
+void NetworkLevelReasoner::initializeBBPSBranchingMaps()
+{
+    // Clear BBPS branching points and branch symbolic bound maps.
+    _neuronToBBPSBranchingPoints.clear();
+    _neuronToSymbolicLbPerBranch.clear();
+    _neuronToSymbolicUbPerBranch.clear();
+    _neuronToSymbolicLowerBiasPerBranch.clear();
+    _neuronToSymbolicUpperBiasPerBranch.clear();
+
+    // Calculate branching points, symbolic bounds for non-fixed neurons which support branching.
+    for ( const auto &pair : _layerIndexToLayer )
+    {
+        const Layer *layer = pair.second;
+        for ( const auto &index : layer->getNonfixedNeurons() )
+        {
+            if ( supportsInvpropBranching( layer->getLayerType() ) )
+            {
+                std::pair<NeuronIndex, double> point = calculateBranchingPoint( index );
+                _neuronToBBPSBranchingPoints.insert( index, point );
+
+                NeuronIndex sourceIndex = point.first;
+                double value = point.second;
+                const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+                double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+                double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+                const Vector<double> values = Vector<double>( { sourceLb, value, sourceUb } );
+
+                unsigned branchCount = values.size() - 1;
+                Vector<double> symbolicLbPerBranch = Vector<double>( branchCount, 0 );
+                Vector<double> symbolicUbPerBranch = Vector<double>( branchCount, 0 );
+                Vector<double> symbolicLowerBiasPerBranch = Vector<double>( branchCount, 0 );
+                Vector<double> symbolicUpperBiasPerBranch = Vector<double>( branchCount, 0 );
+
+                calculateSymbolicBoundsPerBranch( index,
+                                                  sourceIndex,
+                                                  values,
+                                                  symbolicLbPerBranch,
+                                                  symbolicUbPerBranch,
+                                                  symbolicLowerBiasPerBranch,
+                                                  symbolicUpperBiasPerBranch,
+                                                  branchCount );
+
+                _neuronToSymbolicLbPerBranch.insert( index, symbolicLbPerBranch );
+                _neuronToSymbolicUbPerBranch.insert( index, symbolicUbPerBranch );
+                _neuronToSymbolicLowerBiasPerBranch.insert( index, symbolicLowerBiasPerBranch );
+                _neuronToSymbolicUpperBiasPerBranch.insert( index, symbolicUpperBiasPerBranch );
+            }
+        }
+    }
+}
+
+const std::pair<NeuronIndex, double>
+NetworkLevelReasoner::calculateBranchingPoint( NeuronIndex index ) const
+{
+    const Layer *layer = _layerIndexToLayer[index._layer];
+    unsigned neuron = index._neuron;
+    ASSERT( layer->neuronNonfixed( neuron ) );
+    std::pair<NeuronIndex, double> point;
+
+    // Heuristically generate candidates for branching points.
+    Vector<std::pair<NeuronIndex, double>> candidates =
+        generateBranchingPointCandidates( layer, neuron );
+    unsigned numberOfCandidates = candidates.size();
+
+    if ( numberOfCandidates == 1 )
+    {
+        point = candidates[0];
+    }
+    else
+    {
+        Vector<double> scores( numberOfCandidates, 0 );
+        double minScore = FloatUtils::infinity();
+        unsigned minScoreIndex = 0;
+        for ( unsigned i = 0; i < numberOfCandidates; ++i )
+        {
+            // Calculate branch symbolic bounds for every candidate.
+            NeuronIndex sourceIndex = candidates[i].first;
+            double value = candidates[i].second;
+            const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+            double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+            double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+            const Vector<double> values = Vector<double>( { sourceLb, value, sourceUb } );
+
+            unsigned branchCount = values.size() - 1;
+            Vector<double> symbolicLbPerBranch = Vector<double>( branchCount, 0 );
+            Vector<double> symbolicUbPerBranch = Vector<double>( branchCount, 0 );
+            Vector<double> symbolicLowerBiasPerBranch = Vector<double>( branchCount, 0 );
+            Vector<double> symbolicUpperBiasPerBranch = Vector<double>( branchCount, 0 );
+            calculateSymbolicBoundsPerBranch( index,
+                                              sourceIndex,
+                                              values,
+                                              symbolicLbPerBranch,
+                                              symbolicUbPerBranch,
+                                              symbolicLowerBiasPerBranch,
+                                              symbolicUpperBiasPerBranch,
+                                              branchCount );
+
+            // Select candidate which minimizes tightening loss.
+            scores[i] = calculateTighteningLoss( values,
+                                                 symbolicLbPerBranch,
+                                                 symbolicUbPerBranch,
+                                                 symbolicLowerBiasPerBranch,
+                                                 symbolicUpperBiasPerBranch,
+                                                 branchCount );
+            if ( scores[i] < minScore )
+            {
+                minScore = scores[i];
+                minScoreIndex = i;
+            }
+        }
+        point = candidates[minScoreIndex];
+    }
+
+    const std::pair<NeuronIndex, double> branchingPoint( point );
+    return branchingPoint;
+}
+
+const Vector<std::pair<NeuronIndex, double>>
+NetworkLevelReasoner::generateBranchingPointCandidates( const Layer *layer, unsigned i ) const
+{
+    ASSERT( layer->neuronNonfixed( i ) );
+    Layer::Type type = layer->getLayerType();
+
+    switch ( type )
+    {
+    case Layer::RELU:
+    case Layer::LEAKY_RELU:
+    case Layer::SIGN:
+    case Layer::ABSOLUTE_VALUE:
+    {
+        return generateBranchingPointCandidatesAtZero( layer, i );
+        break;
+    }
+    case Layer::ROUND:
+    {
+        return generateBranchingPointCandidatesForRound( layer, i );
+        break;
+    }
+    case Layer::SIGMOID:
+    {
+        return generateBranchingPointCandidatesForSigmoid( layer, i );
+        break;
+    }
+    case Layer::MAX:
+    {
+        return generateBranchingPointCandidatesForMax( layer, i );
+        break;
+    }
+    case Layer::SOFTMAX:
+    {
+        return generateBranchingPointCandidatesForSoftmax( layer, i );
+        break;
+    }
+    case Layer::BILINEAR:
+    {
+        return generateBranchingPointCandidatesForBilinear( layer, i );
+        break;
+    }
+    default:
+    {
+        printf( "Error! Neuron type %u unsupported\n", type );
+        throw MarabouError( MarabouError::NETWORK_LEVEL_REASONER_ACTIVATION_NOT_SUPPORTED );
+        break;
+    }
+    }
+}
+
+const Vector<std::pair<NeuronIndex, double>>
+NetworkLevelReasoner::generateBranchingPointCandidatesAtZero( const Layer *layer, unsigned i ) const
+{
+    // A Relu/Sign/Abs/Leaky Relu activation is only branched at zero.
+    Vector<std::pair<NeuronIndex, double>> candidates;
+    NeuronIndex sourceIndex = *layer->getActivationSources( i ).begin();
+    std::pair<NeuronIndex, double> point( sourceIndex, 0 );
+    candidates.append( point );
+    const Vector<std ::pair<NeuronIndex, double>> branchingPointCandidates( candidates );
+    return branchingPointCandidates;
+}
+
+const Vector<std::pair<NeuronIndex, double>>
+NetworkLevelReasoner::generateBranchingPointCandidatesForRound( const Layer *layer,
+                                                                unsigned i ) const
+{
+    // For a Round activation, the two candidates are selected as the highest value which
+    // rounds to the source's lb, and the lowest value which rounds to the source's ub.
+    Vector<std::pair<NeuronIndex, double>> candidates;
+    NeuronIndex sourceIndex = *layer->getActivationSources( i ).begin();
+    const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+    double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+    double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+    std::pair<NeuronIndex, double> pointLower(
+        sourceIndex,
+        FloatUtils::round( sourceLb ) + 0.5 -
+            GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+    std::pair<NeuronIndex, double> pointUpper(
+        sourceIndex,
+        FloatUtils::round( sourceUb ) - 0.5 +
+            GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+    candidates.append( pointLower );
+    candidates.append( pointUpper );
+    const Vector<std::pair<NeuronIndex, double>> branchingPointCandidates( candidates );
+    return branchingPointCandidates;
+}
+
+const Vector<std::pair<NeuronIndex, double>>
+NetworkLevelReasoner::generateBranchingPointCandidatesForSigmoid( const Layer *layer,
+                                                                  unsigned i ) const
+{
+    // For a Sigmoid activation, sample candidates uniformly in [sourceLb, sourceUb].
+    Vector<std::pair<NeuronIndex, double>> candidates;
+    NeuronIndex sourceIndex = *layer->getActivationSources( i ).begin();
+    const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+    double sourceLb = sourceLayer->getLb( sourceIndex._neuron );
+    double sourceUb = sourceLayer->getUb( sourceIndex._neuron );
+    unsigned numberOfCandidates = GlobalConfiguration::PMNR_BBPS_BRANCHING_CANDIDATES;
+    for ( unsigned j = 0; j < numberOfCandidates; ++j )
+    {
+        std::pair<NeuronIndex, double> point( sourceIndex,
+                                              sourceLb + ( j + 1 ) * ( sourceUb - sourceLb ) /
+                                                             ( numberOfCandidates + 1 ) );
+        candidates.append( point );
+    }
+    const Vector<std::pair<NeuronIndex, double>> branchingPointCandidates( candidates );
+    return branchingPointCandidates;
+}
+
+const Vector<std::pair<NeuronIndex, double>>
+NetworkLevelReasoner::generateBranchingPointCandidatesForMax( const Layer *layer, unsigned i ) const
+{
+    // For a Max activation, calculate source index of largest lower bound
+    // and sample candidates uniformly in [sourceLb, sourceUb].
+    Vector<std::pair<NeuronIndex, double>> candidates;
+    List<NeuronIndex> sources = layer->getActivationSources( i );
+    NeuronIndex indexOfMaxLowerBound = *( sources.begin() );
+    double maxLowerBound = FloatUtils::negativeInfinity();
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+        unsigned sourceNeuron = sourceIndex._neuron;
+        double sourceLb = sourceLayer->getLb( sourceNeuron );
+        if ( maxLowerBound < sourceLb )
+        {
+            indexOfMaxLowerBound = sourceIndex;
+            maxLowerBound = sourceLb;
+        }
+    }
+
+    const Layer *sourceLayer = _layerIndexToLayer[indexOfMaxLowerBound._layer];
+    unsigned sourceNeuron = indexOfMaxLowerBound._neuron;
+    double sourceLb = sourceLayer->getLb( sourceNeuron );
+    double sourceUb = sourceLayer->getUb( sourceNeuron );
+    unsigned numberOfCandidates = GlobalConfiguration::PMNR_BBPS_BRANCHING_CANDIDATES;
+    for ( unsigned j = 0; j < numberOfCandidates; ++j )
+    {
+        std::pair<NeuronIndex, double> point( indexOfMaxLowerBound,
+                                              sourceLb + ( j + 1 ) * ( sourceUb - sourceLb ) /
+                                                             ( numberOfCandidates + 1 ) );
+        candidates.append( point );
+    }
+    const Vector<std::pair<NeuronIndex, double>> branchingPointCandidates( candidates );
+    return branchingPointCandidates;
+}
+
+const Vector<std::pair<NeuronIndex, double>>
+NetworkLevelReasoner::generateBranchingPointCandidatesForSoftmax( const Layer *layer,
+                                                                  unsigned i ) const
+{
+    // For a Softmax activation, calculate this neuron's source index in the Softmax
+    // and sample candidates uniformly in [sourceLb, sourceUb].
+    Vector<std::pair<NeuronIndex, double>> candidates;
+    List<NeuronIndex> sources = layer->getActivationSources( i );
+    NeuronIndex selfIndex( 0, 0 );
+    Set<unsigned> handledInputNeurons;
+    for ( unsigned j = 0; j < i; ++j )
+    {
+        for ( const auto &sourceIndex : layer->getActivationSources( j ) )
+        {
+            if ( !handledInputNeurons.exists( sourceIndex._neuron ) )
+            {
+                handledInputNeurons.insert( sourceIndex._neuron );
+                break;
+            }
+        }
+    }
+    for ( const auto &sourceIndex : sources )
+    {
+        if ( !handledInputNeurons.exists( sourceIndex._neuron ) )
+        {
+            selfIndex = sourceIndex;
+            break;
+        }
+    }
+
+    const Layer *sourceLayer = _layerIndexToLayer[selfIndex._layer];
+    unsigned sourceNeuron = selfIndex._neuron;
+    double sourceLb = sourceLayer->getLb( sourceNeuron );
+    double sourceUb = sourceLayer->getUb( sourceNeuron );
+    unsigned numberOfCandidates = GlobalConfiguration::PMNR_BBPS_BRANCHING_CANDIDATES;
+    for ( unsigned j = 0; j < numberOfCandidates; ++j )
+    {
+        std::pair<NeuronIndex, double> point( selfIndex,
+                                              sourceLb + ( j + 1 ) * ( sourceUb - sourceLb ) /
+                                                             ( numberOfCandidates + 1 ) );
+        candidates.append( point );
+    }
+    const Vector<std::pair<NeuronIndex, double>> branchingPointCandidates( candidates );
+    return branchingPointCandidates;
+}
+
+const Vector<std::pair<NeuronIndex, double>>
+NetworkLevelReasoner::generateBranchingPointCandidatesForBilinear( const Layer *layer,
+                                                                   unsigned i ) const
+{
+    // For a Bilinear activation, sample candidates uniformly from sources' [sourceLb, sourceUb].
+    Vector<std::pair<NeuronIndex, double>> candidates;
+    List<NeuronIndex> sources = layer->getActivationSources( i );
+    Vector<double> sourceLbs;
+    Vector<double> sourceUbs;
+    Vector<unsigned> sourceNeurons;
+    Vector<unsigned> sourceLayerIndices;
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+        unsigned sourceNeuron = sourceIndex._neuron;
+        double sourceLb = sourceLayer->getLb( sourceNeuron );
+        double sourceUb = sourceLayer->getUb( sourceNeuron );
+
+        sourceLayerIndices.append( sourceLayer->getLayerIndex() );
+        sourceNeurons.append( sourceNeuron );
+        sourceLbs.append( sourceLb );
+        sourceUbs.append( sourceUb );
+    }
+
+    for ( unsigned j = 0; j < sources.size(); ++j )
+    {
+        unsigned candidatesPerDimension =
+            GlobalConfiguration::PMNR_BBPS_BRANCHING_CANDIDATES / sources.size();
+        for ( unsigned k = 0; k < candidatesPerDimension; ++k )
+        {
+            std::pair<NeuronIndex, double> point(
+                NeuronIndex( sourceLayerIndices[j], sourceNeurons[j] ),
+                sourceLbs[j] +
+                    ( k + 1 ) * ( sourceUbs[j] - sourceLbs[j] ) / ( candidatesPerDimension + 1 ) );
+            candidates.append( point );
+        }
+    }
+    const Vector<std::pair<NeuronIndex, double>> branchingPointCandidates( candidates );
+    return branchingPointCandidates;
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranch(
+    NeuronIndex index,
+    NeuronIndex sourceIndex,
+    const Vector<double> &values,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch,
+    unsigned branchCount ) const
+{
+    ASSERT( symbolicLbPerBranch.size() == branchCount );
+    ASSERT( symbolicUbPerBranch.size() == branchCount );
+    ASSERT( symbolicLowerBiasPerBranch.size() == branchCount );
+    ASSERT( symbolicUpperBiasPerBranch.size() == branchCount );
+    ASSERT( values.size() == branchCount + 1 );
+
+    unsigned layerIndex = index._layer;
+    Layer *layer = _layerIndexToLayer[layerIndex];
+    ASSERT( layer->neuronNonfixed( index._neuron ) );
+    Layer::Type type = layer->getLayerType();
+
+    for ( unsigned i = 0; i < branchCount; ++i )
+    {
+        switch ( type )
+        {
+        case Layer::RELU:
+            calculateSymbolicBoundsPerBranchForRelu( i,
+                                                     values[i],
+                                                     values[i + 1],
+                                                     symbolicLbPerBranch,
+                                                     symbolicUbPerBranch,
+                                                     symbolicLowerBiasPerBranch,
+                                                     symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::ABSOLUTE_VALUE:
+            calculateSymbolicBoundsPerBranchForAbsoluteValue( i,
+                                                              values[i],
+                                                              values[i + 1],
+                                                              symbolicLbPerBranch,
+                                                              symbolicUbPerBranch,
+                                                              symbolicLowerBiasPerBranch,
+                                                              symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::SIGN:
+            calculateSymbolicBoundsPerBranchForSign( i,
+                                                     values[i],
+                                                     values[i + 1],
+                                                     symbolicLbPerBranch,
+                                                     symbolicUbPerBranch,
+                                                     symbolicLowerBiasPerBranch,
+                                                     symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::ROUND:
+            calculateSymbolicBoundsPerBranchForRound( i,
+                                                      values[i],
+                                                      values[i + 1],
+                                                      symbolicLbPerBranch,
+                                                      symbolicUbPerBranch,
+                                                      symbolicLowerBiasPerBranch,
+                                                      symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::SIGMOID:
+            calculateSymbolicBoundsPerBranchForSigmoid( i,
+                                                        values[i],
+                                                        values[i + 1],
+                                                        symbolicLbPerBranch,
+                                                        symbolicUbPerBranch,
+                                                        symbolicLowerBiasPerBranch,
+                                                        symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::LEAKY_RELU:
+            calculateSymbolicBoundsPerBranchForLeakyRelu( index,
+                                                          i,
+                                                          values[i],
+                                                          values[i + 1],
+                                                          symbolicLbPerBranch,
+                                                          symbolicUbPerBranch,
+                                                          symbolicLowerBiasPerBranch,
+                                                          symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::MAX:
+            calculateSymbolicBoundsPerBranchForMax( index,
+                                                    sourceIndex,
+                                                    i,
+                                                    values[i],
+                                                    values[i + 1],
+                                                    symbolicLbPerBranch,
+                                                    symbolicUbPerBranch,
+                                                    symbolicLowerBiasPerBranch,
+                                                    symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::SOFTMAX:
+            calculateSymbolicBoundsPerBranchForSoftmax( index,
+                                                        sourceIndex,
+                                                        i,
+                                                        values[i],
+                                                        values[i + 1],
+                                                        symbolicLbPerBranch,
+                                                        symbolicUbPerBranch,
+                                                        symbolicLowerBiasPerBranch,
+                                                        symbolicUpperBiasPerBranch );
+            break;
+
+        case Layer::BILINEAR:
+            calculateSymbolicBoundsPerBranchForBilinear( index,
+                                                         sourceIndex,
+                                                         i,
+                                                         values[i],
+                                                         values[i + 1],
+                                                         symbolicLbPerBranch,
+                                                         symbolicUbPerBranch,
+                                                         symbolicLowerBiasPerBranch,
+                                                         symbolicUpperBiasPerBranch );
+            break;
+
+        default:
+        {
+            printf( "Error! Neuron type %u unsupported\n", type );
+            throw MarabouError( MarabouError::NETWORK_LEVEL_REASONER_ACTIVATION_NOT_SUPPORTED );
+            break;
+        }
+        }
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForRelu(
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    if ( !FloatUtils::isNegative( sourceLb ) )
+    {
+        // Phase active
+        // Symbolic bound: x_b <= x_f <= x_b
+        symbolicUbPerBranch[i] = 1;
+        symbolicUpperBiasPerBranch[i] = 0;
+        symbolicLbPerBranch[i] = 1;
+        symbolicLowerBiasPerBranch[i] = 0;
+    }
+    else if ( !FloatUtils::isPositive( sourceUb ) )
+    {
+        // Phase inactive
+        // Symbolic bound: 0 <= x_f <= 0
+        symbolicUbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = 0;
+        symbolicLbPerBranch[i] = 0;
+        symbolicLowerBiasPerBranch[i] = 0;
+    }
+    else
+    {
+        // ReLU not fixed
+        // Symbolic upper bound: x_f <= (x_b - l) * u / ( u - l)
+        double weight = sourceUb / ( sourceUb - sourceLb );
+        symbolicUbPerBranch[i] = weight;
+        symbolicUpperBiasPerBranch[i] = -sourceLb * weight;
+
+        // For the lower bound, in general, x_f >= lambda * x_b, where
+        // 0 <= lambda <= 1, would be a sound lower bound. We
+        // use the heuristic described in section 4.1 of
+        // https://files.sri.inf.ethz.ch/website/papers/DeepPoly.pdf
+        // to set the value of lambda (either 0 or 1 is considered).
+        if ( sourceUb > -sourceLb )
+        {
+            // lambda = 1
+            // Symbolic lower bound: x_f >= x_b
+            symbolicLbPerBranch[i] = 1;
+            symbolicLowerBiasPerBranch[i] = 0;
+        }
+        else
+        {
+            // lambda = 1
+            // Symbolic lower bound: x_f >= 0
+            symbolicLbPerBranch[i] = 0;
+            symbolicLowerBiasPerBranch[i] = 0;
+        }
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForAbsoluteValue(
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    if ( !FloatUtils::isNegative( sourceLb ) )
+    {
+        // Phase active
+        // Symbolic bound: x_b <= x_f <= x_b
+        symbolicUbPerBranch[i] = 1;
+        symbolicUpperBiasPerBranch[i] = 0;
+        symbolicLbPerBranch[i] = 1;
+        symbolicLowerBiasPerBranch[i] = 0;
+    }
+    else if ( !FloatUtils::isPositive( sourceUb ) )
+    {
+        // Phase inactive
+        // Symbolic bound: -x_b <= x_f <= -x_b
+        symbolicUbPerBranch[i] = -1;
+        symbolicUpperBiasPerBranch[i] = 0;
+        symbolicLbPerBranch[i] = -1;
+        symbolicLowerBiasPerBranch[i] = 0;
+    }
+    else
+    {
+        // AbsoluteValue not fixed
+        // Naive concretization: 0 <= x_f <= max(-lb, ub)
+        symbolicUbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = FloatUtils::max( -sourceLb, sourceUb );
+
+        symbolicLbPerBranch[i] = 0;
+        symbolicLowerBiasPerBranch[i] = 0;
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForSign(
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    if ( !FloatUtils::isNegative( sourceLb ) )
+    {
+        // Phase active
+        // Symbolic bound: 1 <= x_f <= 1
+        symbolicUbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = 1;
+        symbolicLbPerBranch[i] = 0;
+        symbolicLowerBiasPerBranch[i] = 1;
+    }
+    else if ( !FloatUtils::isPositive( sourceUb ) )
+    {
+        // Phase inactive
+        // Symbolic bound: -1 <= x_f <= -1
+        symbolicUbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = -1;
+        symbolicLbPerBranch[i] = 0;
+        symbolicLowerBiasPerBranch[i] = -1;
+    }
+    else
+    {
+        // Sign not fixed
+        // Use the relaxation defined in https://arxiv.org/pdf/2011.02948.pdf
+        // Symbolic upper bound: x_f <= -2 / l * x_b + 1
+        symbolicUbPerBranch[i] = -2 / sourceLb;
+        symbolicUpperBiasPerBranch[i] = 1;
+
+        // Symbolic lower bound: x_f >= (2 / u) * x_b - 1
+        symbolicLbPerBranch[i] = 2 / sourceUb;
+        symbolicLowerBiasPerBranch[i] = -1;
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForRound(
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    double sourceUbRound = FloatUtils::round( sourceUb );
+    double sourceLbRound = FloatUtils::round( sourceLb );
+
+    if ( sourceUbRound == sourceLbRound )
+    {
+        symbolicUbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = sourceUbRound;
+        symbolicLbPerBranch[i] = 0;
+        symbolicLowerBiasPerBranch[i] = sourceLbRound;
+    }
+    else
+    {
+        // Round not fixed
+        // Symbolic upper bound: x_f <= x_b + 0.5
+        symbolicUbPerBranch[i] = 1;
+        symbolicUpperBiasPerBranch[i] = 0.5;
+
+        // Symbolic lower bound: x_f >= x_b - 0.5
+        symbolicLbPerBranch[i] = 1;
+        symbolicLowerBiasPerBranch[i] = -0.5;
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForSigmoid(
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    double sourceUbSigmoid = SigmoidConstraint::sigmoid( sourceUb );
+    double sourceLbSigmoid = SigmoidConstraint::sigmoid( sourceLb );
+
+    if ( sourceUb == sourceLb )
+    {
+        symbolicUbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = sourceUbSigmoid;
+        symbolicLbPerBranch[i] = 0;
+        symbolicLowerBiasPerBranch[i] = sourceLbSigmoid;
+    }
+    else
+    {
+        double lambda = ( sourceUbSigmoid - sourceLbSigmoid ) / ( sourceUb - sourceLb );
+        double lambdaPrime = std::min( SigmoidConstraint::sigmoidDerivative( sourceLb ),
+                                       SigmoidConstraint::sigmoidDerivative( sourceUb ) );
+
+        // update lower bound
+        if ( FloatUtils::isPositive( sourceLb ) )
+        {
+            symbolicLbPerBranch[i] = lambda;
+            symbolicLowerBiasPerBranch[i] = sourceLbSigmoid - lambda * sourceLb;
+        }
+        else
+        {
+            symbolicLbPerBranch[i] = lambdaPrime;
+            symbolicLowerBiasPerBranch[i] = sourceLbSigmoid - lambdaPrime * sourceLb;
+        }
+
+        // update upper bound
+        if ( !FloatUtils::isPositive( sourceUb ) )
+        {
+            symbolicUbPerBranch[i] = lambda;
+            symbolicUpperBiasPerBranch[i] = sourceUbSigmoid - lambda * sourceUb;
+        }
+        else
+        {
+            symbolicUbPerBranch[i] = lambdaPrime;
+            symbolicUpperBiasPerBranch[i] = sourceUbSigmoid - lambdaPrime * sourceUb;
+        }
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForLeakyRelu(
+    NeuronIndex index,
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    double slope = _layerIndexToLayer[index._layer]->getAlpha();
+    if ( !FloatUtils::isNegative( sourceLb ) )
+    {
+        // Phase active
+        // Symbolic bound: x_b <= x_f <= x_b
+        symbolicUbPerBranch[i] = 1;
+        symbolicUpperBiasPerBranch[i] = 0;
+        symbolicLbPerBranch[i] = 1;
+        symbolicLowerBiasPerBranch[i] = 0;
+    }
+    else if ( !FloatUtils::isPositive( sourceUb ) )
+    {
+        // Phase inactive
+        // Symbolic bound: slope * x_b <= x_f <= slope * x_b
+        symbolicUbPerBranch[i] = slope;
+        symbolicUpperBiasPerBranch[i] = 0;
+        symbolicLbPerBranch[i] = slope;
+        symbolicLowerBiasPerBranch[i] = 0;
+    }
+    else
+    {
+        // LeakyReLU not fixed
+        // Symbolic upper bound: x_f <= (x_b - l) * u / ( u - l)
+        double width = sourceUb - sourceLb;
+        double weight = ( sourceUb - slope * sourceLb ) / width;
+
+        if ( slope <= 1 )
+        {
+            symbolicUbPerBranch[i] = weight;
+            symbolicUpperBiasPerBranch[i] = ( ( slope - 1 ) * sourceUb * sourceLb ) / width;
+
+            // For the lower bound, in general, x_f >= lambda * x_b, where
+            // 0 <= lambda <= 1, would be a sound lower bound. We
+            // use the heuristic described in section 4.1 of
+            // https://files.sri.inf.ethz.ch/website/papers/DeepPoly.pdf
+            // to set the value of lambda (either 0 or 1 is considered).
+            if ( sourceUb > sourceLb )
+            {
+                // lambda = 1
+                // Symbolic lower bound: x_f >= x_b
+                symbolicLbPerBranch[i] = 1;
+                symbolicLowerBiasPerBranch[i] = 0;
+            }
+            else
+            {
+                // lambda = 1
+                // Symbolic lower bound: x_f >= 0
+                // Concrete lower bound: x_f >= 0
+                symbolicLbPerBranch[i] = slope;
+                symbolicLowerBiasPerBranch[i] = 0;
+            }
+        }
+        else
+        {
+            symbolicLbPerBranch[i] = weight;
+            symbolicLowerBiasPerBranch[i] = ( ( slope - 1 ) * sourceUb * sourceLb ) / width;
+
+            if ( sourceUb > sourceLb )
+            {
+                symbolicUbPerBranch[i] = 1;
+                symbolicUpperBiasPerBranch[i] = 0;
+            }
+            else
+            {
+                symbolicUbPerBranch[i] = slope;
+                symbolicLowerBiasPerBranch[i] = 0;
+            }
+        }
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForMax(
+    NeuronIndex index,
+    NeuronIndex chosenSourceIndex,
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    unsigned layerIndex = index._layer;
+    unsigned neuron = index._neuron;
+    Layer *layer = _layerIndexToLayer[layerIndex];
+    List<NeuronIndex> sources = layer->getActivationSources( neuron );
+
+    NeuronIndex indexOfMaxLowerBound = *( sources.begin() );
+    double maxLowerBound = FloatUtils::negativeInfinity();
+    double maxUpperBound = FloatUtils::negativeInfinity();
+
+    Map<NeuronIndex, double> sourceLbs;
+    Map<NeuronIndex, double> sourceUbs;
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+        unsigned sourceNeuron = sourceIndex._neuron;
+        double currentLb =
+            sourceIndex != chosenSourceIndex ? sourceLayer->getLb( sourceNeuron ) : sourceLb;
+        double currentUb =
+            sourceIndex != chosenSourceIndex ? sourceLayer->getUb( sourceNeuron ) : sourceUb;
+        sourceLbs[sourceIndex] = currentLb;
+        sourceUbs[sourceIndex] = currentUb;
+
+        if ( maxLowerBound < currentLb )
+        {
+            indexOfMaxLowerBound = sourceIndex;
+            maxLowerBound = currentLb;
+        }
+        if ( maxUpperBound < currentUb )
+        {
+            maxUpperBound = currentUb;
+        }
+    }
+
+    // The phase is fixed if the lower-bound of a source variable x_b is
+    // larger than the upper-bounds of the other source variables.
+    bool phaseFixed = true;
+    for ( const auto &sourceIndex : sources )
+    {
+        if ( sourceIndex != indexOfMaxLowerBound &&
+             FloatUtils::gt( sourceUbs[sourceIndex], maxLowerBound ) )
+        {
+            phaseFixed = false;
+            break;
+        }
+    }
+
+    if ( phaseFixed )
+    {
+        // Phase fixed
+        // Symbolic bound: x_b <= x_f <= x_b
+        // Concretized bound (if chosenSourceIndex != indexOfMaxLowerBound): x_b.lb <= x_f <=
+        // x_b.ub.
+        if ( chosenSourceIndex != indexOfMaxLowerBound )
+        {
+            symbolicLbPerBranch[i] = 0;
+            symbolicLowerBiasPerBranch[i] = sourceLbs[indexOfMaxLowerBound];
+            symbolicUbPerBranch[i] = 0;
+            symbolicUpperBiasPerBranch[i] = sourceUbs[indexOfMaxLowerBound];
+        }
+        else
+        {
+            symbolicLbPerBranch[i] = 1;
+            symbolicLowerBiasPerBranch[i] = 0;
+            symbolicUbPerBranch[i] = 1;
+            symbolicUpperBiasPerBranch[i] = 0;
+        }
+    }
+    else
+    {
+        // MaxPool not fixed
+        // Symbolic bounds: x_b <= x_f <= maxUpperBound
+        // Concretized bound (if chosenSourceIndex != indexOfMaxLowerBound): x_b.lb <= x_f <=
+        // maxUpperBound.
+        if ( chosenSourceIndex != indexOfMaxLowerBound )
+        {
+            symbolicLbPerBranch[i] = 0;
+            symbolicLowerBiasPerBranch[i] = sourceLbs[indexOfMaxLowerBound];
+            symbolicUbPerBranch[i] = 0;
+            symbolicUpperBiasPerBranch[i] = maxUpperBound;
+        }
+        else
+        {
+            symbolicLbPerBranch[i] = 1;
+            symbolicLowerBiasPerBranch[i] = 0;
+            symbolicUbPerBranch[i] = 0;
+            symbolicUpperBiasPerBranch[i] = maxUpperBound;
+        }
+    }
+}
+
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForSoftmax(
+    NeuronIndex index,
+    NeuronIndex chosenSourceIndex,
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    unsigned layerIndex = index._layer;
+    unsigned neuron = index._neuron;
+    Layer *layer = _layerIndexToLayer[layerIndex];
+    List<NeuronIndex> sources = layer->getActivationSources( neuron );
+    Vector<double> sourceLbs;
+    Vector<double> sourceUbs;
+    Vector<double> sourceMids;
+    Vector<double> targetLbs;
+    Vector<double> targetUbs;
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+        unsigned sourceNeuron = sourceIndex._neuron;
+        double currentLb =
+            sourceIndex != chosenSourceIndex ? sourceLayer->getLb( sourceNeuron ) : sourceLb;
+        double currentUb =
+            sourceIndex != chosenSourceIndex ? sourceLayer->getUb( sourceNeuron ) : sourceUb;
+        sourceLbs.append( currentLb - GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+        sourceUbs.append( currentUb + GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS );
+        sourceMids.append( ( currentLb + currentUb ) / 2 );
+        targetLbs.append( layer->getLb( neuron ) );
+        targetUbs.append( layer->getUb( neuron ) );
+    }
+
+    unsigned selfIndex = 0;
+    Set<unsigned> handledInputNeurons;
+    for ( unsigned i = 0; i < neuron; ++i )
+    {
+        for ( const auto &sourceIndex : layer->getActivationSources( i ) )
+        {
+            if ( !handledInputNeurons.exists( sourceIndex._neuron ) )
+            {
+                handledInputNeurons.insert( sourceIndex._neuron );
+                break;
+            }
+        }
+    }
+    for ( const auto &sourceIndex : sources )
+    {
+        if ( handledInputNeurons.exists( sourceIndex._neuron ) )
+            ++selfIndex;
+        else
+        {
+            break;
+        }
+    }
+
+    double lb = std::max( Layer::linearLowerBound( sourceLbs, sourceUbs, selfIndex ),
+                          layer->getLb( neuron ) );
+    double ub = std::min( Layer::linearUpperBound( sourceLbs, sourceUbs, selfIndex ),
+                          layer->getUb( neuron ) );
+    targetLbs[selfIndex] = lb;
+    targetUbs[selfIndex] = ub;
+
+    if ( FloatUtils::areEqual( lb, ub ) )
+    {
+        symbolicUbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = ub;
+        symbolicLbPerBranch[i] = 0;
+        symbolicLowerBiasPerBranch[i] = lb;
+    }
+    else
+    {
+        // Compute Softmax symbolic bound. Neurons other than given source neuron are concretized.
+        if ( Options::get()->getSoftmaxBoundType() == SoftmaxBoundType::LOG_SUM_EXP_DECOMPOSITION )
+        {
+            bool useLSE2 = false;
+            for ( const auto &lb : targetLbs )
+            {
+                if ( lb > GlobalConfiguration::SOFTMAX_LSE2_THRESHOLD )
+                    useLSE2 = true;
+            }
+            unsigned inputIndex = 0;
+            if ( !useLSE2 )
+            {
+                symbolicLowerBiasPerBranch[i] =
+                    Layer::LSELowerBound( sourceMids, sourceLbs, sourceUbs, selfIndex );
+                for ( const auto &sourceIndex : sources )
+                {
+                    const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+                    double dldj = Layer::dLSELowerBound(
+                        sourceMids, sourceLbs, sourceUbs, selfIndex, inputIndex );
+                    if ( sourceIndex != chosenSourceIndex )
+                    {
+                        double concretizedLowerBias =
+                            dldj > 0 ? dldj * sourceLayer->getLb( sourceIndex._neuron )
+                                     : dldj * sourceLayer->getUb( sourceIndex._neuron );
+                        symbolicLowerBiasPerBranch[i] += concretizedLowerBias;
+                    }
+                    else
+                    {
+                        symbolicLbPerBranch[i] = dldj;
+                    }
+                    symbolicLowerBiasPerBranch[i] -= dldj * sourceMids[inputIndex];
+                    ++inputIndex;
+                }
+            }
+            else
+            {
+                symbolicLowerBiasPerBranch[i] =
+                    Layer::LSELowerBound2( sourceMids, sourceLbs, sourceUbs, selfIndex );
+                for ( const auto &sourceIndex : sources )
+                {
+                    const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+                    double dldj = Layer::dLSELowerBound2(
+                        sourceMids, sourceLbs, sourceUbs, selfIndex, inputIndex );
+                    if ( sourceIndex != chosenSourceIndex )
+                    {
+                        double concretizedLowerBias =
+                            dldj > 0 ? dldj * sourceLayer->getLb( sourceIndex._neuron )
+                                     : dldj * sourceLayer->getUb( sourceIndex._neuron );
+                        symbolicLowerBiasPerBranch[i] += concretizedLowerBias;
+                    }
+                    else
+                    {
+                        symbolicLbPerBranch[i] = dldj;
+                    }
+                    symbolicLowerBiasPerBranch[i] -= dldj * sourceMids[inputIndex];
+                    ++inputIndex;
+                }
+            }
+
+            symbolicUpperBiasPerBranch[i] =
+                Layer::LSEUpperBound( sourceMids, targetLbs, targetUbs, selfIndex );
+            inputIndex = 0;
+            for ( const auto &sourceIndex : sources )
+            {
+                const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+                double dudj = Layer::dLSEUpperbound(
+                    sourceMids, targetLbs, targetUbs, selfIndex, inputIndex );
+                if ( sourceIndex != chosenSourceIndex )
+                {
+                    double concretizedUpperBias =
+                        dudj > 0 ? dudj * sourceLayer->getUb( sourceIndex._neuron )
+                                 : dudj * sourceLayer->getLb( sourceIndex._neuron );
+                    symbolicUpperBiasPerBranch[i] += concretizedUpperBias;
+                }
+                else
+                {
+                    symbolicUbPerBranch[i] = dudj;
+                }
+                symbolicUpperBiasPerBranch[i] -= dudj * sourceMids[inputIndex];
+                ++inputIndex;
+            }
+        }
+        else if ( Options::get()->getSoftmaxBoundType() ==
+                  SoftmaxBoundType::EXPONENTIAL_RECIPROCAL_DECOMPOSITION )
+        {
+            symbolicLowerBiasPerBranch[i] =
+                Layer::ERLowerBound( sourceMids, sourceLbs, sourceUbs, selfIndex );
+            unsigned inputIndex = 0;
+            for ( const auto &sourceIndex : sources )
+            {
+                const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+                double dldj =
+                    Layer::dERLowerBound( sourceMids, sourceLbs, sourceUbs, selfIndex, inputIndex );
+                if ( sourceIndex != chosenSourceIndex )
+                {
+                    double concretizedLowerBias =
+                        dldj > 0 ? dldj * sourceLayer->getLb( sourceIndex._neuron )
+                                 : dldj * sourceLayer->getUb( sourceIndex._neuron );
+                    symbolicLowerBiasPerBranch[i] += concretizedLowerBias;
+                }
+                else
+                {
+                    symbolicLbPerBranch[i] = dldj;
+                }
+                symbolicLowerBiasPerBranch[i] -= dldj * sourceMids[inputIndex];
+                ++inputIndex;
+            }
+
+            symbolicUpperBiasPerBranch[i] =
+                Layer::ERUpperBound( sourceMids, targetLbs, targetUbs, selfIndex );
+            inputIndex = 0;
+            for ( const auto &sourceIndex : sources )
+            {
+                const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+                double dudj =
+                    Layer::dERUpperBound( sourceMids, targetLbs, targetUbs, selfIndex, inputIndex );
+                if ( sourceIndex != chosenSourceIndex )
+                {
+                    double concretizedUpperBias =
+                        dudj > 0 ? dudj * sourceLayer->getUb( sourceIndex._neuron )
+                                 : dudj * sourceLayer->getLb( sourceIndex._neuron );
+                    symbolicUpperBiasPerBranch[i] += concretizedUpperBias;
+                }
+                else
+                {
+                    symbolicUbPerBranch[i] = dudj;
+                }
+                symbolicUpperBiasPerBranch[i] -= dudj * sourceMids[inputIndex];
+                ++inputIndex;
+            }
+        }
+    }
+}
+void NetworkLevelReasoner::calculateSymbolicBoundsPerBranchForBilinear(
+    NeuronIndex index,
+    NeuronIndex chosenSourceIndex,
+    unsigned i,
+    double sourceLb,
+    double sourceUb,
+    Vector<double> &symbolicLbPerBranch,
+    Vector<double> &symbolicUbPerBranch,
+    Vector<double> &symbolicLowerBiasPerBranch,
+    Vector<double> &symbolicUpperBiasPerBranch ) const
+{
+    unsigned layerIndex = index._layer;
+    unsigned neuron = index._neuron;
+    Layer *layer = _layerIndexToLayer[layerIndex];
+    List<NeuronIndex> sources = layer->getActivationSources( neuron );
+
+    Vector<double> sourceLbs;
+    Vector<double> sourceUbs;
+    Vector<double> sourceValues;
+    Vector<NeuronIndex> sourceNeurons;
+    Vector<unsigned> sourceLayerSizes;
+    Vector<const Layer *> sourceLayers;
+    bool allConstant = true;
+    for ( const auto &sourceIndex : sources )
+    {
+        const Layer *sourceLayer = _layerIndexToLayer[sourceIndex._layer];
+        unsigned sourceNeuron = sourceIndex._neuron;
+        double currentLb =
+            sourceIndex != chosenSourceIndex ? sourceLayer->getLb( sourceNeuron ) : sourceLb;
+        double currentUb =
+            sourceIndex != chosenSourceIndex ? sourceLayer->getUb( sourceNeuron ) : sourceUb;
+
+        sourceLayers.append( sourceLayer );
+        sourceNeurons.append( sourceIndex );
+        sourceLbs.append( currentLb );
+        sourceUbs.append( currentUb );
+
+        if ( !sourceLayer->neuronEliminated( sourceNeuron ) )
+        {
+            allConstant = false;
+        }
+        else
+        {
+            double sourceValue = sourceLayer->getEliminatedNeuronValue( sourceNeuron );
+            sourceValues.append( sourceValue );
+        }
+    }
+
+    if ( allConstant )
+    {
+        // If the both source neurons have been eliminated, this neuron is constant
+        symbolicUbPerBranch[i] = 0;
+        symbolicLbPerBranch[i] = 0;
+        symbolicUpperBiasPerBranch[i] = sourceValues[0] * sourceValues[1];
+        symbolicLowerBiasPerBranch[i] = sourceValues[0] * sourceValues[1];
+    }
+    else
+    {
+        // Symbolic lower bound:
+        // out >= alpha * x + beta * y + gamma
+        // where alpha = lb_y, beta = lb_x, gamma = -lb_x * lb_y.
+
+        // Symbolic upper bound:
+        // out <= alpha * x + beta * y + gamma
+        // where alpha = ub_y, beta = lb_x, gamma = -lb_x * ub_y.
+
+        // Neuron other than given source neuron is concretized.
+
+        double aLower = sourceLbs[1];
+        double aUpper = sourceUbs[1];
+        double bLower = sourceLbs[0];
+        double bUpper = sourceLbs[0];
+        if ( sourceNeurons[0] != chosenSourceIndex )
+        {
+            double concretizedLowerBias =
+                aLower > 0 ? aLower * sourceLayers[0]->getLb( sourceNeurons[0]._neuron )
+                           : aLower * sourceLayers[0]->getUb( sourceNeurons[0]._neuron );
+            double concretizedUpperBias =
+                aUpper > 0 ? aUpper * sourceLayers[0]->getUb( sourceNeurons[0]._neuron )
+                           : aUpper * sourceLayers[0]->getLb( sourceNeurons[0]._neuron );
+            symbolicLbPerBranch[i] = bLower;
+            symbolicUbPerBranch[i] = bUpper;
+            symbolicLowerBiasPerBranch[i] += concretizedLowerBias;
+            symbolicUpperBiasPerBranch[i] += concretizedUpperBias;
+        }
+        else
+        {
+            double concretizedLowerBias =
+                bLower > 0 ? bLower * sourceLayers[1]->getLb( sourceNeurons[1]._neuron )
+                           : bLower * sourceLayers[1]->getUb( sourceNeurons[1]._neuron );
+            double concretizedUpperBias =
+                bUpper > 0 ? bUpper * sourceLayers[1]->getUb( sourceNeurons[1]._neuron )
+                           : bUpper * sourceLayers[1]->getLb( sourceNeurons[1]._neuron );
+            symbolicLbPerBranch[i] = aLower;
+            symbolicUbPerBranch[i] = aUpper;
+            symbolicUpperBiasPerBranch[i] += concretizedUpperBias;
+            symbolicLowerBiasPerBranch[i] += concretizedLowerBias;
+        }
+        symbolicLowerBiasPerBranch[i] += -sourceLbs[0] * sourceLbs[1];
+        symbolicUpperBiasPerBranch[i] += -sourceLbs[0] * sourceUbs[1];
+    }
+}
+
+double
+NetworkLevelReasoner::calculateTighteningLoss( const Vector<double> &values,
+                                               const Vector<double> &symbolicLbPerBranch,
+                                               const Vector<double> &symbolicUbPerBranch,
+                                               const Vector<double> &symbolicLowerBiasPerBranch,
+                                               const Vector<double> &symbolicUpperBiasPerBranch,
+                                               unsigned branchCount ) const
+{
+    ASSERT( symbolicLbPerBranch.size() == branchCount );
+    ASSERT( symbolicUbPerBranch.size() == branchCount );
+    ASSERT( symbolicLowerBiasPerBranch.size() == branchCount );
+    ASSERT( symbolicUpperBiasPerBranch.size() == branchCount );
+    ASSERT( values.size() == branchCount + 1 );
+
+    double score = 0;
+    for ( unsigned i = 0; i < branchCount; ++i )
+    {
+        // Given branch #i symbolic bounds of x_f >= a_l x_b + b_l, x_f <= a_u x_b + b_u, x_b in
+        // [l_i, u_i], calculate integral of ( a_u x_b + b_u ) - ( a_l x_b + b_l ) in [l_i, u_i].
+        score += symbolicUbPerBranch[i] *
+                 ( std::pow( values[i + 1], 2 ) - std::pow( values[i], 2 ) ) / 2;
+        score += symbolicUpperBiasPerBranch[i] * ( values[i + 1] - values[i] );
+        score -= symbolicLbPerBranch[i] *
+                 ( std::pow( values[i + 1], 2 ) - std::pow( values[i], 2 ) ) / 2;
+        score -= symbolicLowerBiasPerBranch[i] * ( values[i + 1] - values[i] );
+    }
+    return score;
+}
+
 const Map<unsigned, Vector<double>>
 NetworkLevelReasoner::getParametersForLayers( const Vector<double> &coeffs ) const
 {
@@ -1259,6 +2762,14 @@ unsigned NetworkLevelReasoner::getNumberOfParametersPerType( Layer::Type t ) con
         return 2;
 
     return 0;
+}
+
+bool NetworkLevelReasoner::supportsInvpropBranching( Layer::Type type ) const
+{
+    // All implemented activations could be branched before INVPROP.
+    return type == Layer::RELU || type == Layer::LEAKY_RELU || type == Layer::SIGN ||
+           type == Layer::ABSOLUTE_VALUE || type == Layer::MAX || type == Layer::ROUND ||
+           type == Layer::SIGMOID || type == Layer::SOFTMAX || type == Layer::BILINEAR;
 }
 
 const Vector<unsigned> NetworkLevelReasoner::getLayersWithNonfixedNeurons() const

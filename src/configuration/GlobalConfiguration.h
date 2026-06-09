@@ -172,6 +172,15 @@ public:
     // Weight decay for PreimageApproximation optimization.
     static const double PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY;
 
+    // Random seed for PMNR (with randomized hyperplanes).
+    static const unsigned PMNR_RANDOM_SEED;
+
+    // Number of selected neurons for PMNR (with heuristically selected hyperplanes).
+    static const unsigned PMNR_SELECTED_NEURONS;
+
+    // Number of candidates for PMNR-BBPS branching points.
+    static const unsigned PMNR_BBPS_BRANCHING_CANDIDATES;
+
     // How often should projected steepest edge reset the reference space?
     static const unsigned PSE_ITERATIONS_BEFORE_RESET;
 

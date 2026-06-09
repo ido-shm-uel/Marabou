@@ -76,6 +76,10 @@ const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_STEP_SIZE 
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_LEARNING_RATE = 0.25;
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY = 0;
 
+const unsigned GlobalConfiguration::PMNR_RANDOM_SEED = 1;
+const unsigned GlobalConfiguration::PMNR_SELECTED_NEURONS = 2;
+const unsigned GlobalConfiguration::PMNR_BBPS_BRANCHING_CANDIDATES = 100;
+
 const bool GlobalConfiguration::USE_HARRIS_RATIO_TEST = true;
 
 const double GlobalConfiguration::SYMBOLIC_TIGHTENING_ROUNDING_CONSTANT = 0.00000000001;
