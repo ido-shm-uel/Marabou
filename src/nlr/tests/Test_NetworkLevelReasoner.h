@@ -14,7 +14,6 @@
 **/
 
 #include "../../engine/tests/MockTableau.h" // TODO: fix this
-#include "DeepPolySoftmaxElement.h"
 #include "FloatUtils.h"
 #include "Layer.h"
 #include "NetworkLevelReasoner.h"
@@ -480,7 +479,6 @@ public:
         nlr.setNeuronVariable( NLR::NeuronIndex( 5, 1 ), 13 );
     }
 
-
     void populateNetworkWithMax( NLR::NetworkLevelReasoner &nlr )
     {
         /*
@@ -741,11 +739,12 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the Round/Sign sources
+        // Mark the Abs sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the ReLU sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 1 );
 
@@ -813,11 +812,12 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the Round/Sign sources
+        // Mark the Round sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the Sign sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 1 );
 
@@ -887,11 +887,12 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the LeakyReLU/Sigmoid sources
+        // Mark the LeakyReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the Sigmoid sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 1 );
 
@@ -957,7 +958,7 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the Softmax/Max sources
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 0, 2, 1 );
         nlr.addActivationSource( 1, 0, 2, 2 );
@@ -968,6 +969,7 @@ public:
         nlr.addActivationSource( 1, 2, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the Max sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 0 );
 
@@ -1031,11 +1033,12 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the ReLU/Bilinear sources
+        // Mark the ReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the Bilinear sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 0 );
 
@@ -1158,7 +1161,6 @@ public:
         nlr.setWeight( 4, 0, 5, 0, 3 );
         nlr.setWeight( 0, 0, 3, 0, -1 );
         nlr.setWeight( 1, 0, 5, 0, 3 );
-
 
         nlr.setBias( 3, 0, 1 );
         nlr.setBias( 5, 0, 1 );
@@ -1627,7 +1629,6 @@ public:
     {
         /*
 
-
           x0      x3  S  x6
 
           x1      x4  S  x7
@@ -1641,7 +1642,7 @@ public:
           x6 x7 x8 = softmax(x3, x4, x5)
 
           x9 = x6 + x7 + x8
-          x10 = x6 + x7 + x8
+          x10 = - x6 - x7 - x8
 
         */
 
@@ -1676,6 +1677,7 @@ public:
         nlr.setBias( 1, 1, 2 );
         nlr.setBias( 1, 2, 3 );
 
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 0 );
         nlr.addActivationSource( 1, 2, 2, 0 );
@@ -1685,7 +1687,6 @@ public:
         nlr.addActivationSource( 1, 0, 2, 2 );
         nlr.addActivationSource( 1, 1, 2, 2 );
         nlr.addActivationSource( 1, 2, 2, 2 );
-
 
         // Variable indexing
         nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
@@ -1728,7 +1729,6 @@ public:
     void populateNetworkSBTSoftmax2( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )
     {
         /*
-
 
           x0      x3  S  x8
 
@@ -1800,6 +1800,7 @@ public:
         nlr.setBias( 1, 3, 2 );
         nlr.setBias( 1, 4, 1 );
 
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 2, 2, 0 );
         nlr.addActivationSource( 1, 4, 2, 0 );
@@ -1874,7 +1875,6 @@ public:
     {
         /*
 
-
           x0    x2
                     x  x4 -- x5
           x1    x3
@@ -1903,9 +1903,9 @@ public:
         nlr.setWeight( 0, 1, 1, 1, 1 );
         nlr.setWeight( 2, 0, 3, 0, -1 );
 
+        // Mark the Bilinear sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 0 );
-
 
         // Variable indexing
         nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
@@ -2188,7 +2188,6 @@ public:
         TS_ASSERT( FloatUtils::areEqual( output[0], -5 ) );
     }
 
-
     void test_evaluate_softmax()
     {
         NLR::NetworkLevelReasoner nlr;
@@ -2282,22 +2281,24 @@ public:
         nlr.setWeight( 0, 1, 1, 1, -3 );
         nlr.setWeight( 0, 1, 1, 2, 1 );
 
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-        nlr.addActivationSource( 1, 2, 2, 2 );
-
         nlr.setWeight( 2, 0, 3, 0, 1 );
         nlr.setWeight( 2, 1, 3, 0, 2 );
         nlr.setWeight( 2, 2, 3, 1, -2 );
         nlr.setWeight( 0, 1, 3, 1, 1 );
 
-        nlr.addActivationSource( 3, 0, 4, 0 );
-        nlr.addActivationSource( 3, 1, 4, 1 );
-        nlr.addActivationSource( 0, 0, 4, 2 );
-
         nlr.setWeight( 4, 0, 5, 0, 1 );
         nlr.setWeight( 4, 1, 5, 0, 1 );
         nlr.setWeight( 4, 2, 5, 0, 1 );
+
+        // Mark the ReLU sources
+        nlr.addActivationSource( 1, 0, 2, 0 );
+        nlr.addActivationSource( 1, 1, 2, 1 );
+        nlr.addActivationSource( 1, 2, 2, 2 );
+
+        // Mark the ReLU sources
+        nlr.addActivationSource( 3, 0, 4, 0 );
+        nlr.addActivationSource( 3, 1, 4, 1 );
+        nlr.addActivationSource( 0, 0, 4, 2 );
 
         // Evaluate
         double input[2];
@@ -2839,11 +2840,12 @@ public:
         nlr.setBias( 5, 0, 0 );
         nlr.setBias( 5, 1, 0 );
 
-        // Mark the ReLU/Abs sources
+        // Mark the ReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the Abs sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 1 );
 
@@ -3543,22 +3545,24 @@ public:
         nlr.setWeight( 0, 1, 1, 1, -3 );
         nlr.setWeight( 0, 1, 1, 2, 1 );
 
-        nlr.addActivationSource( 1, 0, 2, 0 );
-        nlr.addActivationSource( 1, 1, 2, 1 );
-        nlr.addActivationSource( 1, 2, 2, 2 );
-
         nlr.setWeight( 2, 0, 3, 0, 1 );
         nlr.setWeight( 2, 1, 3, 0, 2 );
         nlr.setWeight( 2, 2, 3, 1, -2 );
         nlr.setWeight( 0, 1, 3, 1, 1 );
 
-        nlr.addActivationSource( 3, 0, 4, 0 );
-        nlr.addActivationSource( 3, 1, 4, 1 );
-        nlr.addActivationSource( 0, 0, 4, 2 );
-
         nlr.setWeight( 4, 0, 5, 0, 1 );
         nlr.setWeight( 4, 1, 5, 0, 1 );
         nlr.setWeight( 4, 2, 5, 0, 1 );
+
+        // Mark the ReLU sources
+        nlr.addActivationSource( 1, 0, 2, 0 );
+        nlr.addActivationSource( 1, 1, 2, 1 );
+        nlr.addActivationSource( 1, 2, 2, 2 );
+
+        // Mark the ReLU sources
+        nlr.addActivationSource( 3, 0, 4, 0 );
+        nlr.addActivationSource( 3, 1, 4, 1 );
+        nlr.addActivationSource( 0, 0, 4, 2 );
 
         unsigned simulationSize = Options::get()->getInt( Options::NUMBER_OF_SIMULATIONS );
 
@@ -4001,7 +4005,7 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the ReLU sources
+        // Mark the Abs sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
@@ -4434,7 +4438,6 @@ public:
         NLR::NetworkLevelReasoner nlr;
         populateNetworkWithRound( nlr );
 
-
         MockTableau tableau;
         tableau.getBoundManager().initialize( 14 );
 
@@ -4565,7 +4568,6 @@ public:
     {
         NLR::NetworkLevelReasoner nlr;
         populateNetworkWithSigmoids( nlr );
-
 
         MockTableau tableau;
         tableau.getBoundManager().initialize( 14 );
@@ -4698,7 +4700,6 @@ public:
         NLR::NetworkLevelReasoner nlr;
         populateNetworkWithMax( nlr );
 
-
         MockTableau tableau;
         tableau.getBoundManager().initialize( 12 );
 
@@ -4818,7 +4819,6 @@ public:
     {
         NLR::NetworkLevelReasoner nlr;
         populateNetworkWithSoftmax( nlr );
-
 
         MockTableau tableau;
         tableau.getBoundManager().initialize( 14 );
@@ -4950,7 +4950,6 @@ public:
     {
         NLR::NetworkLevelReasoner nlr;
         populateNetworkWithBilinear( nlr );
-
 
         MockTableau tableau;
         tableau.getBoundManager().initialize( 12 );
@@ -5468,7 +5467,6 @@ public:
     {
         NLR::NetworkLevelReasoner nlr;
         populateNetworkWithSoftmaxAndMax( nlr );
-
 
         MockTableau tableau;
         tableau.getBoundManager().initialize( 12 );
@@ -6041,7 +6039,7 @@ public:
 
           Layer 2 (with residual from x0):
 
-          x3.lb = -1( 0.5x0 + 0.5 ) -x0 + 1 = -1.5x0 + 0.5 : [-1, 1]
+          x3.lb = -1( 0.5x0 + 0.5 ) -x0 + 1 = -1.5x0 + 0.5 : [-1, 2]
           x3.ub = -1( 0.5x0 ) -1x0 + 1 = -1.5x0 + 1 : [-0.5, 2.5]
           x3 range: [-1, 2.5]
 
@@ -6057,7 +6055,7 @@ public:
           x5.lb =  3 ( 0 ) + 3 ( x0 ) + 1 = 3x0 + 1 : [-2, 4]
           x5.ub =  3 ( -15/14 x0 + 20/14 ) + 3 ( x0 ) + 1 = -3/14 x0 + 74/14 : [71/14, 77/14 = 5.5]
 
-          x5 range: [-2, 4]
+          x5 range: [-2, 5.5]
         */
 
         List<Tightening> expectedBounds( {
@@ -7461,73 +7459,26 @@ public:
         */
 
         List<Tightening> expectedBounds(
-            { Tightening( 3, 2, Tightening::LB ),        Tightening( 3, 2, Tightening::UB ),
-              Tightening( 4, 3, Tightening::LB ),        Tightening( 4, 3, Tightening::UB ),
-              Tightening( 5, 0, Tightening::LB ),        Tightening( 5, 0, Tightening::UB ),
-              Tightening( 6, -1, Tightening::LB ),       Tightening( 6, -1, Tightening::UB ),
-              Tightening( 7, -2, Tightening::LB ),       Tightening( 7, -2, Tightening::UB ),
-              Tightening( 8, 0.8668, Tightening::LB ),   Tightening( 8, 0.8668, Tightening::UB ),
-              Tightening( 9, 0.9820, Tightening::LB ),   Tightening( 9, 0.9820, Tightening::UB ),
-              Tightening( 10, 0.1173, Tightening::LB ),  Tightening( 10, 0.1173, Tightening::UB ),
-              Tightening( 11, 0.0179, Tightening::LB ),  Tightening( 11, 0.0179, Tightening::UB ),
-              Tightening( 12, 0.0159, Tightening::LB ),  Tightening( 12, 0.0159, Tightening::UB ),
-              Tightening( 13, 0.9470, Tightening::LB ),  Tightening( 13, 0.9470, Tightening::UB ),
-              Tightening( 14, -0.9470, Tightening::LB ), Tightening( 14, -0.9470, Tightening::UB ),
-              Tightening( 15, 1.0253, Tightening::LB ),  Tightening( 15, 1.0253, Tightening::UB ),
-              Tightening( 16, -1.0253, Tightening::LB ), Tightening( 16, -1.0253, Tightening::UB )
+            { Tightening( 3, 2, Tightening::LB ),       Tightening( 3, 2, Tightening::UB ),
+              Tightening( 4, 3, Tightening::LB ),       Tightening( 4, 3, Tightening::UB ),
+              Tightening( 5, 0, Tightening::LB ),       Tightening( 5, 0, Tightening::UB ),
+              Tightening( 6, -1, Tightening::LB ),      Tightening( 6, -1, Tightening::UB ),
+              Tightening( 7, -2, Tightening::LB ),      Tightening( 7, -2, Tightening::UB ),
+              Tightening( 8, 0.8668, Tightening::LB ),  Tightening( 8, 0.8668, Tightening::UB ),
+              Tightening( 9, 0.9820, Tightening::LB ),  Tightening( 9, 0.9820, Tightening::UB ),
+              Tightening( 10, 0.1173, Tightening::LB ), Tightening( 10, 0.1173, Tightening::UB ),
+              Tightening( 11, 0.0179, Tightening::LB ), Tightening( 11, 0.0179, Tightening::UB ),
+              Tightening( 12, 0.0159, Tightening::LB ), Tightening( 12, 0.0159, Tightening::UB ),
+              Tightening( 13, 1, Tightening::LB ),      Tightening( 13, 1, Tightening::UB ),
+              Tightening( 14, -1, Tightening::LB ),     Tightening( 14, -1, Tightening::UB ),
+              Tightening( 15, 1, Tightening::LB ),      Tightening( 15, 1, Tightening::UB ),
+              Tightening( 16, -1, Tightening::LB ),     Tightening( 16, -1, Tightening::UB )
 
             } );
 
         List<Tightening> bounds;
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
-    }
-
-    void test_softmax_bounds_er()
-    {
-        Vector<double> inputLb = { -1, 0, 1 };
-        Vector<double> inputUb = { 0, 2, 4 };
-        Vector<double> input = { -0.5, 1, 2.5 };
-
-        double value = NLR::DeepPolySoftmaxElement::ERLowerBound( input, inputLb, inputUb, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, 0.0114799, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERLowerBound( input, inputLb, inputUb, 0, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, 0.00563867, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERLowerBound( input, inputLb, inputUb, 0, 1 );
-        TS_ASSERT( FloatUtils::areEqual( value, -0.000838421, 0.00001 ) );
-
-
-        Vector<double> outputLb = { 0.2, 0, 0 };
-        Vector<double> outputUb = { 0.4, 0.1, 0.1 };
-
-        value = NLR::DeepPolySoftmaxElement::ERUpperBound( input, outputLb, outputUb, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, -1.44538, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERUpperBound( input, outputLb, outputUb, 0, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, 1.96538, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERUpperBound( input, outputLb, outputUb, 0, 1 );
-        TS_ASSERT( FloatUtils::areEqual( value, -0.358535, 0.00001 ) );
-    }
-
-    void test_softmax_bounds_lse1()
-    {
-        Vector<double> inputLb = { -1, 0, 1 };
-        Vector<double> inputUb = { 0, 2, 3 };
-        Vector<double> input = { -0.5, 1, 2 };
-        double value = NLR::DeepPolySoftmaxElement::LSELowerBound( input, inputLb, inputUb, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, 0.0365, 0.001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSELowerBound( input, inputLb, inputUb, 0, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, 0.0365, 0.001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSELowerBound( input, inputLb, inputUb, 0, 1 );
-        TS_ASSERT( FloatUtils::areEqual( value, -0.00703444, 0.001 ) );
-
-        Vector<double> outputLb = { 0.2, 0, 0 };
-        Vector<double> outputUb = { 0.4, 0.1, 0.1 };
-        value = NLR::DeepPolySoftmaxElement::LSEUpperBound( input, outputLb, outputUb, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, -0.164165, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSEUpperbound( input, outputLb, outputUb, 0, 0 );
-        TS_ASSERT( FloatUtils::areEqual( value, 0.272204, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSEUpperbound( input, outputLb, outputUb, 0, 1 );
-        TS_ASSERT( FloatUtils::areEqual( value, -0.073207, 0.00001 ) );
     }
 
     void test_sbt_bilinear()
@@ -7564,12 +7515,12 @@ public:
           Lower bound:
               alpha_l = x3.lb = -1
               beta = x2.lb = -1
-              gamma_l = -x2.lb * x3.lb = --1 * -1 = -1
+              gamma_l = -x2.lb x3.lb = --1 * -1 = -1
 
           Upper bound:
               alpha_u = x3.ub = 3
               beta = x2.lb = -1
-              gamma_u = -x2.lb * x3.ub = --1 * 3 = 3
+              gamma_u = -x2.lb x3.ub = --1 * 3 = 3
 
           x4.lb = -1 ( x0 - 2x1 ) + -1 ( x0 + x1 ) + -1 = -2x0 + x1 - 1     : [-7, -2]
           x4.ub = 3 ( x0 - 2x1 ) + -1 ( x0 + x1 ) + 3 = 2x0 - 7x1 + 3    : [0, 21]
@@ -7577,9 +7528,9 @@ public:
 
           Layer 3:
 
-          x7.lb = -1 ( 2x0 - 5x1 + 3 ) = -2x0 + 7x1 - 3   : [-21, 0]
-          x7.ub = -1 ( -2x0 + 3x1 - 1 ) = 2x0 + x1 + 1   : [2, 7]
-          x4 range: [-21, 5]
+          x5.lb = -1 ( 2x0 - 5x1 + 3 ) = -2x0 + 7x1 - 3   : [-21, 0]
+          x5.ub = -1 ( -2x0 + x1 - 1 ) = 2x0 - x1 + 1   : [2, 7]
+          x5 range: [-21, 7]
         */
 
         List<Tightening> expectedBounds( { Tightening( 2, -1, Tightening::LB ),
@@ -7644,7 +7595,6 @@ public:
         TS_ASSERT( FloatUtils::areEqual( assignment[13], 0 ) );
     }
 
-
     void test_obtain_bound_from_ipq()
     {
         NLR::NetworkLevelReasoner nlr;
@@ -7652,7 +7602,6 @@ public:
 
         Query query;
         query.setNumberOfVariables( 14 );
-
 
         // Initialize the bounds
         query.setLowerBound( 0, -1 );

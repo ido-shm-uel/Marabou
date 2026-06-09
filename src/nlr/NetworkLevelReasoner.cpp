@@ -20,7 +20,6 @@
 #include "FloatUtils.h"
 #include "InfeasibleQueryException.h"
 #include "IterativePropagator.h"
-#include "LPFormulator.h"
 #include "MILPFormulator.h"
 #include "MStringf.h"
 #include "MarabouError.h"
@@ -754,6 +753,50 @@ bool NetworkLevelReasoner::suitableForMerging(
     return true;
 }
 
+const Map<unsigned, Vector<double>>
+NetworkLevelReasoner::getParametersForLayers( const Vector<double> &coeffs ) const
+{
+    ASSERT( coeffs.size() == getNumberOfParameters() );
+    unsigned index = 0;
+    Map<unsigned, Vector<double>> layerIndicesToParameters;
+    for ( const auto &pair : _layerIndexToLayer )
+    {
+        unsigned layerIndex = pair.first;
+        Layer *layer = pair.second;
+        unsigned coeffsCount = getNumberOfParametersPerType( layer->getLayerType() );
+        Vector<double> currentCoeffs( coeffsCount );
+        for ( unsigned i = 0; i < coeffsCount; ++i )
+        {
+            currentCoeffs[i] = coeffs[index + i];
+        }
+        layerIndicesToParameters.insert( layerIndex, currentCoeffs );
+        index += coeffsCount;
+    }
+    const Map<unsigned, Vector<double>> parametersForLayers( layerIndicesToParameters );
+    return parametersForLayers;
+}
+
+unsigned NetworkLevelReasoner::getNumberOfParameters() const
+{
+    unsigned num = 0;
+    for ( const auto &pair : _layerIndexToLayer )
+    {
+        Layer *layer = pair.second;
+        num += getNumberOfParametersPerType( layer->getLayerType() );
+    }
+    return num;
+}
+
+unsigned NetworkLevelReasoner::getNumberOfParametersPerType( Layer::Type t ) const
+{
+    if ( t == Layer::RELU || t == Layer::LEAKY_RELU )
+        return 1;
+
+    if ( t == Layer::SIGN || t == Layer::BILINEAR )
+        return 2;
+
+    return 0;
+}
 
 void NetworkLevelReasoner::mergeWSLayers( unsigned secondLayerIndex,
                                           Map<unsigned, LinearExpression> &eliminatedNeurons )

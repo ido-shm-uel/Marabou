@@ -134,6 +134,9 @@ public:
     void getConstraintTightenings( List<Tightening> &tightenings );
     void clearConstraintTightenings();
 
+    // Get total number of optimizable parameters for parameterised SBT relaxation.
+    unsigned getNumberOfParameters() const;
+
     /*
       For debugging purposes: dump the network topology
     */
@@ -207,12 +210,11 @@ private:
     // Tightenings discovered by the various layers
     List<Tightening> _boundTightenings;
 
-
     std::unique_ptr<DeepPolyAnalysis> _deepPolyAnalysis;
 
-    void freeMemoryIfNeeded();
-
     List<PiecewiseLinearConstraint *> _constraintsInTopologicalOrder;
+
+    void freeMemoryIfNeeded();
 
     // Map each neuron to a linear expression representing its weighted sum
     void generateLinearExpressionForWeightedSumLayer(
@@ -248,6 +250,14 @@ private:
     */
     Map<const ReluConstraint *, double> _previousBiases;
     void initializePreviousBiasMap();
+
+    // Get map containing vector of optimizable parameters for parameterised SBT relaxation for
+    // every layer index.
+    const Map<unsigned, Vector<double>>
+    getParametersForLayers( const Vector<double> &coeffs ) const;
+
+    // Get number of optimizable parameters for parameterised SBT relaxation per layer type.
+    unsigned getNumberOfParametersPerType( Layer::Type t ) const;
 
     /*
       If the NLR is manipulated manually in order to generate a new

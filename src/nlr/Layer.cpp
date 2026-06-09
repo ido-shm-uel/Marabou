@@ -2,7 +2,7 @@
 /*! \file Layer.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Guy Katz, Ido Shmuel
+ **   Guy Katz
  ** This file is part of the Marabou project.
  ** Copyright (c) 2017-2024 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
@@ -926,23 +926,23 @@ void Layer::computeIntervalArithmeticBoundsForSign()
         double lb = sourceLayer->getLb( sourceIndex._neuron );
         double ub = sourceLayer->getUb( sourceIndex._neuron );
 
-        double new_lb;
-        double new_ub;
+        double newLb;
+        double newUb;
 
         if ( !FloatUtils::isNegative( lb ) )
         {
-            new_lb = 1;
-            new_ub = 1;
+            newLb = 1;
+            newUb = 1;
         }
         else if ( FloatUtils::isNegative( ub ) )
         {
-            new_lb = -1;
-            new_ub = -1;
+            newLb = -1;
+            newUb = -1;
         }
         else
         {
-            new_lb = -1;
-            new_ub = 1;
+            newLb = -1;
+            newUb = 1;
         }
 
         /*
@@ -950,16 +950,16 @@ void Layer::computeIntervalArithmeticBoundsForSign()
           variable. If they are tigheter than what was previously
           known, store them.
         */
-        if ( _lb[i] < new_lb )
+        if ( _lb[i] < newLb )
         {
-            _lb[i] = new_lb;
+            _lb[i] = newLb;
             _layerOwner->receiveTighterBound(
                 Tightening( _neuronToVariable[i], _lb[i], Tightening::LB ) );
         }
 
-        if ( _ub[i] > new_ub )
+        if ( _ub[i] > newUb )
         {
-            _ub[i] = new_ub;
+            _ub[i] = newUb;
             _layerOwner->receiveTighterBound(
                 Tightening( _neuronToVariable[i], _ub[i], Tightening::UB ) );
         }
@@ -1045,7 +1045,6 @@ void Layer::computeIntervalArithmeticBoundsForSigmoid()
         double lbSigmoid = SigmoidConstraint::sigmoid( lb );
         double ubSigmoid = SigmoidConstraint::sigmoid( ub );
 
-
         if ( _lb[i] < lbSigmoid )
         {
             _lb[i] = lbSigmoid;
@@ -1060,7 +1059,6 @@ void Layer::computeIntervalArithmeticBoundsForSigmoid()
         }
     }
 }
-
 
 void Layer::computeIntervalArithmeticBoundsForRound()
 {
@@ -1078,7 +1076,6 @@ void Layer::computeIntervalArithmeticBoundsForRound()
         double lbRound = FloatUtils::round( lb );
         double ubRound = FloatUtils::round( ub );
 
-
         if ( _lb[i] < lbRound )
         {
             _lb[i] = lbRound;
@@ -1093,7 +1090,6 @@ void Layer::computeIntervalArithmeticBoundsForRound()
         }
     }
 }
-
 
 void Layer::computeIntervalArithmeticBoundsForMax()
 {
@@ -1225,8 +1221,8 @@ void Layer::computeIntervalArithmeticBoundsForSoftmax()
             }
         }
 
-        double lb = softmaxLinearLowerBound( sourceLbs, sourceUbs, index );
-        double ub = softmaxLinearUpperBound( sourceLbs, sourceUbs, index );
+        double lb = linearLowerBound( sourceLbs, sourceUbs, index );
+        double ub = linearUpperBound( sourceLbs, sourceUbs, index );
         if ( _lb[i] < lb )
         {
             _lb[i] = lb;
@@ -1253,14 +1249,13 @@ void Layer::computeIntervalArithmeticBoundsForBilinear()
         List<NeuronIndex> sources = getActivationSources( i );
         ASSERT( sources.size() == 2 );
 
-        const Layer *sourceLayer = _layerOwner->getLayer( sources.begin()->_layer );
-
         Vector<double> sourceLbs;
         Vector<double> sourceUbs;
         Vector<double> sourceValues;
         bool allConstant = true;
         for ( const auto &sourceIndex : sources )
         {
+            const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
             unsigned sourceNeuron = sourceIndex._neuron;
             double sourceLb = sourceLayer->getLb( sourceNeuron );
             double sourceUb = sourceLayer->getUb( sourceNeuron );
@@ -1313,7 +1308,6 @@ void Layer::computeIntervalArithmeticBoundsForBilinear()
             if ( v > ub )
                 ub = v;
         }
-
 
         if ( _lb[i] < lb )
         {
@@ -1726,7 +1720,6 @@ void Layer::computeSymbolicBoundsForSign()
                 for ( unsigned j = 0; j < _inputLayerSize; ++j )
                     _symbolicUb[j * _size + i] *= factor;
 
-
                 // Do the same for the bias, and then adjust
                 _symbolicUpperBias[i] *= factor;
                 _symbolicUpperBias[i] += 1;
@@ -2047,19 +2040,18 @@ void Layer::computeSymbolicBoundsForLeakyRelu()
             // Symbolic upper bound: x_f <= (x_b - l) * u / ( u - l)
             // Concrete upper bound: x_f <= ub_b
             double width = sourceUb - sourceLb;
-            double coeff = ( sourceUb - _alpha * sourceLb ) / width;
+            double weight = ( sourceUb - _alpha * sourceLb ) / width;
 
             if ( _alpha <= 1 )
             {
                 for ( unsigned j = 0; j < _inputLayerSize; ++j )
                 {
-                    _symbolicUb[j * _size + i] *= coeff;
+                    _symbolicUb[j * _size + i] *= weight;
                 }
 
                 // Do the same for the bias, and then adjust
-                _symbolicUpperBias[i] *= coeff;
+                _symbolicUpperBias[i] *= weight;
                 _symbolicUpperBias[i] += ( ( _alpha - 1 ) * sourceUb * sourceLb ) / width;
-
 
                 // For the lower bound, in general, x_f >= lambda * x_b, where
                 // 0 <= lambda <= 1, would be a sound lower bound. We
@@ -2092,11 +2084,11 @@ void Layer::computeSymbolicBoundsForLeakyRelu()
             {
                 for ( unsigned j = 0; j < _inputLayerSize; ++j )
                 {
-                    _symbolicLb[j * _size + i] *= coeff;
+                    _symbolicLb[j * _size + i] *= weight;
                 }
 
                 // Do the same for the bias, and then adjust
-                _symbolicLowerBias[i] *= coeff;
+                _symbolicLowerBias[i] *= weight;
                 _symbolicLowerBias[i] += ( ( _alpha - 1 ) * sourceUb * sourceLb ) / width;
 
                 if ( sourceUb > sourceLb )
@@ -2209,7 +2201,6 @@ void Layer::computeSymbolicBoundsForLeakyRelu()
     }
 }
 
-
 void Layer::computeSymbolicBoundsForSigmoid()
 {
     std::fill_n( _symbolicLb, _size * _inputLayerSize, 0 );
@@ -2269,7 +2260,7 @@ void Layer::computeSymbolicBoundsForSigmoid()
         double sourceLbSigmoid = SigmoidConstraint::sigmoid( sourceLb );
 
         // Case when the Sigmoid constraint is fixed
-        if ( FloatUtils::areEqual( FloatUtils::round( sourceUb ), FloatUtils::round( sourceLb ) ) )
+        if ( FloatUtils::areEqual( sourceLb, sourceUb ) )
         {
             for ( unsigned j = 0; j < _inputLayerSize; ++j )
             {
@@ -2340,7 +2331,6 @@ void Layer::computeSymbolicBoundsForSigmoid()
                 _symbolicUpperBias[i] *= lambdaPrime;
                 _symbolicUpperBias[i] += sourceUbSigmoid - lambdaPrime * sourceUb;
             }
-
 
             /*
               We now have the symbolic representation for the current
@@ -2466,7 +2456,6 @@ void Layer::computeSymbolicBoundsForRound()
         _symbolicLbOfUb[i] = sourceLayer->getSymbolicLbOfUb( sourceIndex._neuron );
         _symbolicUbOfUb[i] = sourceLayer->getSymbolicUbOfUb( sourceIndex._neuron );
 
-
         // Bounds of lb, ub are the rounded values of source lb, ub
         double sourceUbRound = FloatUtils::round( sourceUb );
         double sourceLbRound = FloatUtils::round( sourceLb );
@@ -2475,7 +2464,6 @@ void Layer::computeSymbolicBoundsForRound()
         _symbolicUbOfUb[i] = sourceUbRound;
         _symbolicLbOfLb[i] = sourceLbRound;
         _symbolicUbOfLb[i] = sourceLbRound;
-
 
         // Case when the Round constraint is fixed
         if ( FloatUtils::areEqual( FloatUtils::round( sourceUb ), FloatUtils::round( sourceLb ) ) )
@@ -2610,7 +2598,6 @@ void Layer::computeSymbolicBoundsForMax()
             _symbolicUpperBias[i] =
                 sourceLayer->getSymbolicUpperBias()[indexOfMaxLowerBound._neuron];
 
-
             _symbolicLbOfLb[i] = maxLowerBound;
             _symbolicUbOfLb[i] = maxLowerBound;
             _symbolicLbOfUb[i] = sourceUbs[indexOfMaxLowerBound];
@@ -2706,7 +2693,6 @@ void Layer::computeSymbolicBoundsForSoftmax()
         Vector<double> sourceMids;
         Vector<double> targetLbs;
         Vector<double> targetUbs;
-        unsigned len = 0;
         for ( const auto &sourceIndex : sources )
         {
             unsigned sourceNeuron = sourceIndex._neuron;
@@ -2718,8 +2704,6 @@ void Layer::computeSymbolicBoundsForSoftmax()
             sourceMids.append( ( sourceLb + sourceUb ) / 2 );
             targetLbs.append( _lb[i] );
             targetUbs.append( _ub[i] );
-
-            ++len;
         }
 
         // Find the index of i in the softmax
@@ -2735,8 +2719,8 @@ void Layer::computeSymbolicBoundsForSoftmax()
             }
         }
 
-        double lb = softmaxLinearLowerBound( sourceLbs, sourceUbs, index );
-        double ub = softmaxLinearUpperBound( sourceLbs, sourceUbs, index );
+        double lb = linearLowerBound( sourceLbs, sourceUbs, index );
+        double ub = linearUpperBound( sourceLbs, sourceUbs, index );
         if ( _lb[i] < lb )
         {
             _lb[i] = lb;
@@ -2758,8 +2742,8 @@ void Layer::computeSymbolicBoundsForSoftmax()
             _symbolicUpperBias[i] = _ub[i];
             for ( const auto &sourceIndex : sources )
             {
-                symbolicLb[len * sourceIndex._neuron + i] = 0;
-                symbolicUb[len * sourceIndex._neuron + i] = 0;
+                symbolicLb[_size * sourceIndex._neuron + i] = 0;
+                symbolicUb[_size * sourceIndex._neuron + i] = 0;
             }
         }
         else
@@ -2777,12 +2761,12 @@ void Layer::computeSymbolicBoundsForSoftmax()
                 if ( !useLSE2 )
                 {
                     _symbolicLowerBias[i] =
-                        softmaxLSELowerBound( sourceMids, sourceLbs, sourceUbs, index );
+                        LSELowerBound( sourceMids, sourceLbs, sourceUbs, index );
                     for ( const auto &sourceIndex : sources )
                     {
-                        double dldj = softmaxdLSELowerBound(
-                            sourceMids, sourceLbs, sourceUbs, index, inputIndex );
-                        symbolicLb[len * sourceIndex._neuron + i] = dldj;
+                        double dldj =
+                            dLSELowerBound( sourceMids, sourceLbs, sourceUbs, index, inputIndex );
+                        symbolicLb[_size * sourceIndex._neuron + i] = dldj;
                         _symbolicLowerBias[i] -= dldj * sourceMids[inputIndex];
                         ++inputIndex;
                     }
@@ -2790,51 +2774,48 @@ void Layer::computeSymbolicBoundsForSoftmax()
                 else
                 {
                     _symbolicLowerBias[i] =
-                        softmaxLSELowerBound2( sourceMids, sourceLbs, sourceUbs, index );
+                        LSELowerBound2( sourceMids, sourceLbs, sourceUbs, index );
                     for ( const auto &sourceIndex : sources )
                     {
-                        double dldj = softmaxdLSELowerBound2(
-                            sourceMids, sourceLbs, sourceUbs, index, inputIndex );
-                        symbolicLb[len * sourceIndex._neuron + i] = dldj;
+                        double dldj =
+                            dLSELowerBound2( sourceMids, sourceLbs, sourceUbs, index, inputIndex );
+                        symbolicLb[_size * sourceIndex._neuron + i] = dldj;
                         _symbolicLowerBias[i] -= dldj * sourceMids[inputIndex];
                         ++inputIndex;
                     }
                 }
 
-                _symbolicUpperBias[i] =
-                    softmaxLSEUpperBound( sourceMids, targetLbs, targetUbs, index );
+                _symbolicUpperBias[i] = LSEUpperBound( sourceMids, targetLbs, targetUbs, index );
                 inputIndex = 0;
                 for ( const auto &sourceIndex : sources )
                 {
-                    double dudj = softmaxdLSEUpperbound(
-                        sourceMids, targetLbs, targetUbs, index, inputIndex );
-                    symbolicUb[len * sourceIndex._neuron + i] = dudj;
+                    double dudj =
+                        dLSEUpperbound( sourceMids, targetLbs, targetUbs, index, inputIndex );
+                    symbolicUb[_size * sourceIndex._neuron + i] = dudj;
                     _symbolicUpperBias[i] -= dudj * sourceMids[inputIndex];
                     ++inputIndex;
                 }
             }
             else if ( boundType == SoftmaxBoundType::EXPONENTIAL_RECIPROCAL_DECOMPOSITION )
             {
-                _symbolicLowerBias[i] =
-                    softmaxERLowerBound( sourceMids, sourceLbs, sourceUbs, index );
+                _symbolicLowerBias[i] = ERLowerBound( sourceMids, sourceLbs, sourceUbs, index );
                 unsigned inputIndex = 0;
                 for ( const auto &sourceIndex : sources )
                 {
                     double dldj =
-                        softmaxdERLowerBound( sourceMids, sourceLbs, sourceUbs, index, inputIndex );
-                    symbolicLb[len * sourceIndex._neuron + i] = dldj;
+                        dERLowerBound( sourceMids, sourceLbs, sourceUbs, index, inputIndex );
+                    symbolicLb[_size * sourceIndex._neuron + i] = dldj;
                     _symbolicLowerBias[i] -= dldj * sourceMids[inputIndex];
                     ++inputIndex;
                 }
 
-                _symbolicUpperBias[i] =
-                    softmaxERUpperBound( sourceMids, targetLbs, targetUbs, index );
+                _symbolicUpperBias[i] = ERUpperBound( sourceMids, targetLbs, targetUbs, index );
                 inputIndex = 0;
                 for ( const auto &sourceIndex : sources )
                 {
                     double dudj =
-                        softmaxdERUpperBound( sourceMids, targetLbs, targetUbs, index, inputIndex );
-                    symbolicUb[len * sourceIndex._neuron + i] = dudj;
+                        dERUpperBound( sourceMids, targetLbs, targetUbs, index, inputIndex );
+                    symbolicUb[_size * sourceIndex._neuron + i] = dudj;
                     _symbolicUpperBias[i] -= dudj * sourceMids[inputIndex];
                     ++inputIndex;
                 }
@@ -3036,27 +3017,26 @@ void Layer::computeSymbolicBoundsForBilinear()
         List<NeuronIndex> sources = getActivationSources( i );
         ASSERT( sources.size() == 2 );
 
-        const Layer *sourceLayer = _layerOwner->getLayer( sources.begin()->_layer );
-
-        unsigned sourceLayerSize = sourceLayer->getSize();
-        const double *sourceSymbolicLb = sourceLayer->getSymbolicLb();
-        const double *sourceSymbolicUb = sourceLayer->getSymbolicUb();
-
         Vector<double> sourceLbs;
         Vector<double> sourceUbs;
         Vector<double> sourceValues;
+        Vector<unsigned> sourceNeurons;
+        Vector<unsigned> sourceLayerSizes;
+        Vector<const Layer *> sourceLayers;
         bool allConstant = true;
-        unsigned indexA = 0;
-        unsigned indexB = 0;
-        unsigned counter = 0;
         for ( const auto &sourceIndex : sources )
         {
+            const Layer *sourceLayer = _layerOwner->getLayer( sourceIndex._layer );
             unsigned sourceNeuron = sourceIndex._neuron;
             double sourceLb = sourceLayer->getLb( sourceNeuron );
             double sourceUb = sourceLayer->getUb( sourceNeuron );
+            unsigned sourceLayerSize = sourceLayer->getSize();
 
+            sourceLayers.append( sourceLayer );
+            sourceNeurons.append( sourceNeuron );
             sourceLbs.append( sourceLb );
             sourceUbs.append( sourceUb );
+            sourceLayerSizes.append( sourceLayerSize );
 
             if ( !sourceLayer->neuronEliminated( sourceNeuron ) )
             {
@@ -3067,16 +3047,6 @@ void Layer::computeSymbolicBoundsForBilinear()
                 double sourceValue = sourceLayer->getEliminatedNeuronValue( sourceNeuron );
                 sourceValues.append( sourceValue );
             }
-
-            if ( counter == 0 )
-            {
-                indexA = sourceIndex._neuron;
-            }
-            else
-            {
-                indexB = sourceIndex._neuron;
-            }
-            ++counter;
         }
 
         if ( allConstant )
@@ -3106,47 +3076,75 @@ void Layer::computeSymbolicBoundsForBilinear()
         // Symbolic upper bound:
         // out <= alpha * x + beta * y + gamma
         // where alpha = ub_y, beta = lb_x, gamma = -lb_x * ub_y
-        for ( unsigned j = 0; j < _inputLayerSize; ++j )
-        {
-            if ( sourceLbs[1] >= 0 )
-            {
-                _symbolicLb[j * _size + i] +=
-                    sourceLbs[1] * sourceSymbolicLb[j * sourceLayerSize + indexA];
-            }
-            else
-            {
-                _symbolicLb[j * _size + i] +=
-                    sourceLbs[1] * sourceSymbolicUb[j * sourceLayerSize + indexA];
-            }
-
-            if ( sourceUbs[1] >= 0 )
-            {
-                _symbolicUb[j * _size + i] +=
-                    sourceUbs[1] * sourceSymbolicUb[j * sourceLayerSize + indexA];
-            }
-            else
-            {
-                _symbolicLb[j * _size + i] +=
-                    sourceUbs[1] * sourceSymbolicLb[j * sourceLayerSize + indexA];
-            }
-
-            if ( sourceLbs[0] >= 0 )
-            {
-                _symbolicLb[j * _size + i] +=
-                    sourceLbs[0] * sourceSymbolicLb[j * sourceLayerSize + indexB];
-                _symbolicUb[j * _size + i] +=
-                    sourceLbs[0] * sourceSymbolicUb[j * sourceLayerSize + indexB];
-            }
-            else
-            {
-                _symbolicLb[j * _size + i] +=
-                    sourceLbs[0] * sourceSymbolicUb[j * sourceLayerSize + indexB];
-                _symbolicUb[j * _size + i] +=
-                    sourceLbs[0] * sourceSymbolicLb[j * sourceLayerSize + indexB];
-            }
-        }
+        double aLower = sourceLbs[1];
+        double aUpper = sourceUbs[1];
+        double bLower = sourceLbs[0];
+        double bUpper = sourceLbs[0];
         _symbolicLowerBias[i] = -sourceLbs[0] * sourceLbs[1];
         _symbolicUpperBias[i] = -sourceLbs[0] * sourceUbs[1];
+
+        for ( unsigned j = 0; j < _inputLayerSize; ++j )
+        {
+            if ( aLower >= 0 )
+            {
+                _symbolicLb[j * _size + i] +=
+                    aLower * ( sourceLayers[0]
+                                   ->getSymbolicLb() )[j * sourceLayerSizes[0] + sourceNeurons[0]];
+                _symbolicLowerBias[i] += aLower * ( sourceLayers[0]->getSymbolicLowerBias() )[0];
+            }
+            else
+            {
+                _symbolicLb[j * _size + i] +=
+                    aLower * ( sourceLayers[0]
+                                   ->getSymbolicUb() )[j * sourceLayerSizes[0] + sourceNeurons[0]];
+                _symbolicLowerBias[i] += aLower * ( sourceLayers[0]->getSymbolicUpperBias() )[0];
+            }
+
+            if ( aUpper >= 0 )
+            {
+                _symbolicUb[j * _size + i] +=
+                    aUpper * ( sourceLayers[0]
+                                   ->getSymbolicUb() )[j * sourceLayerSizes[0] + sourceNeurons[0]];
+                _symbolicUpperBias[i] += aUpper * ( sourceLayers[0]->getSymbolicUpperBias() )[0];
+            }
+            else
+            {
+                _symbolicUb[j * _size + i] +=
+                    aUpper * ( sourceLayers[0]
+                                   ->getSymbolicLb() )[j * sourceLayerSizes[0] + sourceNeurons[0]];
+                _symbolicUpperBias[i] += aUpper * ( sourceLayers[0]->getSymbolicLowerBias() )[0];
+            }
+
+            if ( bLower >= 0 )
+            {
+                _symbolicLb[j * _size + i] +=
+                    bLower * ( sourceLayers[1]
+                                   ->getSymbolicLb() )[j * sourceLayerSizes[1] + sourceNeurons[1]];
+                _symbolicUpperBias[i] += bLower * ( sourceLayers[1]->getSymbolicLowerBias() )[1];
+            }
+            else
+            {
+                _symbolicLb[j * _size + i] +=
+                    bLower * ( sourceLayers[1]
+                                   ->getSymbolicUb() )[j * sourceLayerSizes[1] + sourceNeurons[1]];
+                _symbolicUpperBias[i] += bLower * ( sourceLayers[1]->getSymbolicUpperBias() )[1];
+            }
+
+            if ( bUpper >= 0 )
+            {
+                _symbolicUb[j * _size + i] +=
+                    bUpper * ( sourceLayers[1]
+                                   ->getSymbolicUb() )[j * sourceLayerSizes[1] + sourceNeurons[1]];
+                _symbolicUpperBias[i] += bUpper * ( sourceLayers[1]->getSymbolicUpperBias() )[1];
+            }
+            else
+            {
+                _symbolicUb[j * _size + i] +=
+                    bUpper * ( sourceLayers[1]
+                                   ->getSymbolicLb() )[j * sourceLayerSizes[1] + sourceNeurons[1]];
+                _symbolicUpperBias[i] += bUpper * ( sourceLayers[1]->getSymbolicLowerBias() )[1];
+            }
+        }
 
         double lb = FloatUtils::infinity();
         double ub = FloatUtils::negativeInfinity();
@@ -3327,7 +3325,6 @@ void Layer::computeSymbolicBoundsForWeightedSum()
         }
     }
 
-
     /*
       We now have the symbolic representation for the current
       layer. Next, we compute new lower and upper bounds for
@@ -3397,10 +3394,10 @@ void Layer::computeSymbolicBoundsForWeightedSum()
     }
 }
 
-double Layer::softmaxLSELowerBound( const Vector<double> &inputs,
-                                    const Vector<double> &inputLbs,
-                                    const Vector<double> &inputUbs,
-                                    unsigned i )
+double Layer::LSELowerBound( const Vector<double> &inputs,
+                             const Vector<double> &inputLbs,
+                             const Vector<double> &inputUbs,
+                             unsigned i )
 {
     double sum = 0;
     for ( unsigned j = 0; j < inputs.size(); ++j )
@@ -3415,15 +3412,15 @@ double Layer::softmaxLSELowerBound( const Vector<double> &inputs,
     return std::exp( inputs[i] ) / sum;
 }
 
-double Layer::softmaxdLSELowerBound( const Vector<double> &inputMids,
-                                     const Vector<double> &inputLbs,
-                                     const Vector<double> &inputUbs,
-                                     unsigned i,
-                                     unsigned di )
+double Layer::dLSELowerBound( const Vector<double> &inputMids,
+                              const Vector<double> &inputLbs,
+                              const Vector<double> &inputUbs,
+                              unsigned i,
+                              unsigned di )
 {
     double val = 0;
     if ( i == di )
-        val += softmaxLSELowerBound( inputMids, inputLbs, inputUbs, i );
+        val += LSELowerBound( inputMids, inputLbs, inputUbs, i );
 
     double ldi = inputLbs[di];
     double udi = inputUbs[di];
@@ -3445,10 +3442,10 @@ double Layer::softmaxdLSELowerBound( const Vector<double> &inputMids,
     return val;
 }
 
-double Layer::softmaxLSELowerBound2( const Vector<double> &inputMids,
-                                     const Vector<double> &inputLbs,
-                                     const Vector<double> &inputUbs,
-                                     unsigned i )
+double Layer::LSELowerBound2( const Vector<double> &inputMids,
+                              const Vector<double> &inputLbs,
+                              const Vector<double> &inputUbs,
+                              unsigned i )
 {
     double max = FloatUtils::negativeInfinity();
     unsigned maxInputIndex = 0;
@@ -3464,7 +3461,7 @@ double Layer::softmaxLSELowerBound2( const Vector<double> &inputMids,
     }
 
     if ( maxInputIndex == i )
-        return softmaxERLowerBound( inputMids, inputLbs, inputUbs, i );
+        return ERLowerBound( inputMids, inputLbs, inputUbs, i );
     else
     {
         double sum = 0;
@@ -3487,11 +3484,11 @@ double Layer::softmaxLSELowerBound2( const Vector<double> &inputMids,
     }
 }
 
-double Layer::softmaxdLSELowerBound2( const Vector<double> &inputMids,
-                                      const Vector<double> &inputLbs,
-                                      const Vector<double> &inputUbs,
-                                      unsigned i,
-                                      unsigned di )
+double Layer::dLSELowerBound2( const Vector<double> &inputMids,
+                               const Vector<double> &inputLbs,
+                               const Vector<double> &inputUbs,
+                               unsigned i,
+                               unsigned di )
 {
     double max = FloatUtils::negativeInfinity();
     unsigned maxInputIndex = 0;
@@ -3507,10 +3504,10 @@ double Layer::softmaxdLSELowerBound2( const Vector<double> &inputMids,
     }
 
     if ( maxInputIndex == i )
-        return softmaxdERLowerBound( inputMids, inputLbs, inputUbs, i, di );
+        return dERLowerBound( inputMids, inputLbs, inputUbs, i, di );
     else
     {
-        double val = softmaxLSELowerBound2( inputMids, inputLbs, inputUbs, i );
+        double val = LSELowerBound2( inputMids, inputLbs, inputUbs, i );
 
         double sum = 0;
         for ( unsigned j = 0; j < inputMids.size(); ++j )
@@ -3561,10 +3558,10 @@ double Layer::softmaxdLSELowerBound2( const Vector<double> &inputMids,
     }
 }
 
-double Layer::softmaxLSEUpperBound( const Vector<double> &inputs,
-                                    const Vector<double> &outputLb,
-                                    const Vector<double> &outputUb,
-                                    unsigned i )
+double Layer::LSEUpperBound( const Vector<double> &inputs,
+                             const Vector<double> &outputLb,
+                             const Vector<double> &outputUb,
+                             unsigned i )
 {
     double li = outputLb[i];
     double ui = outputUb[i];
@@ -3577,11 +3574,11 @@ double Layer::softmaxLSEUpperBound( const Vector<double> &inputs,
                  SoftmaxConstraint::logSumOfExponential( inputTilda ) );
 }
 
-double Layer::softmaxdLSEUpperbound( const Vector<double> &inputMids,
-                                     const Vector<double> &outputLb,
-                                     const Vector<double> &outputUb,
-                                     unsigned i,
-                                     unsigned di )
+double Layer::dLSEUpperbound( const Vector<double> &inputMids,
+                              const Vector<double> &outputLb,
+                              const Vector<double> &outputUb,
+                              unsigned i,
+                              unsigned di )
 {
     double li = outputLb[i];
     double ui = outputUb[i];
@@ -3595,10 +3592,10 @@ double Layer::softmaxdLSEUpperbound( const Vector<double> &inputMids,
     return val * val2;
 }
 
-double Layer::softmaxERLowerBound( const Vector<double> &inputs,
-                                   const Vector<double> &inputLbs,
-                                   const Vector<double> &inputUbs,
-                                   unsigned i )
+double Layer::ERLowerBound( const Vector<double> &inputs,
+                            const Vector<double> &inputLbs,
+                            const Vector<double> &inputUbs,
+                            unsigned i )
 {
     Vector<double> inputTilda;
     SoftmaxConstraint::xTilda( inputs, inputs[i], inputTilda );
@@ -3622,13 +3619,13 @@ double Layer::softmaxERLowerBound( const Vector<double> &inputs,
     return 1 / sum;
 }
 
-double Layer::softmaxdERLowerBound( const Vector<double> &inputMids,
-                                    const Vector<double> &inputLbs,
-                                    const Vector<double> &inputUbs,
-                                    unsigned i,
-                                    unsigned di )
+double Layer::dERLowerBound( const Vector<double> &inputMids,
+                             const Vector<double> &inputLbs,
+                             const Vector<double> &inputUbs,
+                             unsigned i,
+                             unsigned di )
 {
-    double val = softmaxERLowerBound( inputMids, inputLbs, inputUbs, i );
+    double val = ERLowerBound( inputMids, inputLbs, inputUbs, i );
 
     if ( i != di )
     {
@@ -3653,10 +3650,10 @@ double Layer::softmaxdERLowerBound( const Vector<double> &inputMids,
     }
 }
 
-double Layer::softmaxERUpperBound( const Vector<double> &inputs,
-                                   const Vector<double> &outputLb,
-                                   const Vector<double> &outputUb,
-                                   unsigned i )
+double Layer::ERUpperBound( const Vector<double> &inputs,
+                            const Vector<double> &outputLb,
+                            const Vector<double> &outputUb,
+                            unsigned i )
 {
     double li = outputLb[i];
     double ui = outputUb[i];
@@ -3667,15 +3664,14 @@ double Layer::softmaxERUpperBound( const Vector<double> &inputs,
     return ui + li - ui * li * SoftmaxConstraint::sumOfExponential( inputTilda );
 }
 
-double Layer::softmaxdERUpperBound( const Vector<double> &inputMids,
-                                    const Vector<double> &outputLb,
-                                    const Vector<double> &outputUb,
-                                    unsigned i,
-                                    unsigned di )
+double Layer::dERUpperBound( const Vector<double> &inputMids,
+                             const Vector<double> &outputLb,
+                             const Vector<double> &outputUb,
+                             unsigned i,
+                             unsigned di )
 {
     double li = outputLb[i];
     double ui = outputUb[i];
-
 
     if ( i == di )
     {
@@ -3688,9 +3684,9 @@ double Layer::softmaxdERUpperBound( const Vector<double> &inputMids,
         return -li * ui * std::exp( inputMids[di] - inputMids[i] );
 }
 
-double Layer::softmaxLinearLowerBound( const Vector<double> &inputLbs,
-                                       const Vector<double> &inputUbs,
-                                       unsigned i )
+double Layer::linearLowerBound( const Vector<double> &inputLbs,
+                                const Vector<double> &inputUbs,
+                                unsigned i )
 {
     Vector<double> uTilda;
     SoftmaxConstraint::xTilda( inputUbs, inputLbs[i], uTilda );
@@ -3698,9 +3694,9 @@ double Layer::softmaxLinearLowerBound( const Vector<double> &inputLbs,
     return 1 / SoftmaxConstraint::sumOfExponential( uTilda );
 }
 
-double Layer::softmaxLinearUpperBound( const Vector<double> &inputLbs,
-                                       const Vector<double> &inputUbs,
-                                       unsigned i )
+double Layer::linearUpperBound( const Vector<double> &inputLbs,
+                                const Vector<double> &inputUbs,
+                                unsigned i )
 {
     Vector<double> lTilda;
     SoftmaxConstraint::xTilda( inputLbs, inputUbs[i], lTilda );
@@ -4005,7 +4001,6 @@ String Layer::typeToString( Type type )
     case BILINEAR:
         return "BILINEAR";
         break;
-
 
     default:
         return "UNKNOWN TYPE";

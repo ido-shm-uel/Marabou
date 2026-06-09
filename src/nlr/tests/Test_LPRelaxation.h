@@ -73,9 +73,6 @@ public:
         nlr.addLayer( 4, NLR::Layer::RELU, 2 );
         nlr.addLayer( 5, NLR::Layer::WEIGHTED_SUM, 2 );
 
-        nlr.getLayer( 2 )->setAlpha( 0.1 );
-        nlr.getLayer( 4 )->setAlpha( 0.1 );
-
         // Mark layer dependencies
         for ( unsigned i = 1; i <= 5; ++i )
             nlr.addLayerDependency( i - 1, i );
@@ -1763,7 +1760,7 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the Softmax/Max sources
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 0, 2, 1 );
         nlr.addActivationSource( 1, 0, 2, 2 );
@@ -1774,6 +1771,7 @@ public:
         nlr.addActivationSource( 1, 2, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the Max sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 0 );
 
@@ -1821,7 +1819,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
     }
-
 
     void populateNetworkBackwardSoftmaxAndMax2( NLR::NetworkLevelReasoner &nlr,
                                                 MockTableau &tableau )
@@ -1888,7 +1885,7 @@ public:
         nlr.setBias( 3, 0, 2 );
         nlr.setBias( 3, 2, -2 );
 
-        // Mark the Softmax/Max sources
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 0 );
         nlr.addActivationSource( 1, 2, 2, 0 );
@@ -1916,6 +1913,7 @@ public:
         nlr.addActivationSource( 3, 1, 4, 2 );
         nlr.addActivationSource( 3, 2, 4, 2 );
 
+        // Mark the Max sources
         nlr.addActivationSource( 4, 0, 5, 0 );
         nlr.addActivationSource( 4, 1, 5, 0 );
         nlr.addActivationSource( 4, 2, 5, 0 );
@@ -2022,11 +2020,12 @@ public:
         nlr.setBias( 1, 0, 1 );
         nlr.setBias( 3, 1, 2 );
 
-        // Mark the ReLU/Bilinear sources
+        // Mark the ReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
 
+        // Mark the Bilinear sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 0 );
 
@@ -2139,7 +2138,7 @@ public:
 
         nlr.setBias( 3, 0, 2 );
 
-        // Mark the ReLU/Bilinear sources
+        // Mark the ReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
         nlr.addActivationSource( 1, 2, 2, 2 );
@@ -2148,6 +2147,7 @@ public:
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 1 );
 
+        // Mark the Bilinear sources
         nlr.addActivationSource( 4, 0, 5, 0 );
         nlr.addActivationSource( 4, 1, 5, 0 );
 
@@ -2247,7 +2247,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2259,7 +2258,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -2289,7 +2287,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -2313,7 +2310,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -2346,7 +2342,6 @@ public:
         tableau.setUpperBound( 1, 1 );
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
-
 
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2384,7 +2379,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2400,7 +2394,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -2450,7 +2443,6 @@ public:
         tableau.setLowerBound( 21, -large );
         tableau.setUpperBound( 21, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -2485,7 +2477,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -2522,7 +2513,6 @@ public:
         tableau.setLowerBound( 1, 0 );
         tableau.setUpperBound( 1, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -2548,7 +2538,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2558,7 +2547,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -2588,7 +2576,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -2612,7 +2599,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -2642,7 +2628,6 @@ public:
         tableau.setUpperBound( 1, 1 );
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
-
 
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2680,7 +2665,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2690,7 +2674,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -2740,7 +2723,6 @@ public:
         tableau.setLowerBound( 21, -large );
         tableau.setUpperBound( 21, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -2776,7 +2758,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2804,7 +2785,6 @@ public:
         tableau.setLowerBound( 1, 0 );
         tableau.setUpperBound( 1, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -2830,7 +2810,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2840,7 +2819,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -2870,7 +2848,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -2894,7 +2871,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -2924,7 +2900,6 @@ public:
         tableau.setUpperBound( 1, 1 );
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
-
 
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2962,7 +2937,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -2972,7 +2946,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -3022,7 +2995,6 @@ public:
         tableau.setLowerBound( 21, -large );
         tableau.setUpperBound( 21, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3058,7 +3030,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3086,7 +3057,6 @@ public:
         tableau.setLowerBound( 1, 0 );
         tableau.setUpperBound( 1, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3112,7 +3082,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3125,7 +3094,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -3155,7 +3123,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3179,7 +3146,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -3215,7 +3181,6 @@ public:
         tableau.setUpperBound( 1, 1 );
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
-
 
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3253,7 +3218,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3263,7 +3227,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -3313,7 +3276,6 @@ public:
         tableau.setLowerBound( 21, -large );
         tableau.setUpperBound( 21, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3349,7 +3311,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3377,7 +3338,6 @@ public:
         tableau.setLowerBound( 1, 0 );
         tableau.setUpperBound( 1, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3403,7 +3363,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3413,7 +3372,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -3443,7 +3401,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3467,7 +3424,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -3497,7 +3453,6 @@ public:
         tableau.setUpperBound( 1, 1 );
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
-
 
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3535,7 +3490,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3545,7 +3499,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -3595,7 +3548,6 @@ public:
         tableau.setLowerBound( 21, -large );
         tableau.setUpperBound( 21, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3631,7 +3583,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3659,7 +3610,6 @@ public:
         tableau.setLowerBound( 1, 0 );
         tableau.setUpperBound( 1, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3685,7 +3635,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3700,7 +3649,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -3730,7 +3678,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3754,7 +3701,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -3790,7 +3736,6 @@ public:
         tableau.setUpperBound( 1, 1 );
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
-
 
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3828,7 +3773,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -3850,7 +3794,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -3900,7 +3843,6 @@ public:
         tableau.setLowerBound( 21, -large );
         tableau.setUpperBound( 21, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -3935,7 +3877,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -3977,8 +3918,7 @@ public:
         tableau.setLowerBound( 1, 0 );
         tableau.setUpperBound( 1, 1 );
 
-
-        // Invoke SBT
+        // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
 
@@ -4003,7 +3943,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -4013,7 +3952,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -4043,7 +3981,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -4067,7 +4004,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -4099,7 +4035,6 @@ public:
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -4130,7 +4065,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -4140,7 +4074,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -4182,7 +4115,6 @@ public:
         tableau.setLowerBound( 17, -large );
         tableau.setUpperBound( 17, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -4212,7 +4144,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -4240,7 +4171,6 @@ public:
         tableau.setLowerBound( 1, 0 );
         tableau.setUpperBound( 1, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -4266,7 +4196,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.lpRelaxationPropagation() );
@@ -4275,7 +4204,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -4305,7 +4233,6 @@ public:
         tableau.setLowerBound( 11, -large );
         tableau.setUpperBound( 11, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -4329,7 +4256,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
@@ -4362,7 +4288,6 @@ public:
         tableau.setLowerBound( 2, -1 );
         tableau.setUpperBound( 2, 1 );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -4391,7 +4316,6 @@ public:
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds ) );
 
-
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
@@ -4404,7 +4328,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds2 ) );
-
 
         // Change the current bounds
         tableau.setLowerBound( 0, -3 );
@@ -4442,7 +4365,6 @@ public:
         tableau.setLowerBound( 15, -large );
         tableau.setUpperBound( 15, large );
 
-
         // Invoke DeepPoly
         TS_ASSERT_THROWS_NOTHING( nlr.obtainCurrentBounds() );
         TS_ASSERT_THROWS_NOTHING( nlr.deepPolyPropagation() );
@@ -4469,7 +4391,6 @@ public:
 
         TS_ASSERT_THROWS_NOTHING( nlr.getConstraintTightenings( bounds ) );
         TS_ASSERT( boundsEqual( bounds, expectedBounds3 ) );
-
 
         // Invoke backward LP propagation
         TS_ASSERT_THROWS_NOTHING( updateTableau( tableau, bounds ) );

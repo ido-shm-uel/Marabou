@@ -14,7 +14,6 @@
 **/
 
 #include "../../engine/tests/MockTableau.h"
-#include "DeepPolySoftmaxElement.h"
 #include "FloatUtils.h"
 #include "InputQuery.h"
 #include "Layer.h"
@@ -245,7 +244,6 @@ public:
         nlr.setWeight( 4, 0, 5, 0, 3 );
         nlr.setWeight( 0, 0, 3, 0, -1 );
         nlr.setWeight( 1, 0, 5, 0, 3 );
-
 
         nlr.setBias( 3, 0, 1 );
         nlr.setBias( 5, 0, 1 );
@@ -824,6 +822,8 @@ public:
         // Mark the Sigmoid sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
+
+        // Mark the Round sources
         nlr.addActivationSource( 3, 0, 4, 0 );
         nlr.addActivationSource( 3, 1, 4, 1 );
 
@@ -952,7 +952,6 @@ public:
     {
         /*
 
-
           x0      x3  S  x6
 
           x1      x4  S  x7
@@ -1001,6 +1000,7 @@ public:
         nlr.setBias( 1, 1, 2 );
         nlr.setBias( 1, 2, 3 );
 
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 0 );
         nlr.addActivationSource( 1, 2, 2, 0 );
@@ -1010,7 +1010,6 @@ public:
         nlr.addActivationSource( 1, 0, 2, 2 );
         nlr.addActivationSource( 1, 1, 2, 2 );
         nlr.addActivationSource( 1, 2, 2, 2 );
-
 
         // Variable indexing
         nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
@@ -1049,7 +1048,6 @@ public:
         tableau.setLowerBound( 10, -large );
         tableau.setUpperBound( 10, large );
     }
-
 
     void test_deeppoly_softmax1()
     {
@@ -1193,11 +1191,9 @@ public:
         return false;
     }
 
-
     void populateNetworkSoftmax2( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )
     {
         /*
-
 
           x0      x3  S  x8
 
@@ -1269,6 +1265,7 @@ public:
         nlr.setBias( 1, 3, 2 );
         nlr.setBias( 1, 4, 1 );
 
+        // Mark the Softmax sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 2, 2, 0 );
         nlr.addActivationSource( 1, 4, 2, 0 );
@@ -1392,22 +1389,21 @@ public:
         Vector<double> inputUb = { 0, 2, 4 };
         Vector<double> input = { -0.5, 1, 2.5 };
 
-        double value = NLR::DeepPolySoftmaxElement::ERLowerBound( input, inputLb, inputUb, 0 );
+        double value = NLR::Layer::ERLowerBound( input, inputLb, inputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.0114799, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERLowerBound( input, inputLb, inputUb, 0, 0 );
+        value = NLR::Layer::dERLowerBound( input, inputLb, inputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.00563867, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERLowerBound( input, inputLb, inputUb, 0, 1 );
+        value = NLR::Layer::dERLowerBound( input, inputLb, inputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.000838421, 0.00001 ) );
-
 
         Vector<double> outputLb = { 0.2, 0, 0 };
         Vector<double> outputUb = { 0.4, 0.1, 0.1 };
 
-        value = NLR::DeepPolySoftmaxElement::ERUpperBound( input, outputLb, outputUb, 0 );
+        value = NLR::Layer::ERUpperBound( input, outputLb, outputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, -1.44538, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERUpperBound( input, outputLb, outputUb, 0, 0 );
+        value = NLR::Layer::dERUpperBound( input, outputLb, outputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 1.96538, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dERUpperBound( input, outputLb, outputUb, 0, 1 );
+        value = NLR::Layer::dERUpperBound( input, outputLb, outputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.358535, 0.00001 ) );
     }
 
@@ -1416,27 +1412,28 @@ public:
         Vector<double> inputLb = { -1, 0, 1 };
         Vector<double> inputUb = { 0, 2, 3 };
         Vector<double> input = { -0.5, 1, 2 };
-        double value = NLR::DeepPolySoftmaxElement::LSELowerBound( input, inputLb, inputUb, 0 );
+
+        double value = NLR::Layer::LSELowerBound( input, inputLb, inputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.0365, 0.001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSELowerBound( input, inputLb, inputUb, 0, 0 );
+        value = NLR::Layer::dLSELowerBound( input, inputLb, inputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.0365, 0.001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSELowerBound( input, inputLb, inputUb, 0, 1 );
+        value = NLR::Layer::dLSELowerBound( input, inputLb, inputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.00703444, 0.001 ) );
 
         Vector<double> outputLb = { 0.2, 0, 0 };
         Vector<double> outputUb = { 0.4, 0.1, 0.1 };
-        value = NLR::DeepPolySoftmaxElement::LSEUpperBound( input, outputLb, outputUb, 0 );
+
+        value = NLR::Layer::LSEUpperBound( input, outputLb, outputUb, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.164165, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSEUpperbound( input, outputLb, outputUb, 0, 0 );
+        value = NLR::Layer::dLSEUpperbound( input, outputLb, outputUb, 0, 0 );
         TS_ASSERT( FloatUtils::areEqual( value, 0.272204, 0.00001 ) );
-        value = NLR::DeepPolySoftmaxElement::dLSEUpperbound( input, outputLb, outputUb, 0, 1 );
+        value = NLR::Layer::dLSEUpperbound( input, outputLb, outputUb, 0, 1 );
         TS_ASSERT( FloatUtils::areEqual( value, -0.073207, 0.00001 ) );
     }
 
     void populateNetworkBilinear( NLR::NetworkLevelReasoner &nlr, MockTableau &tableau )
     {
         /*
-
 
           x0    x2
                     x  x4 -- x5
@@ -1466,9 +1463,9 @@ public:
         nlr.setWeight( 0, 1, 1, 1, 1 );
         nlr.setWeight( 2, 0, 3, 0, -1 );
 
+        // Mark the Bilinear sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 0 );
-
 
         // Variable indexing
         nlr.setNeuronVariable( NLR::NeuronIndex( 0, 0 ), 0 );
@@ -1589,7 +1586,7 @@ public:
 
         nlr.setBias( 5, 0, 1 );
 
-        // Mark the ReLU sources
+        // Mark the LeakyReLU sources
         nlr.addActivationSource( 1, 0, 2, 0 );
         nlr.addActivationSource( 1, 1, 2, 1 );
 
