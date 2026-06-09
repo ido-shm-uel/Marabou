@@ -203,6 +203,16 @@ void NetworkLevelReasoner::symbolicBoundPropagation()
         _layerIndexToLayer[i]->computeSymbolicBounds();
 }
 
+void NetworkLevelReasoner::parameterisedSymbolicBoundPropagation( const Vector<double> &coeffs )
+{
+    Map<unsigned, Vector<double>> layerIndicesToParameters = getParametersForLayers( coeffs );
+    for ( unsigned i = 0; i < _layerIndexToLayer.size(); ++i )
+    {
+        const Vector<double> &currentLayerCoeffs = layerIndicesToParameters[i];
+        _layerIndexToLayer[i]->computeParameterisedSymbolicBounds( currentLayerCoeffs, true );
+    }
+}
+
 void NetworkLevelReasoner::deepPolyPropagation()
 {
     if ( _deepPolyAnalysis == nullptr )

@@ -138,6 +138,7 @@ public:
     void obtainCurrentBounds();
     void computeIntervalArithmeticBounds();
     void computeSymbolicBounds();
+    void computeParameterisedSymbolicBounds( const Vector<double> &coeffs, bool receive = false );
 
     const double *getSymbolicLb() const;
     const double *getSymbolicUb() const;
@@ -283,6 +284,16 @@ private:
     void computeSymbolicBoundsForSoftmax();
     void computeSymbolicBoundsForBilinear();
     void computeSymbolicBoundsDefault();
+
+    /*
+      Helper functions for parameterised symbolic bound tightening
+    */
+    void computeParameterisedSymbolicBoundsForRelu( const Vector<double> &coeffs, bool receive );
+    void computeParameterisedSymbolicBoundsForSign( const Vector<double> &coeffs, bool receive );
+    void computeParameterisedSymbolicBoundsForLeakyRelu( const Vector<double> &coeffs,
+                                                         bool receive );
+    void computeParameterisedSymbolicBoundsForBilinear( const Vector<double> &coeffs,
+                                                        bool receive );
 
     /*
       Helper functions for interval bound tightening
