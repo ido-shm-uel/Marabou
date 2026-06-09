@@ -50,6 +50,7 @@ public:
     */
     void addLayer( unsigned layerIndex, Layer::Type type, unsigned layerSize );
     void addLayerDependency( unsigned sourceLayer, unsigned targetLayer );
+    void removeLayerDependency( unsigned sourceLayer, unsigned targetLayer );
     void computeSuccessorLayers();
     void setWeight( unsigned sourceLayer,
                     unsigned sourceNeuron,
@@ -110,6 +111,18 @@ public:
           the parameterised symbolic bounds (or default to regular
           symbolic bounds if parameterised bounds not implemented).
 
+        - DeepPoly: For every neuron in the network, calculate symbolic
+          bounds in term of its predecessor neurons, then perform
+          backsubstitution up to the input layer and concretize.
+
+        - Parameterised DeepPoly: For certain activation functions, there
+          is a continuum of valid symbolic bounds. We receive a map of
+          coefficients in range [0, 1] for every layer index, then compute
+          the DeepPoly bounds via backsubstitution and concretization. For
+          each layer, a symbolic bound in terms its highest predecessor layers
+          is stored in the predessorSymbolic maps. Symbolic bounds for the last
+          layer in terms of every layer are stored in the outputLayer maps.
+
         - LP Relaxation: invoking an LP solver on a series of LP
           relaxations of the problem we're trying to solve, and
           optimizing the lower and upper bounds of each of the
@@ -139,6 +152,8 @@ public:
     void symbolicBoundPropagation();
     void parameterisedSymbolicBoundPropagation( const Vector<double> &coeffs );
     void deepPolyPropagation();
+    void parameterisedDeepPoly( bool storeSymbolicBounds = false,
+                                const Vector<double> &coeffs = Vector<double>( {} ) );
     void lpRelaxationPropagation();
     void LPTighteningForOneLayer( unsigned targetIndex );
     void MILPPropagation();
@@ -200,6 +215,18 @@ public:
     */
     double getPreviousBias( const ReluConstraint *reluConstraint ) const;
 
+    // Get symbolic bounds for the last layer in term of given layer.
+    Vector<double> getOutputSymbolicLb( unsigned layerIndex );
+    Vector<double> getOutputSymbolicUb( unsigned layerIndex );
+    Vector<double> getOutputSymbolicLowerBias( unsigned layerIndex );
+    Vector<double> getOutputSymbolicUpperBias( unsigned layerIndex );
+
+    // Get symbolic bounds of given layer in terms of its predecessor.
+    Vector<double> getPredecessorSymbolicLb( unsigned layerIndex );
+    Vector<double> getPredecessorSymbolicUb( unsigned layerIndex );
+    Vector<double> getPredecessorSymbolicLowerBias( unsigned layerIndex );
+    Vector<double> getPredecessorSymbolicUpperBias( unsigned layerIndex );
+
     /*
       Finds logically consecutive WS layers and merges them, in order
       to reduce the total number of layers and variables in the
@@ -233,6 +260,16 @@ private:
     std::unique_ptr<DeepPolyAnalysis> _deepPolyAnalysis;
 
     List<PiecewiseLinearConstraint *> _constraintsInTopologicalOrder;
+
+    Map<unsigned, Vector<double>> _predecessorSymbolicLb;
+    Map<unsigned, Vector<double>> _predecessorSymbolicUb;
+    Map<unsigned, Vector<double>> _predecessorSymbolicLowerBias;
+    Map<unsigned, Vector<double>> _predecessorSymbolicUpperBias;
+
+    Map<unsigned, Vector<double>> _outputSymbolicLb;
+    Map<unsigned, Vector<double>> _outputSymbolicUb;
+    Map<unsigned, Vector<double>> _outputSymbolicLowerBias;
+    Map<unsigned, Vector<double>> _outputSymbolicUpperBias;
 
     void freeMemoryIfNeeded();
 
