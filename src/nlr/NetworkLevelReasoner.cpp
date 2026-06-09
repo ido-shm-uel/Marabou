@@ -798,6 +798,20 @@ unsigned NetworkLevelReasoner::getNumberOfParametersPerType( Layer::Type t ) con
     return 0;
 }
 
+const Vector<unsigned> NetworkLevelReasoner::getLayersWithNonfixedNeurons() const
+{
+    Vector<unsigned> layerWithNonfixedNeurons = Vector<unsigned>( {} );
+    for ( const auto &pair : _layerIndexToLayer )
+    {
+        if ( !pair.second->getNonfixedNeurons().empty() )
+        {
+            layerWithNonfixedNeurons.append( pair.first );
+        }
+    }
+    const Vector<unsigned> layerList = Vector<unsigned>( layerWithNonfixedNeurons );
+    return layerList;
+}
+
 void NetworkLevelReasoner::mergeWSLayers( unsigned secondLayerIndex,
                                           Map<unsigned, LinearExpression> &eliminatedNeurons )
 {
