@@ -2,7 +2,7 @@
 /*! \file NetworkLevelReasoner.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Guy Katz
+ **   Guy Katz, Ido Shmuel
  ** This file is part of the Marabou project.
  ** Copyright (c) 2017-2024 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
@@ -141,6 +141,13 @@ public:
         - getPolygonalTightenings: this is the function that an
           external user calls in order to collect the polygonal bounds
           discovered by the NLR.
+
+        - receiveInfeasibleBranches: this is a callback from the layer
+          objects, through which they report infeasible branches combinations.
+
+        - getInfeasibleBranches: this is the function that an
+          external user calls in order to collect the infeasible branches combinations
+          discovered by the NLR.
     */
 
     void setTableau( const ITableau *tableau );
@@ -167,6 +174,10 @@ public:
     void receivePolygonalTightening( PolygonalTightening &polygonalTightening );
     void getPolygonalTightenings( List<PolygonalTightening> &polygonalTightenings );
     void clearPolygonalTightenings();
+
+    void receiveInfeasibleBranches( Map<NeuronIndex, unsigned> &neuronToBranchIndex );
+    void getInfeasibleBranches( List<Map<NeuronIndex, unsigned>> &infeasibleBranches );
+    void clearInfeasibleBranches();
 
     // Get total number of optimizable parameters for parameterised SBT relaxation.
     unsigned getNumberOfParameters() const;
@@ -274,6 +285,8 @@ private:
     List<Tightening> _boundTightenings;
     List<PolygonalTightening> _polygonalBoundTightenings;
 
+    List<Map<NeuronIndex, unsigned>> _infeasibleBranches;
+
     std::unique_ptr<DeepPolyAnalysis> _deepPolyAnalysis;
 
     List<PiecewiseLinearConstraint *> _constraintsInTopologicalOrder;
@@ -329,17 +342,44 @@ private:
     // Return optimizable parameters which minimize parameterised SBT bounds' volume.
     const Vector<double> OptimalParameterisedSymbolicBoundTightening();
 
+    // Optimize biases of generated parameterised polygonal tightenings.
+    const Vector<PolygonalTightening> OptimizeParameterisedPolygonalTightening();
+
     // Estimate Volume of parameterised symbolic bound tightening.
     double EstimateVolume( const Vector<double> &coeffs );
 
     // Heuristically select neurons for PMNR.
     const Vector<NeuronIndex> selectPMNRNeurons();
 
+    // Optimize biases of generated parameterised polygonal tightenings.
+    double OptimizeSingleParameterisedPolygonalTightening(
+        PolygonalTightening &tightening,
+        Vector<PolygonalTightening> &prevTightenings,
+        bool maximize,
+        double feasibilityBound,
+        const Map<NeuronIndex, unsigned> &neuronToBranchIndex = Map<NeuronIndex, unsigned>( {} ) );
+
+    double OptimizeSingleParameterisedPolygonalTighteningWithBranching(
+        PolygonalTightening &tightening,
+        Vector<PolygonalTightening> &prevTightenings,
+        bool maximize,
+        double bound );
+
+    // Get current lower bound for selected parameterised polygonal tightenings' biases.
+    double getParameterisdPolygonalTighteningBound(
+        const Vector<double> &gamma,
+        PolygonalTightening &tightening,
+        Vector<PolygonalTightening> &prevTightenings,
+        const Map<NeuronIndex, unsigned> &neuronToBranchIndex = Map<NeuronIndex, unsigned>( {} ) );
+
     // Return difference between given point and upper and lower bounds determined by parameterised
     // SBT relaxation.
     double calculateDifferenceFromSymbolic( const Layer *layer,
                                             Map<unsigned, double> &point,
                                             unsigned i ) const;
+
+    // Heuristically generating optimizable polygonal tightening for PMNR.
+    const Vector<PolygonalTightening> generatePolygonalTighteningsForPMNR();
 
     /*
       Store previous biases for each ReLU neuron in a map for getPreviousBias()

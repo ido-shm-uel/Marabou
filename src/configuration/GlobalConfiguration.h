@@ -172,6 +172,21 @@ public:
     // Weight decay for PreimageApproximation optimization.
     static const double PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY;
 
+    // Maximum iterations for Generalized INVPROP optimization.
+    static const unsigned GENERALIZED_INVPROP_MAX_ITERATIONS;
+
+    // Step size for Generalized INVPROP optimization.
+    static const double GENERALIZED_INVPROP_STEP_SIZE;
+
+    // Learning rate for Generalized INVPROP optimization.
+    static const double GENERALIZED_INVPROP_LEARNING_RATE;
+
+    // Weight decay for Generalized INVPROP optimization.
+    static const double GENERALIZED_INVPROP_WEIGHT_DECAY;
+
+    // Initial gamma values for Generalized INVPROP optimization.
+    static const double GENERALIZED_INVPROP_INITIAL_GAMMA;
+
     // Random seed for PMNR (with randomized hyperplanes).
     static const unsigned PMNR_RANDOM_SEED;
 
@@ -292,6 +307,10 @@ public:
     /* How many rounds of backward analysis to perform?
      */
     static const unsigned MAX_ROUNDS_OF_BACKWARD_ANALYSIS;
+
+    /* How many rounds of backward analysis to perform for PMNR algorithm?
+     */
+    static const unsigned MAX_ROUNDS_OF_PMNR_BACKWARD_ANALYSIS;
 
     /* Analyze lemma dependencies when producing proofs
      */

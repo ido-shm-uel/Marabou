@@ -2,7 +2,7 @@
 /*! \file NetworkLevelReasoner.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Guy Katz
+ **   Guy Katz, Ido Shmuel
  ** This file is part of the Marabou project.
  ** Copyright (c) 2017-2024 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
@@ -219,6 +219,24 @@ void NetworkLevelReasoner::clearPolygonalTightenings()
     _polygonalBoundTightenings.clear();
 }
 
+void NetworkLevelReasoner::receiveInfeasibleBranches(
+    Map<NeuronIndex, unsigned> &neuronToBranchIndex )
+{
+    _infeasibleBranches.append( neuronToBranchIndex );
+}
+
+void NetworkLevelReasoner::getInfeasibleBranches(
+    List<Map<NeuronIndex, unsigned>> &infeasibleBranches )
+{
+    infeasibleBranches = _infeasibleBranches;
+    _infeasibleBranches.clear();
+}
+
+void NetworkLevelReasoner::clearInfeasibleBranches()
+{
+    _infeasibleBranches.clear();
+}
+
 void NetworkLevelReasoner::symbolicBoundPropagation()
 {
     for ( unsigned i = 0; i < _layerIndexToLayer.size(); ++i )
@@ -383,6 +401,19 @@ void NetworkLevelReasoner::lpRelaxationPropagation()
             _layerIndexToLayer, false, layerIndicesToParameters );
         lpFormulator.optimizeBoundsWithLpRelaxation(
             _layerIndexToLayer, true, layerIndicesToParameters );
+    }
+    else if ( Options::get()->getMILPSolverBoundTighteningType() ==
+              MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
+    {
+        const Vector<double> optimalCoeffs = OptimalParameterisedSymbolicBoundTightening();
+        Map<unsigned, Vector<double>> layerIndicesToParameters =
+            getParametersForLayers( optimalCoeffs );
+        const Vector<PolygonalTightening> &polygonalTightenings =
+            OptimizeParameterisedPolygonalTightening();
+        lpFormulator.optimizeBoundsWithLpRelaxation(
+            _layerIndexToLayer, false, layerIndicesToParameters, polygonalTightenings );
+        lpFormulator.optimizeBoundsWithLpRelaxation(
+            _layerIndexToLayer, true, layerIndicesToParameters, polygonalTightenings );
     }
     else if ( Options::get()->getMILPSolverBoundTighteningType() ==
               MILPSolverBoundTighteningType::LP_RELAXATION )
@@ -1317,6 +1348,159 @@ double NetworkLevelReasoner::calculateDifferenceFromSymbolic( const Layer *layer
     return std::max( layer->getUb( i ) - upperSum, lowerSum - layer->getLb( i ) );
 }
 
+const Vector<PolygonalTightening> NetworkLevelReasoner::generatePolygonalTighteningsForPMNR()
+{
+    Vector<PolygonalTightening> tightenings = Vector<PolygonalTightening>( {} );
+    Vector<PolygonalTightening> lowerDeepPolyTightenings = Vector<PolygonalTightening>( {} );
+    Vector<PolygonalTightening> upperDeepPolyTightenings = Vector<PolygonalTightening>( {} );
+    const Vector<NeuronIndex> neurons = selectPMNRNeurons();
+    unsigned neuronCount = neurons.size();
+
+    // Initial tightenings are non-fixed neurons and their DeepPoly symbolic bounds.
+    for ( const auto &pair : neurons )
+    {
+        unsigned layerIndex = pair._layer;
+        unsigned neuron = pair._neuron;
+        Layer *layer = _layerIndexToLayer[layerIndex];
+        unsigned size = layer->getSize();
+
+        Map<NeuronIndex, double> lowerCoeffs;
+        Map<NeuronIndex, double> upperCoeffs;
+        lowerCoeffs[pair] = 1;
+        upperCoeffs[pair] = -1;
+
+        unsigned inputIndex = 0;
+        List<NeuronIndex> sources = layer->getActivationSources( neuron );
+        for ( const auto &sourceIndex : sources )
+        {
+            lowerCoeffs[sourceIndex] =
+                -getPredecessorSymbolicLb( layerIndex )[size * inputIndex + neuron];
+            upperCoeffs[sourceIndex] =
+                getPredecessorSymbolicUb( layerIndex )[size * inputIndex + neuron];
+            ++inputIndex;
+        }
+        PolygonalTightening lowerTightening( lowerCoeffs,
+                                             getPredecessorSymbolicLowerBias( layerIndex )[neuron],
+                                             PolygonalTightening::LB );
+        PolygonalTightening upperTightening( upperCoeffs,
+                                             -getPredecessorSymbolicUpperBias( layerIndex )[neuron],
+                                             PolygonalTightening::LB );
+        lowerDeepPolyTightenings.append( lowerTightening );
+        upperDeepPolyTightenings.append( upperTightening );
+    }
+
+    /*
+       If DeepPoly bounds are x_f - \sum a_u_i x_i <= b_u, \sum x_f - a_u_i x_i >= b_l, PMNR
+       tightenings are linear combinations of x_f - \sum a_u_i x_i, coeffs in {-1, 0, 1}, and
+       linear combinations of x_f - \sum a_l_i x_i, coeffs in {-1, 0, 1}.
+    */
+    const Vector<double> weights = Vector<double>( { -1, 0, 1 } );
+    unsigned weightCount = weights.size();
+    unsigned range = std::pow( weightCount, neuronCount );
+    for ( unsigned i = 0; i < range; ++i )
+    {
+        // Keep track of whether all coefficients for current tightening are non-negative,
+        // and count non-zero coefficients.
+        unsigned nonZeroWeights = 0;
+        bool allNonnegative = true;
+        Map<NeuronIndex, double> lowerCoeffs;
+        Map<NeuronIndex, double> upperCoeffs;
+        for ( unsigned j = 0; j < neuronCount; ++j )
+        {
+            unsigned mask = std::pow( weightCount, j );
+            unsigned flag = ( i / mask ) % weightCount;
+            double weight = weights[flag];
+            if ( weight < 0 )
+            {
+                allNonnegative = false;
+            }
+            if ( weight != 0 )
+            {
+                ++nonZeroWeights;
+            }
+
+            // Compute linear combinations of DeepPoly tightenings.
+            for ( const auto &pair : lowerDeepPolyTightenings[j]._neuronToCoefficient )
+            {
+                if ( !lowerCoeffs.exists( pair.first ) )
+                {
+                    lowerCoeffs[pair.first] = weight * pair.second;
+                }
+                else
+                {
+                    lowerCoeffs[pair.first] = lowerCoeffs[pair.first] + weight * pair.second;
+                }
+            }
+            for ( const auto &pair : upperDeepPolyTightenings[j]._neuronToCoefficient )
+            {
+                if ( !upperCoeffs.exists( pair.first ) )
+                {
+                    upperCoeffs[pair.first] = weight * pair.second;
+                }
+                else
+                {
+                    upperCoeffs[pair.first] = upperCoeffs[pair.first] + weight * pair.second;
+                }
+            }
+        }
+
+        // No need to tighten the original DeepPoly bounds.
+        if ( nonZeroWeights <= 1 )
+        {
+            continue;
+        }
+
+        // Calculate initial concrete lower bound for all tightenings. If all coefficients are,
+        // non-negative, compute lower bounds by adding the DeepPoly tightenings' lower bounds.
+        double lowerTighteningLb = 0;
+        double upperTighteningLb = 0;
+        if ( allNonnegative )
+        {
+            for ( unsigned j = 0; j < neuronCount; ++j )
+            {
+                unsigned mask = std::pow( weightCount, j );
+                unsigned flag = ( i / mask ) % weightCount;
+                double weight = weights[flag];
+                lowerTighteningLb += weight * lowerDeepPolyTightenings[j]._value;
+                upperTighteningLb += weight * upperDeepPolyTightenings[j]._value;
+            }
+        }
+
+        // If some weights are negative, compute lower bounds by concretizing.
+        else
+        {
+            for ( const auto &pair : lowerCoeffs )
+            {
+                double neuronLb =
+                    _layerIndexToLayer[pair.first._layer]->getLb( pair.first._neuron );
+                double neuronUb =
+                    _layerIndexToLayer[pair.first._layer]->getUb( pair.first._neuron );
+                lowerTighteningLb +=
+                    pair.second >= 0 ? pair.second * neuronLb : pair.second * neuronUb;
+            }
+            for ( const auto &pair : upperCoeffs )
+            {
+                double neuronLb =
+                    _layerIndexToLayer[pair.first._layer]->getLb( pair.first._neuron );
+                double neuronUb =
+                    _layerIndexToLayer[pair.first._layer]->getUb( pair.first._neuron );
+                upperTighteningLb +=
+                    pair.second >= 0 ? pair.second * neuronLb : pair.second * neuronUb;
+            }
+        }
+        PolygonalTightening lowerTightening(
+            lowerCoeffs, lowerTighteningLb, PolygonalTightening::LB );
+        PolygonalTightening upperTightening(
+            upperCoeffs, upperTighteningLb, PolygonalTightening::LB );
+        tightenings.append( lowerTightening );
+        tightenings.append( upperTightening );
+    }
+
+    const Vector<PolygonalTightening> tighteningsVector =
+        Vector<PolygonalTightening>( tightenings );
+    return tighteningsVector;
+}
+
 const Vector<NeuronIndex> NetworkLevelReasoner::selectPMNRNeurons()
 {
     // Select layer with maximal PMNR neuron score sum.
@@ -1368,6 +1552,408 @@ const Vector<NeuronIndex> NetworkLevelReasoner::selectPMNRNeurons()
     }
     const Vector<NeuronIndex> neurons( selectedNeurons );
     return neurons;
+}
+
+const Vector<PolygonalTightening> NetworkLevelReasoner::OptimizeParameterisedPolygonalTightening()
+{
+    // Calculate successor layers, PMNR scores, symbolic bound maps before optimizing.
+    computeSuccessorLayers();
+    parameterisedDeepPoly( true );
+    initializePMNRScoreMap();
+
+    // Repeatedly optimize polygonal tightenings given previously optimized ones.
+    const Vector<PolygonalTightening> &selectedTightenings = generatePolygonalTighteningsForPMNR();
+    Vector<PolygonalTightening> optimizedTightenings = Vector<PolygonalTightening>( {} );
+    for ( unsigned i = 0; i < selectedTightenings.size(); ++i )
+    {
+        PolygonalTightening tightening = selectedTightenings[i];
+        bool maximize = ( tightening._type == PolygonalTightening::LB );
+        double feasibiltyBound = maximize ? FloatUtils::infinity() : FloatUtils::negativeInfinity();
+        double bound = OptimizeSingleParameterisedPolygonalTightening(
+            tightening, optimizedTightenings, maximize, feasibiltyBound );
+
+        // Attempt to obtain stronger bound by branching selected neurons.
+        tightening._value = OptimizeSingleParameterisedPolygonalTighteningWithBranching(
+            tightening, optimizedTightenings, maximize, bound );
+        optimizedTightenings.append( tightening );
+
+        // Store optimized tightenings in NLR.
+        receivePolygonalTightening( tightening );
+    }
+
+    const Vector<PolygonalTightening> tightenings( optimizedTightenings );
+    return tightenings;
+}
+
+double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTighteningWithBranching(
+    PolygonalTightening &tightening,
+    Vector<PolygonalTightening> &prevTightenings,
+    bool maximize,
+    double originalBound )
+{
+    // Determine which of the selected neurons support branching.
+    const Vector<NeuronIndex> selectedNeurons = selectPMNRNeurons();
+    Vector<NeuronIndex> neurons = Vector<NeuronIndex>( {} );
+    for ( const auto &index : selectedNeurons )
+    {
+        const Layer *layer = _layerIndexToLayer[index._layer];
+        if ( layer->neuronNonfixed( index._neuron ) &&
+             supportsInvpropBranching( layer->getLayerType() ) )
+        {
+            neurons.append( index );
+        }
+    }
+    if ( neurons.empty() )
+        return originalBound;
+
+    // Re-optimize current tightening for every branch combination. If we seek to maximize
+    // the tightening's bound, select minimal score of all combinations, and vice versa.
+    bool maximizeBranchBound = !maximize;
+    double newBound = maximizeBranchBound ? FloatUtils::negativeInfinity() : FloatUtils::infinity();
+    unsigned neuronCount = neurons.size();
+    Vector<unsigned> branchCounts( neuronCount, 0 );
+    for ( unsigned i = 0; i < neuronCount; ++i )
+    {
+        branchCounts[i] = getSymbolicLbPerBranch( neurons[i] ).size();
+    }
+    unsigned range =
+        std::accumulate( branchCounts.begin(), branchCounts.end(), 1, std::multiplies<unsigned>() );
+    for ( unsigned i = 0; i < range; ++i )
+    {
+        Map<NeuronIndex, unsigned> neuronToBranchIndex;
+        for ( unsigned j = 0; j < neuronCount; ++j )
+        {
+            unsigned mask = std::accumulate( branchCounts.begin(),
+                                             std::next( branchCounts.begin(), j ),
+                                             1,
+                                             std::multiplies<unsigned>() );
+            unsigned branchIndex = ( i / mask ) % branchCounts[j];
+            NeuronIndex index = neurons[j];
+            neuronToBranchIndex.insert( index, branchIndex );
+        }
+
+        // To determine some of the infeasible branch combinations, calculate a feasibility bound
+        // (known upper/lower bound for max/min problem) with concretization.
+        double feasibilityBound = 0;
+        for ( const auto &pair : tightening._neuronToCoefficient )
+        {
+            double ub = _layerIndexToLayer[pair.first._layer]->getUb( pair.first._neuron );
+            double lb = _layerIndexToLayer[pair.first._layer]->getLb( pair.first._neuron );
+            if ( maximize )
+            {
+                feasibilityBound += pair.second > 0 ? pair.second * ub : pair.second * lb;
+            }
+            else
+            {
+                feasibilityBound += pair.second > 0 ? pair.second * lb : pair.second * ub;
+            }
+        }
+
+        double branchBound = OptimizeSingleParameterisedPolygonalTightening(
+            tightening, prevTightenings, maximize, feasibilityBound, neuronToBranchIndex );
+
+        // If bound is stronger than known feasibility bound, store branch combination in NLR.
+        if ( !FloatUtils::isFinite( branchBound ) || maximize ? branchBound > feasibilityBound
+                                                              : branchBound < feasibilityBound )
+        {
+            receiveInfeasibleBranches( neuronToBranchIndex );
+        }
+        else
+        {
+            newBound = maximizeBranchBound ? std::max( branchBound, newBound )
+                                           : std::min( branchBound, newBound );
+        }
+    }
+
+    newBound = maximize ? std::max( originalBound, newBound ) : std::min( originalBound, newBound );
+    return newBound;
+}
+
+double NetworkLevelReasoner::OptimizeSingleParameterisedPolygonalTightening(
+    PolygonalTightening &tightening,
+    Vector<PolygonalTightening> &prevTightenings,
+    bool maximize,
+    double feasibilityBound,
+    const Map<NeuronIndex, unsigned> &neuronToBranchIndex )
+{
+    // Search over gamma in [0, inf)^sizeOfPrevTightenings with PGD.
+    unsigned maxIterations = GlobalConfiguration::GENERALIZED_INVPROP_MAX_ITERATIONS;
+    double gammaStepSize = GlobalConfiguration::GENERALIZED_INVPROP_STEP_SIZE;
+    double epsilon = GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS;
+    double weightDecay = GlobalConfiguration::GENERALIZED_INVPROP_WEIGHT_DECAY;
+    double lr = GlobalConfiguration::GENERALIZED_INVPROP_LEARNING_RATE;
+    unsigned gammaDimension = prevTightenings.size();
+    double sign = ( maximize ? 1 : -1 );
+    double bestBound = tightening._value;
+
+    Vector<double> gammaLowerBounds( gammaDimension, 0 );
+
+    Vector<double> gamma( gammaDimension, GlobalConfiguration::GENERALIZED_INVPROP_INITIAL_GAMMA );
+    Vector<double> previousGamma( gamma );
+
+    Vector<Vector<double>> gammaCandidates( gammaDimension );
+    Vector<double> gammaGradient( gammaDimension );
+
+    for ( unsigned i = 0; i < maxIterations; ++i )
+    {
+        for ( unsigned j = 0; j < gammaDimension; ++j )
+        {
+            gamma[j] += weightDecay * ( gamma[j] - previousGamma[j] );
+            gamma[j] = std::max( gamma[j], gammaLowerBounds[j] );
+        }
+
+        double currentCost = getParameterisdPolygonalTighteningBound(
+            gamma, tightening, prevTightenings, neuronToBranchIndex );
+
+        // If calculated bound is stronger than known feasibility bound, stop optimization.
+        if ( !FloatUtils::isFinite( currentCost ) || maximize ? currentCost > feasibilityBound
+                                                              : currentCost < feasibilityBound )
+        {
+            return currentCost;
+        }
+
+        for ( unsigned j = 0; j < gammaDimension; ++j )
+        {
+            gammaCandidates[j] = Vector<double>( gamma );
+            gammaCandidates[j][j] += gammaStepSize;
+            if ( gammaCandidates[j][j] < gammaLowerBounds[j] )
+            {
+                gammaGradient[j] = 0;
+                continue;
+            }
+
+            double cost = getParameterisdPolygonalTighteningBound(
+                gammaCandidates[j], tightening, prevTightenings, neuronToBranchIndex );
+            if ( !FloatUtils::isFinite( cost ) || maximize ? cost > feasibilityBound
+                                                           : cost < feasibilityBound )
+            {
+                return cost;
+            }
+
+            gammaGradient[j] = ( cost - currentCost ) / gammaStepSize;
+            bestBound = ( maximize ? std::max( bestBound, cost ) : std::min( bestBound, cost ) );
+        }
+
+        bool gradientIsZero = true;
+        for ( unsigned j = 0; j < gammaDimension; ++j )
+        {
+            if ( FloatUtils::abs( gammaGradient[j] ) > epsilon )
+            {
+                gradientIsZero = false;
+            }
+        }
+        if ( gradientIsZero )
+        {
+            break;
+        }
+        for ( unsigned j = 0; j < gammaDimension; ++j )
+        {
+            previousGamma[j] = gamma[j];
+            gamma[j] += sign * lr * gammaGradient[j];
+            gamma[j] = std::max( gamma[j], gammaLowerBounds[j] );
+        }
+    }
+
+    return bestBound;
+}
+
+double NetworkLevelReasoner::getParameterisdPolygonalTighteningBound(
+    const Vector<double> &gamma,
+    PolygonalTightening &tightening,
+    Vector<PolygonalTightening> &prevTightenings,
+    const Map<NeuronIndex, unsigned> &neuronToBranchIndex )
+{
+    // Recursively compute vectors mu, muHat for every layer with the backpropagation procedure.
+    unsigned numLayers = _layerIndexToLayer.size();
+    unsigned maxLayer = _layerIndexToLayer.size() - 1;
+    unsigned prevTigheningsCount = prevTightenings.size();
+    unsigned inputLayerSize = _layerIndexToLayer[0]->getSize();
+    double sign = ( tightening._type == PolygonalTightening::LB ? 1 : -1 );
+    Vector<Vector<double>> mu( numLayers );
+    Vector<Vector<double>> muHat( numLayers );
+
+    for ( unsigned layerIndex = numLayers; layerIndex-- > 0; )
+    {
+        Layer *layer = _layerIndexToLayer[layerIndex];
+        unsigned size = layer->getSize();
+        mu[layerIndex] = Vector<double>( size, 0 );
+        muHat[layerIndex] = Vector<double>( size, 0 );
+
+        if ( layerIndex < maxLayer )
+        {
+            for ( unsigned i = 0; i < size; ++i )
+            {
+                for ( unsigned successorIndex : layer->getSuccessorLayers() )
+                {
+                    const Layer *successorLayer = _layerIndexToLayer[successorIndex];
+                    unsigned successorSize = successorLayer->getSize();
+
+                    if ( successorLayer->getLayerType() == Layer::WEIGHTED_SUM )
+                    {
+                        const double *weights = successorLayer->getWeightMatrix( layerIndex );
+                        for ( unsigned j = 0; j < successorSize; ++j )
+                        {
+                            if ( !successorLayer->neuronEliminated( j ) )
+                            {
+                                muHat[layerIndex][i] +=
+                                    mu[successorIndex][j] * weights[i * successorSize + j];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for ( unsigned j = 0; j < successorSize; ++j )
+                        {
+                            // Find the index of the current neuron in the successor's activation
+                            // sources list.
+                            bool found = false;
+                            unsigned inputIndex = 0;
+                            List<NeuronIndex> sources = successorLayer->getActivationSources( j );
+                            for ( const auto &sourceIndex : sources )
+                            {
+                                if ( sourceIndex._layer == layerIndex && sourceIndex._neuron == i )
+                                {
+                                    found = true;
+                                    break;
+                                }
+                                ++inputIndex;
+                            }
+                            NeuronIndex successor( successorIndex, j );
+                            if ( found )
+                            {
+                                if ( !successorLayer->neuronEliminated( j ) )
+                                {
+                                    // When branching selected neurons, use predecessor symbolic
+                                    // bounds for current branch.
+                                    if ( neuronToBranchIndex.exists( successor ) )
+                                    {
+                                        muHat[layerIndex][i] +=
+                                            std::max( mu[successorIndex][j], 0.0 ) *
+                                            getSymbolicUbPerBranch(
+                                                successor )[neuronToBranchIndex[successor]];
+
+                                        muHat[layerIndex][i] -=
+                                            std::max( -mu[successorIndex][j], 0.0 ) *
+                                            getSymbolicLbPerBranch(
+                                                successor )[neuronToBranchIndex[successor]];
+                                    }
+                                    else
+                                    {
+                                        muHat[layerIndex][i] +=
+                                            std::max( mu[successorIndex][j], 0.0 ) *
+                                            getPredecessorSymbolicUb(
+                                                successorIndex )[successorSize * inputIndex + j];
+
+                                        muHat[layerIndex][i] -=
+                                            std::max( -mu[successorIndex][j], 0.0 ) *
+                                            getPredecessorSymbolicLb(
+                                                successorIndex )[successorSize * inputIndex + j];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if ( layerIndex > 0 )
+        {
+            // Compute mu from muHat.
+            for ( unsigned i = 0; i < size; ++i )
+            {
+                mu[layerIndex][i] += muHat[layerIndex][i] -
+                                     sign * tightening.getCoeff( NeuronIndex( layerIndex, i ) );
+                for ( unsigned j = 0; j < prevTigheningsCount; ++j )
+                {
+                    PolygonalTightening pt = prevTightenings[j];
+                    double prevCoeff = pt.getCoeff( NeuronIndex( layerIndex, i ) );
+                    double currentSign = ( pt._type == PolygonalTightening::LB ? 1 : -1 );
+                    mu[layerIndex][i] += currentSign * gamma[j] * prevCoeff;
+                }
+            }
+        }
+    }
+
+    // Compute global bound for input space minimization problem.
+    Vector<double> inputLayerBound( inputLayerSize, 0 );
+    for ( unsigned i = 0; i < inputLayerSize; ++i )
+    {
+        inputLayerBound[i] += sign * tightening.getCoeff( NeuronIndex( 0, i ) ) - muHat[0][i];
+        for ( unsigned j = 0; j < prevTigheningsCount; ++j )
+        {
+            PolygonalTightening pt = prevTightenings[j];
+            double prevCoeff = pt.getCoeff( NeuronIndex( 0, i ) );
+            double currentSign = ( pt._type == PolygonalTightening::LB ? 1 : -1 );
+            inputLayerBound[i] -= currentSign * gamma[j] * prevCoeff;
+        }
+    }
+
+    // Compute bound for polygonal tightening bias using mu and inputLayerBound.
+    double bound = 0;
+    for ( unsigned i = 0; i < prevTigheningsCount; ++i )
+    {
+        PolygonalTightening pt = prevTightenings[i];
+        double currentSign = ( pt._type == PolygonalTightening::LB ? 1 : -1 );
+        bound += currentSign * gamma[i] * pt._value;
+    }
+
+    for ( unsigned layerIndex = maxLayer; layerIndex >= 1; --layerIndex )
+    {
+        Layer *layer = _layerIndexToLayer[layerIndex];
+        if ( layer->getLayerType() == Layer::WEIGHTED_SUM )
+        {
+            const double *biases = layer->getBiases();
+            for ( unsigned i = 0; i < layer->getSize(); ++i )
+            {
+                if ( !layer->neuronEliminated( i ) )
+                {
+                    bound -= mu[layerIndex][i] * biases[i];
+                }
+                else
+                {
+                    bound -= mu[layerIndex][i] * layer->getEliminatedNeuronValue( i );
+                }
+            }
+        }
+        else
+        {
+            for ( unsigned i = 0; i < layer->getSize(); ++i )
+            {
+                if ( !layer->neuronEliminated( i ) )
+                {
+                    NeuronIndex index( layerIndex, i );
+                    if ( neuronToBranchIndex.exists( index ) )
+                    {
+                        bound -= std::max( mu[layerIndex][i], 0.0 ) *
+                                 getSymbolicUpperBiasPerBranch( index )[neuronToBranchIndex[index]];
+                        bound += std::max( -mu[layerIndex][i], 0.0 ) *
+                                 getSymbolicLowerBiasPerBranch( index )[neuronToBranchIndex[index]];
+                    }
+                    else
+                    {
+                        bound -= std::max( mu[layerIndex][i], 0.0 ) *
+                                 getPredecessorSymbolicUpperBias( layerIndex )[i];
+                        bound += std::max( -mu[layerIndex][i], 0.0 ) *
+                                 getPredecessorSymbolicLowerBias( layerIndex )[i];
+                    }
+                }
+                else
+                {
+                    bound -=
+                        FloatUtils::abs( mu[layerIndex][i] ) * layer->getEliminatedNeuronValue( i );
+                }
+            }
+        }
+    }
+
+    Layer *inputLayer = _layerIndexToLayer[0];
+    for ( unsigned i = 0; i < inputLayerSize; ++i )
+    {
+        bound += std::max( inputLayerBound[i], 0.0 ) * inputLayer->getLb( i );
+        bound -= std::max( -inputLayerBound[i], 0.0 ) * inputLayer->getUb( i );
+    }
+    return sign * bound;
 }
 
 void NetworkLevelReasoner::initializePMNRScoreMap()
@@ -2766,10 +3352,15 @@ unsigned NetworkLevelReasoner::getNumberOfParametersPerType( Layer::Type t ) con
 
 bool NetworkLevelReasoner::supportsInvpropBranching( Layer::Type type ) const
 {
-    // All implemented activations could be branched before INVPROP.
-    return type == Layer::RELU || type == Layer::LEAKY_RELU || type == Layer::SIGN ||
-           type == Layer::ABSOLUTE_VALUE || type == Layer::MAX || type == Layer::ROUND ||
-           type == Layer::SIGMOID || type == Layer::SOFTMAX || type == Layer::BILINEAR;
+    // When using NSSE heuristic, all implemented activations could be branched before INVPROP.
+    if ( Options::get()->getMILPSolverBoundTighteningType() ==
+         MILPSolverBoundTighteningType::BACKWARD_ANALYSIS_PMNR )
+    {
+        return type == Layer::RELU || type == Layer::LEAKY_RELU || type == Layer::SIGN ||
+               type == Layer::ABSOLUTE_VALUE || type == Layer::MAX || type == Layer::ROUND ||
+               type == Layer::SIGMOID || type == Layer::SOFTMAX || type == Layer::BILINEAR;
+    }
+    return false;
 }
 
 const Vector<unsigned> NetworkLevelReasoner::getLayersWithNonfixedNeurons() const

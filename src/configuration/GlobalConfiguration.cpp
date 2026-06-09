@@ -76,6 +76,12 @@ const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_STEP_SIZE 
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_LEARNING_RATE = 0.25;
 const double GlobalConfiguration::PREIMAGE_APPROXIMATION_OPTIMIZATION_WEIGHT_DECAY = 0;
 
+const unsigned GlobalConfiguration::GENERALIZED_INVPROP_MAX_ITERATIONS = 10;
+const double GlobalConfiguration::GENERALIZED_INVPROP_STEP_SIZE = 0.025;
+const double GlobalConfiguration::GENERALIZED_INVPROP_LEARNING_RATE = 0.005;
+const double GlobalConfiguration::GENERALIZED_INVPROP_WEIGHT_DECAY = 0.5;
+const double GlobalConfiguration::GENERALIZED_INVPROP_INITIAL_GAMMA = 0.025;
+
 const unsigned GlobalConfiguration::PMNR_RANDOM_SEED = 1;
 const unsigned GlobalConfiguration::PMNR_SELECTED_NEURONS = 2;
 const unsigned GlobalConfiguration::PMNR_BBPS_BRANCHING_CANDIDATES = 100;
@@ -130,6 +136,7 @@ const bool GlobalConfiguration::WRITE_JSON_PROOF = false;
 
 const unsigned GlobalConfiguration::BACKWARD_BOUND_PROPAGATION_DEPTH = 3;
 const unsigned GlobalConfiguration::MAX_ROUNDS_OF_BACKWARD_ANALYSIS = 10;
+const unsigned GlobalConfiguration::MAX_ROUNDS_OF_PMNR_BACKWARD_ANALYSIS = 10;
 
 const bool GlobalConfiguration::ANALYZE_PROOF_DEPENDENCIES = true;
 const bool GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES = true;
